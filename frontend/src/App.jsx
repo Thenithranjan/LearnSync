@@ -9,7 +9,14 @@ import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import NotFound from './pages/NotFound';
 
-// Helper component to redirect authenticated users away from /login and /register
+// Module 2 Pages
+import CoursesPage from './pages/courses/CoursesPage';
+import MyCoursesPage from './pages/courses/MyCoursesPage';
+import LearningViewPage from './pages/courses/LearningViewPage';
+import AdminCoursesPage from './pages/admin/AdminCoursesPage';
+import FacultyCoursesPage from './pages/faculty/FacultyCoursesPage';
+import CourseContentPage from './pages/faculty/CourseContentPage';
+
 const PublicOnlyRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
 
@@ -52,7 +59,7 @@ const App = () => {
         }
       />
 
-      {/* Protected Routes */}
+      {/* Protected General Routes */}
       <Route
         path="/dashboard"
         element={
@@ -66,6 +73,60 @@ const App = () => {
         element={
           <ProtectedRoute>
             <Profile />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Module 2: Course & Digital Learning Routes */}
+      <Route
+        path="/courses"
+        element={
+          <ProtectedRoute>
+            <CoursesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/my-courses"
+        element={
+          <ProtectedRoute allowedRoles={['STUDENT', 'ADMIN']}>
+            <MyCoursesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/learning/:courseId"
+        element={
+          <ProtectedRoute>
+            <LearningViewPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Admin Specific Course Routes */}
+      <Route
+        path="/admin/courses"
+        element={
+          <ProtectedRoute allowedRoles={['ADMIN']}>
+            <AdminCoursesPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Faculty Specific Course Routes */}
+      <Route
+        path="/faculty/courses"
+        element={
+          <ProtectedRoute allowedRoles={['FACULTY', 'ADMIN']}>
+            <FacultyCoursesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/faculty/courses/:courseId/content"
+        element={
+          <ProtectedRoute allowedRoles={['FACULTY', 'ADMIN']}>
+            <CourseContentPage />
           </ProtectedRoute>
         }
       />

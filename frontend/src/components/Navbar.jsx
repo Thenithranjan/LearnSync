@@ -8,7 +8,9 @@ import {
   LogOut,
   Shield,
   BookOpen,
-  Award
+  Award,
+  Layers,
+  Compass
 } from 'lucide-react';
 
 const Navbar = () => {
@@ -73,11 +75,11 @@ const Navbar = () => {
             </div>
           </Link>
 
-          {/* Navigation Links */}
-          <nav className="flex items-center gap-2 sm:gap-6">
+          {/* Dynamic Navigation Links */}
+          <nav className="flex items-center gap-1 sm:gap-4">
             <Link
               to="/dashboard"
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
                 isActive('/dashboard')
                   ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
@@ -87,22 +89,77 @@ const Navbar = () => {
               <span>Dashboard</span>
             </Link>
 
+            {/* Role Specific Module 2 Links */}
+            <Link
+              to="/courses"
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
+                isActive('/courses')
+                  ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+              }`}
+            >
+              <Compass className="w-4 h-4" />
+              <span>Catalog</span>
+            </Link>
+
+            {user?.role === 'STUDENT' && (
+              <Link
+                to="/my-courses"
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
+                  isActive('/my-courses')
+                    ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                }`}
+              >
+                <BookOpen className="w-4 h-4" />
+                <span>My Courses</span>
+              </Link>
+            )}
+
+            {user?.role === 'FACULTY' && (
+              <Link
+                to="/faculty/courses"
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
+                  isActive('/faculty/courses')
+                    ? 'bg-amber-600/20 text-amber-300 border border-amber-500/30'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                }`}
+              >
+                <Layers className="w-4 h-4" />
+                <span>Course Studio</span>
+              </Link>
+            )}
+
+            {user?.role === 'ADMIN' && (
+              <Link
+                to="/admin/courses"
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
+                  isActive('/admin/courses')
+                    ? 'bg-rose-600/20 text-rose-300 border border-rose-500/30'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                }`}
+              >
+                <Shield className="w-4 h-4" />
+                <span>Course Admin</span>
+              </Link>
+            )}
+
             <Link
               to="/profile"
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
                 isActive('/profile')
                   ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
               }`}
             >
               <User className="w-4 h-4" />
-              <span>Profile</span>
+              <span className="hidden sm:inline">Profile</span>
             </Link>
           </nav>
 
           {/* User Section & Logout */}
           <div className="flex items-center gap-4">
-            <div className="hidden md:flex items-center gap-3 pl-4 border-l border-slate-800">
+            <div className="hidden lg:flex items-center gap-3 pl-4 border-l border-slate-800">
               <div className="w-9 h-9 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-indigo-400 font-semibold shadow-inner">
                 {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
               </div>
