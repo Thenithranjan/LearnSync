@@ -4,6 +4,7 @@ const cookieParser = require('cookie-parser');
 const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
 const courseRoutes = require('./routes/course.routes');
+const moduleRoutes = require('./routes/module.routes');
 const testRoutes = require('./routes/test.routes');
 const errorHandler = require('./middleware/error.middleware');
 const { sendError } = require('./utils/apiResponse');
@@ -48,6 +49,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/courses', courseRoutes);
+app.use('/api', moduleRoutes); // Handles /api/courses/:courseId/modules and /api/modules/:id
 app.use('/api', testRoutes);
 
 // Handle 404 for undefined routes
