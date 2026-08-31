@@ -6,6 +6,7 @@ const userRoutes = require('./routes/user.routes');
 const courseRoutes = require('./routes/course.routes');
 const moduleRoutes = require('./routes/module.routes');
 const materialRoutes = require('./routes/material.routes');
+const enrollmentRoutes = require('./routes/enrollment.routes');
 const testRoutes = require('./routes/test.routes');
 const errorHandler = require('./middleware/error.middleware');
 const { sendError } = require('./utils/apiResponse');
@@ -49,6 +50,7 @@ app.get('/api/health', (req, res) => {
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api', enrollmentRoutes); // Mounts /api/courses/my-courses and /api/courses/:courseId/enroll
 app.use('/api/courses', courseRoutes);
 app.use('/api', moduleRoutes);
 app.use('/api', materialRoutes);
