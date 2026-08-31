@@ -7,6 +7,7 @@ const courseRoutes = require('./routes/course.routes');
 const moduleRoutes = require('./routes/module.routes');
 const materialRoutes = require('./routes/material.routes');
 const enrollmentRoutes = require('./routes/enrollment.routes');
+const progressRoutes = require('./routes/progress.routes');
 const testRoutes = require('./routes/test.routes');
 const errorHandler = require('./middleware/error.middleware');
 const { sendError } = require('./utils/apiResponse');
@@ -50,10 +51,11 @@ app.get('/api/health', (req, res) => {
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
-app.use('/api', enrollmentRoutes); // Mounts /api/courses/my-courses and /api/courses/:courseId/enroll
+app.use('/api', enrollmentRoutes);
 app.use('/api/courses', courseRoutes);
 app.use('/api', moduleRoutes);
 app.use('/api', materialRoutes);
+app.use('/api', progressRoutes);
 app.use('/api', testRoutes);
 
 // Handle 404 for undefined routes
