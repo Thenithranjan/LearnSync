@@ -1,10 +1,12 @@
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 const mongoose = require('mongoose');
+const { MongoMemoryServer } = require('mongodb-memory-server');
 const User = require('./src/models/User');
 const app = require('./src/app');
 
 let server;
+let mongoServer;
 
 async function runTests() {
   console.log('==================================================');
@@ -12,9 +14,18 @@ async function runTests() {
   console.log('==================================================\n');
 
   try {
-    // Connect DB
-    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/edupulse');
-    console.log('✅ Connected to MongoDB for testing.');
+    let mongoUri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/edupulse';
+
+    try {
+      await mongoose.connect(mongoUri, { serverSelectionTimeoutMS: 2000 });
+      console.log(`✅ Connected to local MongoDB at ${mongoUri}.`);
+    } catch (err) {
+      console.log('⚠️  Local MongoDB not running. Launching in-memory MongoDB server for testing...');
+      mongoServer = await MongoMemoryServer.create();
+      mongoUri = mongoServer.getUri();
+      await mongoose.connect(mongoUri);
+      console.log(`✅ Connected to in-memory MongoDB instance.`);
+    }
 
     // Clean test database users
     await User.deleteMany({ email: /@test\.com$/ });
@@ -25,8 +36,6 @@ async function runTests() {
     console.log(`✅ Test server running on port ${PORT}.\n`);
 
     const baseUrl = `http://localhost:${PORT}/api`;
-
-    // Helper for fetch with cookie tracking
     let cookies = '';
 
     const request = async (endpoint, method = 'GET', body = null, useAuthCookie = false) => {
@@ -43,7 +52,6 @@ async function runTests() {
       const res = await fetch(`${baseUrl}${endpoint}`, options);
       const data = await res.json().catch(() => ({}));
       
-      // Capture set-cookie
       const setCookie = res.headers.get('set-cookie');
       if (setCookie) {
         cookies = setCookie.split(';')[0];
@@ -198,9 +206,6 @@ async function runTests() {
       throw new Error(`Logout Failed. Status: ${logoutRes.status}`);
     }
 
-    // Clean up test database records
-    await User.deleteMany({ email: /@test\.com$/ });
-
     console.log('\n==================================================');
     console.log('🎉 ALL 11 VERIFICATION TESTS PASSED SUCCESSFULLY!');
     console.log('==================================================\n');
@@ -209,7 +214,8 @@ async function runTests() {
     process.exitCode = 1;
   } finally {
     if (server) server.close();
-    await mongoose.connection.close();
+    if (mongoose.connection.readyState !== 0) await mongoose.connection.close();
+    if (mongoServer) await mongoServer.stop();
   }
 }
 
