@@ -3,7 +3,7 @@ const { sendSuccess } = require('../utils/apiResponse');
 
 class MaterialController {
   /**
-   * POST /api/modules/:moduleId/materials
+   * POST /api/modules/:moduleId/materials-->
    */
   static async create(req, res, next) {
     try {
@@ -15,7 +15,7 @@ class MaterialController {
   }
 
   /**
-   * GET /api/modules/:moduleId/materials
+   * GET /api/modules/:moduleId/materials:-->
    */
   static async getByModule(req, res, next) {
     try {
@@ -27,7 +27,7 @@ class MaterialController {
   }
 
   /**
-   * GET /api/materials/:id
+   * GET /api/materials/:id:-->>
    */
   static async getById(req, res, next) {
     try {
@@ -39,7 +39,7 @@ class MaterialController {
   }
 
   /**
-   * PUT /api/materials/:id
+   * PUT /api/materials/:id:
    */
   static async update(req, res, next) {
     try {
