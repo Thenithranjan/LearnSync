@@ -3,6 +3,7 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
+const courseRoutes = require('./routes/course.routes');
 const testRoutes = require('./routes/test.routes');
 const errorHandler = require('./middleware/error.middleware');
 const { sendError } = require('./utils/apiResponse');
@@ -19,7 +20,6 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: function (origin, callback) {
-      // allow requests with no origin (like mobile apps or curl)
       if (!origin) return callback(null, true);
       if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
         return callback(null, true);
@@ -47,7 +47,8 @@ app.get('/api/health', (req, res) => {
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
-app.use('/api', testRoutes); // Mounts /api/admin/test, /api/faculty/test, /api/student/test
+app.use('/api/courses', courseRoutes);
+app.use('/api', testRoutes);
 
 // Handle 404 for undefined routes
 app.use('*', (req, res) => {
