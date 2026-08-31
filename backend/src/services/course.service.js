@@ -46,7 +46,7 @@ class CourseService {
     });
 
     return await course.populate([
-      { path: 'faculty', select: 'name email department' },
+      { path: 'faculty', select: 'name email department profileImage' },
       { path: 'createdBy', select: 'name email role' }
     ]);
   }
@@ -61,13 +61,12 @@ class CourseService {
     if (user.role === 'STUDENT') {
       filter.status = 'PUBLISHED';
     } else if (user.role === 'FACULTY') {
-      // Faculty sees their assigned courses OR published courses
       filter.$or = [
         { faculty: user._id },
         { status: 'PUBLISHED' }
       ];
     }
-    // ADMIN sees all courses (DRAFT, PUBLISHED, ARCHIVED)
+    // ADMIN sees all courses
 
     if (query.department) {
       filter.department = query.department;
@@ -85,6 +84,23 @@ class CourseService {
       });
     }
 
+    return await Course.find(filter)
+      .populate('faculty', 'name email department profileImage')
+      .populate('createdBy', 'name email role')
+      .sort({ createdAt: -1 });
+  }
+
+  /**
+   * Get courses assigned specifically to logged-in Faculty
+   */
+  static async getFacultyAssignedCourses(facultyUser) {
+    if (facultyUser.role !== 'FACULTY' && facultyUser.role !== 'ADMIN') {
+      const error = new Error('Access denied. Faculty role required.');
+      error.statusCode = 403;
+      throw error;
+    }
+
+    const filter = facultyUser.role === 'ADMIN' ? {} : { faculty: facultyUser._id };
     return await Course.find(filter)
       .populate('faculty', 'name email department profileImage')
       .populate('createdBy', 'name email role')
@@ -116,6 +132,43 @@ class CourseService {
   }
 
   /**
+   * Assign or unassign faculty to a course (Admin only)
+   */
+  static async assignFaculty(courseId, facultyId, user) {
+    if (user.role !== 'ADMIN') {
+      const error = new Error('Only ADMIN can assign faculty to courses.');
+      error.statusCode = 403;
+      throw error;
+    }
+
+    const course = await Course.findById(courseId);
+    if (!course) {
+      const error = new Error('Course not found.');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    if (facultyId) {
+      const facultyUser = await User.findById(facultyId);
+      if (!facultyUser || facultyUser.role !== 'FACULTY') {
+        const error = new Error('Assigned user must exist and have the FACULTY role.');
+        error.statusCode = 400;
+        throw error;
+      }
+      course.faculty = facultyId;
+    } else {
+      course.faculty = null;
+    }
+
+    await course.save();
+
+    return await course.populate([
+      { path: 'faculty', select: 'name email department profileImage' },
+      { path: 'createdBy', select: 'name email role' }
+    ]);
+  }
+
+  /**
    * Update course details
    */
   static async updateCourse(courseId, updateData, user) {
@@ -128,7 +181,6 @@ class CourseService {
 
     // Authorization check
     if (user.role !== 'ADMIN') {
-      // Faculty can only update if assigned to this course
       if (user.role === 'FACULTY' && String(course.faculty) !== String(user._id)) {
         const error = new Error('You are not authorized to update this course.');
         error.statusCode = 403;
@@ -141,7 +193,6 @@ class CourseService {
       }
     }
 
-    // If updating course code, verify uniqueness
     if (updateData.code && updateData.code.toUpperCase().trim() !== course.code) {
       const normalizedCode = updateData.code.toUpperCase().trim();
       const existing = await Course.findOne({ code: normalizedCode });
@@ -153,14 +204,12 @@ class CourseService {
       course.code = normalizedCode;
     }
 
-    // Update allowed fields
     if (updateData.title) course.title = updateData.title.trim();
     if (updateData.description) course.description = updateData.description.trim();
     if (updateData.department) course.department = updateData.department.trim();
     if (updateData.thumbnail !== undefined) course.thumbnail = updateData.thumbnail;
     if (updateData.status) course.status = updateData.status;
 
-    // Faculty assignment only changeable by ADMIN
     if (updateData.faculty !== undefined && user.role === 'ADMIN') {
       if (updateData.faculty) {
         const facultyUser = await User.findById(updateData.faculty);
@@ -178,7 +227,7 @@ class CourseService {
     await course.save();
 
     return await course.populate([
-      { path: 'faculty', select: 'name email department' },
+      { path: 'faculty', select: 'name email department profileImage' },
       { path: 'createdBy', select: 'name email role' }
     ]);
   }

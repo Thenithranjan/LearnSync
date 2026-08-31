@@ -8,7 +8,9 @@ router.use(authenticate);
 
 router.post('/', authorize('ADMIN'), CourseController.create);
 router.get('/', CourseController.getAll);
+router.get('/faculty/my-courses', authorize('ADMIN', 'FACULTY'), CourseController.getFacultyCourses);
 router.get('/:id', CourseController.getById);
+router.put('/:id/faculty', authorize('ADMIN'), CourseController.assignFaculty);
 router.put('/:id', authorize('ADMIN', 'FACULTY'), CourseController.update);
 router.delete('/:id', authorize('ADMIN'), CourseController.delete);
 
