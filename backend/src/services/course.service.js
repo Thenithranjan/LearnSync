@@ -1,5 +1,9 @@
 const Course = require('../models/Course');
 const User = require('../models/User');
+const Module = require('../models/Module');
+const Material = require('../models/Material');
+const Enrollment = require('../models/Enrollment');
+const ProgressService = require('./progress.service');
 
 class CourseService {
   /**
@@ -16,7 +20,6 @@ class CourseService {
 
     const normalizedCode = code.toUpperCase().trim();
 
-    // Check duplicate course code
     const existingCourse = await Course.findOne({ code: normalizedCode });
     if (existingCourse) {
       const error = new Error(`Course code '${normalizedCode}' already exists.`);
@@ -24,7 +27,6 @@ class CourseService {
       throw error;
     }
 
-    // Verify assigned faculty if provided
     if (faculty) {
       const facultyUser = await User.findById(faculty);
       if (!facultyUser || facultyUser.role !== 'FACULTY') {
@@ -57,7 +59,6 @@ class CourseService {
   static async getCourses(user, query = {}) {
     const filter = {};
 
-    // Role-based visibility
     if (user.role === 'STUDENT') {
       filter.status = 'PUBLISHED';
     } else if (user.role === 'FACULTY') {
@@ -66,7 +67,6 @@ class CourseService {
         { status: 'PUBLISHED' }
       ];
     }
-    // ADMIN sees all courses
 
     if (query.department) {
       filter.department = query.department;
@@ -121,7 +121,6 @@ class CourseService {
       throw error;
     }
 
-    // Role visibility check for single course
     if (user.role === 'STUDENT' && course.status !== 'PUBLISHED') {
       const error = new Error('Course is not accessible.');
       error.statusCode = 403;
@@ -129,6 +128,77 @@ class CourseService {
     }
 
     return course;
+  }
+
+  /**
+   * Get complete learning structure (Course + Modules + Materials + Student Progress)
+   */
+  static async getCourseFullDetails(courseId, user) {
+    const course = await Course.findById(courseId)
+      .populate('faculty', 'name email department profileImage')
+      .populate('createdBy', 'name email role');
+
+    if (!course) {
+      const error = new Error('Course not found.');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    if (user.role === 'STUDENT' && course.status !== 'PUBLISHED') {
+      const error = new Error('Course is not accessible.');
+      error.statusCode = 403;
+      throw error;
+    }
+
+    // Fetch modules
+    const moduleFilter = { courseId };
+    if (user.role === 'STUDENT') {
+      moduleFilter.isPublished = true;
+    }
+    const modules = await Module.find(moduleFilter).sort({ order: 1, createdAt: 1 }).lean();
+
+    // Fetch materials for modules
+    const moduleIds = modules.map((m) => m._id);
+    const materialFilter = { moduleId: { $in: moduleIds } };
+    if (user.role === 'STUDENT') {
+      materialFilter.isPublished = true;
+    }
+    const materials = await Material.find(materialFilter).sort({ order: 1, createdAt: 1 }).lean();
+
+    // Group materials by module ID
+    const materialsByModule = {};
+    materials.forEach((mat) => {
+      const modIdStr = String(mat.moduleId);
+      if (!materialsByModule[modIdStr]) {
+        materialsByModule[modIdStr] = [];
+      }
+      materialsByModule[modIdStr].push(mat);
+    });
+
+    const structuredModules = modules.map((mod) => ({
+      ...mod,
+      materials: materialsByModule[String(mod._id)] || []
+    }));
+
+    // Check enrollment and progress if student
+    let enrollment = null;
+    let progress = null;
+
+    if (user.role === 'STUDENT') {
+      const enrollmentDoc = await Enrollment.findOne({ studentId: user._id, courseId, status: 'ACTIVE' });
+      enrollment = {
+        isEnrolled: !!enrollmentDoc,
+        enrolledAt: enrollmentDoc ? enrollmentDoc.enrolledAt : null
+      };
+      progress = await ProgressService.getCourseProgress(courseId, user);
+    }
+
+    return {
+      course,
+      modules: structuredModules,
+      enrollment,
+      progress
+    };
   }
 
   /**
@@ -179,7 +249,6 @@ class CourseService {
       throw error;
     }
 
-    // Authorization check
     if (user.role !== 'ADMIN') {
       if (user.role === 'FACULTY' && String(course.faculty) !== String(user._id)) {
         const error = new Error('You are not authorized to update this course.');

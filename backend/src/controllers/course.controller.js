@@ -51,6 +51,18 @@ class CourseController {
   }
 
   /**
+   * GET /api/courses/:id/details (Complete Course + Modules + Materials + Progress)
+   */
+  static async getDetails(req, res, next) {
+    try {
+      const details = await CourseService.getCourseFullDetails(req.params.id, req.user);
+      return sendSuccess(res, 200, 'Complete course details retrieved successfully', details);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * PUT /api/courses/:id/faculty
    */
   static async assignFaculty(req, res, next) {
