@@ -51,7 +51,7 @@ class MaterialController {
   }
 
   /**
-   * DELETE /api/materials/:id
+   * DELETE /api/materials/:id-->>
    */
   static async delete(req, res, next) {
     try {
