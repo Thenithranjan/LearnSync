@@ -24,7 +24,7 @@ const connectDB = async () => {
         const count = await User.countDocuments();
         if (count === 0) {
           console.log('[Seed] Creating demo accounts for Student, Faculty, and Admin...');
-          await User.create([
+          const demoAccounts = [
             {
               name: 'Dr. Alan Faculty',
               email: 'faculty@example.com',
@@ -46,8 +46,13 @@ const connectDB = async () => {
               role: 'ADMIN',
               department: 'Administration'
             }
-          ]);
-          console.log('[Seed] ✅ Demo accounts created:');
+          ];
+
+          for (const acc of demoAccounts) {
+            await User.create(acc);
+          }
+
+          console.log('[Seed] ✅ Demo accounts created successfully:');
           console.log('       👩‍🎓 Student: student@example.com / Password123!');
           console.log('       👨‍🏫 Faculty: faculty@example.com / Password123!');
           console.log('       🛡️ Admin:   admin@example.com   / Password123!');
