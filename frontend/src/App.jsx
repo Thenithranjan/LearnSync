@@ -37,6 +37,11 @@ import StudentAnalyticsPage from './pages/analytics/StudentAnalyticsPage';
 import FacultyAnalyticsPage from './pages/analytics/FacultyAnalyticsPage';
 import AdminAnalyticsPage from './pages/analytics/AdminAnalyticsPage';
 
+// Module 7 Pages: Academic Intelligence Engine
+import StudentIntelligencePage from './pages/intelligence/StudentIntelligencePage';
+import FacultyIntelligencePage from './pages/intelligence/FacultyIntelligencePage';
+import AdminIntelligencePage from './pages/intelligence/AdminIntelligencePage';
+
 const PublicOnlyRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
 
@@ -251,6 +256,32 @@ const App = () => {
         element={
           <ProtectedRoute allowedRoles={['ADMIN']}>
             <AdminAnalyticsPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Module 7: Academic Intelligence Routes */}
+      <Route
+        path="/insights"
+        element={
+          <ProtectedRoute allowedRoles={['STUDENT', 'ADMIN']}>
+            <StudentIntelligencePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/faculty/intelligence"
+        element={
+          <ProtectedRoute allowedRoles={['FACULTY', 'ADMIN']}>
+            <FacultyIntelligencePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/intelligence"
+        element={
+          <ProtectedRoute allowedRoles={['ADMIN']}>
+            <AdminIntelligencePage />
           </ProtectedRoute>
         }
       />
