@@ -158,6 +158,21 @@ The frontend application runs on `http://localhost:5173`.
   - `GET /api/courses/:courseId/attendance/my-summary` - Student attendance summary (Student)
   - `GET /api/courses/:courseId/attendance/report` - Course-wide attendance report (Faculty/Admin)
 
+## Module 5: Discussion & Collaboration Forums (Completed ✅)
+
+- **Course & Topic Threads**: Multi-category discussion threads (`Question`, `Discussion`, `Resource`, `Announcement`) with search, tagging, and pinned topics.
+- **Upvoting & Engagement**: Real-time upvoting for both threads and replies.
+- **Instructor Endorsement**: Faculty badge verification for official accepted solutions.
+- **Endpoints**:
+  - `POST /api/courses/:courseId/threads` - Create thread
+  - `GET /api/courses/:courseId/threads` - List course threads with category/search/tag filters
+  - `GET /api/threads/:threadId` - Retrieve thread details & replies
+  - `POST /api/threads/:threadId/replies` - Post a reply
+  - `POST /api/threads/:threadId/upvote` - Toggle upvote on thread
+  - `POST /api/replies/:replyId/upvote` - Toggle upvote on reply
+  - `PUT /api/replies/:replyId/endorse` - Endorse answer as verified solution (Faculty/Admin)
+  - `DELETE /api/threads/:threadId` - Delete thread
+
 ---
 
 ## 🔄 Authentication Flow
@@ -171,5 +186,4 @@ The frontend application runs on `http://localhost:5173`.
 
 ## 🔮 Future Modules (Designed for Compatibility)
 EduPulse is architected so that future modules will seamlessly integrate with the `User` schema:
-- Discussion Forums
 - Performance Analytics & Academic Intelligence
