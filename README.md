@@ -143,6 +143,21 @@ The frontend application runs on `http://localhost:5173`.
   - `GET /api/assessments/:assessmentId/submissions` - View all submissions for grading (Faculty)
   - `PUT /api/submissions/:submissionId/grade` - Grade assignment and provide feedback
 
+## Module 4: Attendance Management System (Completed ✅)
+
+- **Session Scheduling**: Class session creation with session types (Lecture, Lab, Tutorial) and custom dates.
+- **Live OTP Check-In**: 6-digit dynamic codes with configurable expiration windows for instantaneous student self check-in.
+- **Faculty Batch Roster**: 1-click batch marking (`Present`, `Absent`, `Late`, `Excused`) for all enrolled students.
+- **Attendance Intelligence**: Course attendance percentage computation with automated `<75%` low-attendance academic risk warnings.
+- **Endpoints**:
+  - `POST /api/courses/:courseId/attendance/sessions` - Create class session (Faculty/Admin)
+  - `GET /api/courses/:courseId/attendance/sessions` - List course sessions
+  - `GET /api/attendance/sessions/:sessionId` - Get session details & roster
+  - `PUT /api/attendance/sessions/:sessionId/roster` - Batch mark attendance (Faculty/Admin)
+  - `POST /api/courses/:courseId/attendance/check-in` - Student self check-in via OTP (Student)
+  - `GET /api/courses/:courseId/attendance/my-summary` - Student attendance summary (Student)
+  - `GET /api/courses/:courseId/attendance/report` - Course-wide attendance report (Faculty/Admin)
+
 ---
 
 ## 🔄 Authentication Flow
@@ -156,6 +171,5 @@ The frontend application runs on `http://localhost:5173`.
 
 ## 🔮 Future Modules (Designed for Compatibility)
 EduPulse is architected so that future modules will seamlessly integrate with the `User` schema:
-- Attendance Management
 - Discussion Forums
 - Performance Analytics & Academic Intelligence
