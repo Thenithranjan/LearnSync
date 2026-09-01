@@ -8,6 +8,7 @@ const moduleRoutes = require('./routes/module.routes');
 const materialRoutes = require('./routes/material.routes');
 const enrollmentRoutes = require('./routes/enrollment.routes');
 const progressRoutes = require('./routes/progress.routes');
+const assessmentRoutes = require('./routes/assessment.routes');
 const testRoutes = require('./routes/test.routes');
 const errorHandler = require('./middleware/error.middleware');
 const { sendError } = require('./utils/apiResponse');
@@ -56,6 +57,7 @@ app.use('/api/courses', courseRoutes);
 app.use('/api', moduleRoutes);
 app.use('/api', materialRoutes);
 app.use('/api', progressRoutes);
+app.use('/api', assessmentRoutes);
 app.use('/api', testRoutes);
 
 // Handle 404 for undefined routes
