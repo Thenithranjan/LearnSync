@@ -42,6 +42,11 @@ const materialSchema = new mongoose.Schema(
       type: Boolean,
       default: true
     },
+    topic: {
+      type: String,
+      trim: true,
+      default: ''
+    },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
