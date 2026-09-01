@@ -8,7 +8,7 @@ class StudentAnalyticsController {
       const studentId = req.user._id;
       const { courseId } = req.query;
       const overview = await StudentAnalyticsService.getStudentOverview(studentId, { courseId });
-      return sendSuccess(res, 200, 'Student overview analytics retrieved', overview);
+      return sendSuccess(res, 200, 'Student overview analytics retrieved', { data: overview });
     } catch (error) {
       next(error);
     }
@@ -18,7 +18,7 @@ class StudentAnalyticsController {
     try {
       const studentId = req.user._id;
       const courses = await StudentAnalyticsService.getStudentCourses(studentId);
-      return sendSuccess(res, 200, 'Student course performance retrieved', courses);
+      return sendSuccess(res, 200, 'Student course performance retrieved', { data: courses });
     } catch (error) {
       next(error);
     }
@@ -29,7 +29,7 @@ class StudentAnalyticsController {
       const studentId = req.user._id;
       const { courseId } = req.query;
       const trends = await StudentAnalyticsService.getStudentTrends(studentId, courseId);
-      return sendSuccess(res, 200, 'Student performance trends retrieved', trends);
+      return sendSuccess(res, 200, 'Student performance trends retrieved', { data: trends });
     } catch (error) {
       next(error);
     }
@@ -40,7 +40,7 @@ class StudentAnalyticsController {
       const studentId = req.user._id;
       const { courseId } = req.query;
       const topics = await TopicAnalyticsService.getStudentTopicAnalytics(studentId, courseId);
-      return sendSuccess(res, 200, 'Student topic performance retrieved', topics);
+      return sendSuccess(res, 200, 'Student topic performance retrieved', { data: topics });
     } catch (error) {
       next(error);
     }

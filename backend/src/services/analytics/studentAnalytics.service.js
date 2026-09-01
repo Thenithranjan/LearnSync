@@ -1,5 +1,6 @@
 const Enrollment = require('../../models/Enrollment');
 const Course = require('../../models/Course');
+const Module = require('../../models/Module');
 const Assessment = require('../../models/Assessment');
 const Submission = require('../../models/Submission');
 const AttendanceSession = require('../../models/AttendanceSession');
@@ -144,14 +145,17 @@ class StudentAnalyticsService {
     }
 
     // 5. Learning Progress Calculation
-    const materials = await Material.find({
+    const modules = await Module.find({
+      courseId: { $in: courseIds },
       isPublished: true
-    }).populate({
-      path: 'moduleId',
-      match: { courseId: { $in: courseIds } }
+    }).select('_id').lean();
+    const moduleIds = modules.map((m) => m._id);
+
+    const applicableMaterials = await Material.find({
+      moduleId: { $in: moduleIds },
+      isPublished: true
     }).lean();
 
-    const applicableMaterials = materials.filter((m) => m.moduleId !== null);
     let learningProgress = null;
     let completedMaterials = 0;
 

@@ -5,7 +5,7 @@ class AdminAnalyticsController {
   static async getOverview(req, res, next) {
     try {
       const overview = await AdminAnalyticsService.getAdminOverview();
-      return sendSuccess(res, 200, 'Institution overview analytics retrieved', overview);
+      return sendSuccess(res, 200, 'Institution overview analytics retrieved', { data: overview });
     } catch (error) {
       next(error);
     }
@@ -14,7 +14,7 @@ class AdminAnalyticsController {
   static async getDepartments(req, res, next) {
     try {
       const departments = await AdminAnalyticsService.getDepartmentAnalytics();
-      return sendSuccess(res, 200, 'Department performance analytics retrieved', departments);
+      return sendSuccess(res, 200, 'Department performance analytics retrieved', { data: departments });
     } catch (error) {
       next(error);
     }

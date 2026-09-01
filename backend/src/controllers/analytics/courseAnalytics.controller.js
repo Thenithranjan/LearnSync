@@ -27,7 +27,7 @@ class CourseAnalyticsController {
       const { courseId } = req.params;
       await CourseAnalyticsController.verifyCourseAccess(courseId, req.user);
       const trends = await CourseAnalyticsService.getCourseTrends(courseId);
-      return sendSuccess(res, 200, 'Course performance trends retrieved', trends);
+      return sendSuccess(res, 200, 'Course performance trends retrieved', { data: trends });
     } catch (error) {
       next(error);
     }
@@ -38,7 +38,7 @@ class CourseAnalyticsController {
       const { courseId } = req.params;
       await CourseAnalyticsController.verifyCourseAccess(courseId, req.user);
       const distribution = await CourseAnalyticsService.getCourseDistribution(courseId);
-      return sendSuccess(res, 200, 'Course performance distribution retrieved', distribution);
+      return sendSuccess(res, 200, 'Course performance distribution retrieved', { data: distribution });
     } catch (error) {
       next(error);
     }
@@ -49,7 +49,7 @@ class CourseAnalyticsController {
       const { courseId } = req.params;
       await CourseAnalyticsController.verifyCourseAccess(courseId, req.user);
       const topics = await TopicAnalyticsService.getCourseTopicAnalytics(courseId);
-      return sendSuccess(res, 200, 'Course topic performance retrieved', topics);
+      return sendSuccess(res, 200, 'Course topic performance retrieved', { data: topics });
     } catch (error) {
       next(error);
     }
@@ -65,7 +65,7 @@ class CourseAnalyticsController {
         sortOrder,
         search
       });
-      return sendSuccess(res, 200, 'Course student analytics retrieved', studentData);
+      return sendSuccess(res, 200, 'Course student analytics retrieved', { data: studentData });
     } catch (error) {
       next(error);
     }

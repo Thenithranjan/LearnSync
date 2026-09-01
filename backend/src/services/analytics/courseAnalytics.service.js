@@ -1,5 +1,6 @@
 const Enrollment = require('../../models/Enrollment');
 const Course = require('../../models/Course');
+const Module = require('../../models/Module');
 const Assessment = require('../../models/Assessment');
 const Submission = require('../../models/Submission');
 const AttendanceSession = require('../../models/AttendanceSession');
@@ -113,11 +114,11 @@ class CourseAnalyticsService {
     const assignments = await Assessment.find({ courseId, type: 'ASSIGNMENT', isPublished: true }).lean();
     const quizzes = await Assessment.find({ courseId, type: 'QUIZ', isPublished: true }).lean();
     const sessions = await AttendanceSession.find({ courseId }).lean();
-    const materials = await Material.find({ isPublished: true }).populate({
-      path: 'moduleId',
-      match: { courseId }
+    const modules = await Module.find({ courseId, isPublished: true }).select('_id').lean();
+    const courseMaterials = await Material.find({
+      moduleId: { $in: modules.map((m) => m._id) },
+      isPublished: true
     }).lean();
-    const courseMaterials = materials.filter((m) => m.moduleId !== null);
 
     const students = [];
 
