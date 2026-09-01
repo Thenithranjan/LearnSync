@@ -12,7 +12,9 @@ import {
   Layers,
   Compass,
   TrendingUp,
-  BarChart3
+  BarChart3,
+  Brain,
+  Sparkles
 } from 'lucide-react';
 
 const Navbar = () => {
@@ -147,45 +149,84 @@ const Navbar = () => {
             )}
 
             {user?.role === 'STUDENT' && (
-              <Link
-                to="/analytics"
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
-                  isActive('/analytics')
-                    ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-                }`}
-              >
-                <TrendingUp className="w-4 h-4" />
-                <span>Analytics</span>
-              </Link>
+              <>
+                <Link
+                  to="/analytics"
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
+                    isActive('/analytics')
+                      ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                  }`}
+                >
+                  <TrendingUp className="w-4 h-4" />
+                  <span>Analytics</span>
+                </Link>
+                <Link
+                  to="/insights"
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
+                    isActive('/insights')
+                      ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                  }`}
+                >
+                  <Sparkles className="w-4 h-4 text-indigo-400" />
+                  <span>Insights</span>
+                </Link>
+              </>
             )}
 
             {user?.role === 'FACULTY' && (
-              <Link
-                to="/faculty/analytics"
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
-                  isActive('/faculty/analytics')
-                    ? 'bg-amber-600/20 text-amber-300 border border-amber-500/30'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-                }`}
-              >
-                <BarChart3 className="w-4 h-4" />
-                <span>Analytics</span>
-              </Link>
+              <>
+                <Link
+                  to="/faculty/analytics"
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
+                    isActive('/faculty/analytics')
+                      ? 'bg-amber-600/20 text-amber-300 border border-amber-500/30'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                  }`}
+                >
+                  <BarChart3 className="w-4 h-4" />
+                  <span>Analytics</span>
+                </Link>
+                <Link
+                  to="/faculty/intelligence"
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
+                    isActive('/faculty/intelligence')
+                      ? 'bg-amber-600/20 text-amber-300 border border-amber-500/30'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                  }`}
+                >
+                  <Brain className="w-4 h-4 text-amber-400" />
+                  <span>Intelligence</span>
+                </Link>
+              </>
             )}
 
             {user?.role === 'ADMIN' && (
-              <Link
-                to="/admin/analytics"
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
-                  isActive('/admin/analytics')
-                    ? 'bg-rose-600/20 text-rose-300 border border-rose-500/30'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-                }`}
-              >
-                <TrendingUp className="w-4 h-4" />
-                <span>Institution Analytics</span>
-              </Link>
+              <>
+                <Link
+                  to="/admin/analytics"
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
+                    isActive('/admin/analytics')
+                      ? 'bg-rose-600/20 text-rose-300 border border-rose-500/30'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                  }`}
+                >
+                  <TrendingUp className="w-4 h-4" />
+                  <span>Analytics</span>
+                </Link>
+                <Link
+                  to="/admin/intelligence"
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
+                    isActive('/admin/intelligence')
+                      ? 'bg-rose-600/20 text-rose-300 border border-rose-500/30'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                  }`}
+                >
+                  <Brain className="w-4 h-4 text-rose-400" />
+                  <span>Intelligence</span>
+                </Link>
+              </>
             )}
 
             <Link
