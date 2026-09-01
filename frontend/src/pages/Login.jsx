@@ -151,8 +151,38 @@ const Login = () => {
             </div>
           </form>
 
+          {/* Quick Demo Credentials */}
+          <div className="mt-6 p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2.5">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block text-center">
+              Quick Demo Login
+            </span>
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={() => setFormData({ email: 'student@example.com', password: 'Password123!' })}
+                className="py-1.5 px-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/20 rounded-lg text-xs font-semibold transition-colors"
+              >
+                Student
+              </button>
+              <button
+                type="button"
+                onClick={() => setFormData({ email: 'faculty@example.com', password: 'Password123!' })}
+                className="py-1.5 px-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/20 rounded-lg text-xs font-semibold transition-colors"
+              >
+                Faculty
+              </button>
+              <button
+                type="button"
+                onClick={() => setFormData({ email: 'admin@example.com', password: 'Password123!' })}
+                className="py-1.5 px-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/20 rounded-lg text-xs font-semibold transition-colors"
+              >
+                Admin
+              </button>
+            </div>
+          </div>
+
           {/* Registration Link */}
-          <div className="mt-8 pt-6 border-t border-slate-800/80 text-center text-sm">
+          <div className="mt-6 pt-5 border-t border-slate-800/80 text-center text-sm">
             <span className="text-slate-400">Don't have an account? </span>
             <Link
               to="/register"
