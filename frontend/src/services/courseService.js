@@ -39,3 +39,16 @@ export const deleteCourseApi = async (id) => {
   const response = await api.delete(`/courses/${id}`);
   return response.data;
 };
+
+const courseService = {
+  getCourses: getCoursesApi,
+  getFacultyCourses: getFacultyCoursesApi,
+  getCourseById: getCourseByIdApi,
+  getCourseDetails: getCourseDetailsApi,
+  createCourse: createCourseApi,
+  updateCourse: updateCourseApi,
+  assignFaculty: assignFacultyApi,
+  deleteCourse: deleteCourseApi
+};
+
+export default courseService;
