@@ -11,7 +11,7 @@ export const updateProfileApi = async (profileData) => {
 };
 
 export const testRoleApi = async (role) => {
-  const endpoint = `/api/${role.toLowerCase()}/test`;
+  const endpoint = `/${role.toLowerCase()}/test`;
   const response = await api.get(endpoint);
   return response.data;
 };
