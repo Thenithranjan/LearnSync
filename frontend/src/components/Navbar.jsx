@@ -172,6 +172,17 @@ const Navbar = () => {
                   <Sparkles className="w-4 h-4 text-indigo-400" />
                   <span>Insights</span>
                 </Link>
+                <Link
+                  to="/interventions"
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
+                    isActive('/interventions')
+                      ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                  }`}
+                >
+                  <Layers className="w-4 h-4 text-emerald-400" />
+                  <span>Actions</span>
+                </Link>
               </>
             )}
 
@@ -199,6 +210,17 @@ const Navbar = () => {
                   <Brain className="w-4 h-4 text-amber-400" />
                   <span>Intelligence</span>
                 </Link>
+                <Link
+                  to="/faculty/interventions"
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
+                    isActive('/faculty/interventions')
+                      ? 'bg-amber-600/20 text-amber-300 border border-amber-500/30'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                  }`}
+                >
+                  <Layers className="w-4 h-4 text-amber-400" />
+                  <span>Interventions</span>
+                </Link>
               </>
             )}
 
@@ -225,6 +247,17 @@ const Navbar = () => {
                 >
                   <Brain className="w-4 h-4 text-rose-400" />
                   <span>Intelligence</span>
+                </Link>
+                <Link
+                  to="/admin/interventions"
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
+                    isActive('/admin/interventions')
+                      ? 'bg-rose-600/20 text-rose-300 border border-rose-500/30'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                  }`}
+                >
+                  <Layers className="w-4 h-4 text-rose-400" />
+                  <span>Action Center</span>
                 </Link>
               </>
             )}

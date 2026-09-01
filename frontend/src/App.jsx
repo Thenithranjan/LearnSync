@@ -42,6 +42,12 @@ import StudentIntelligencePage from './pages/intelligence/StudentIntelligencePag
 import FacultyIntelligencePage from './pages/intelligence/FacultyIntelligencePage';
 import AdminIntelligencePage from './pages/intelligence/AdminIntelligencePage';
 
+// Module 8 Pages: Intervention & Improvement Tracking
+import StudentInterventionsPage from './pages/interventions/StudentInterventionsPage';
+import StudentImprovementPage from './pages/interventions/StudentImprovementPage';
+import FacultyInterventionsPage from './pages/interventions/FacultyInterventionsPage';
+import AdminInterventionsPage from './pages/interventions/AdminInterventionsPage';
+
 const PublicOnlyRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
 
@@ -282,6 +288,40 @@ const App = () => {
         element={
           <ProtectedRoute allowedRoles={['ADMIN']}>
             <AdminIntelligencePage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Module 8: Intervention & Improvement Tracking Routes */}
+      <Route
+        path="/interventions"
+        element={
+          <ProtectedRoute allowedRoles={['STUDENT', 'ADMIN']}>
+            <StudentInterventionsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/interventions/improvement"
+        element={
+          <ProtectedRoute allowedRoles={['STUDENT', 'ADMIN']}>
+            <StudentImprovementPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/faculty/interventions"
+        element={
+          <ProtectedRoute allowedRoles={['FACULTY', 'ADMIN']}>
+            <FacultyInterventionsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/interventions"
+        element={
+          <ProtectedRoute allowedRoles={['ADMIN']}>
+            <AdminInterventionsPage />
           </ProtectedRoute>
         }
       />
