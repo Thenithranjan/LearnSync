@@ -28,6 +28,10 @@ import SubmissionsReviewPage from './pages/faculty/SubmissionsReviewPage';
 import StudentAttendancePage from './pages/attendance/StudentAttendancePage';
 import FacultyAttendancePage from './pages/faculty/FacultyAttendancePage';
 
+// Module 5 Pages: Discussion Forums
+import ForumThreadsPage from './pages/forum/ForumThreadsPage';
+import ThreadDetailsPage from './pages/forum/ThreadDetailsPage';
+
 const PublicOnlyRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
 
@@ -170,6 +174,24 @@ const App = () => {
         element={
           <ProtectedRoute allowedRoles={['FACULTY', 'ADMIN']}>
             <FacultyAttendancePage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Module 5: Discussion & Collaboration Forums Routes */}
+      <Route
+        path="/courses/:courseId/forum"
+        element={
+          <ProtectedRoute>
+            <ForumThreadsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/threads/:threadId"
+        element={
+          <ProtectedRoute>
+            <ThreadDetailsPage />
           </ProtectedRoute>
         }
       />
