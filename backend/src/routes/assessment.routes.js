@@ -2,18 +2,18 @@ const express = require('express');
 const router = express.Router();
 const AssessmentController = require('../controllers/assessment.controller');
 const SubmissionController = require('../controllers/submission.controller');
-const { protect, authorize } = require('../middleware/auth.middleware');
+const { authenticate, authorize } = require('../middleware/auth.middleware');
 
 // Course-level assessment routes
 router.get(
   '/courses/:courseId/assessments',
-  protect,
+  authenticate,
   AssessmentController.getCourseAssessments
 );
 
 router.post(
   '/courses/:courseId/assessments',
-  protect,
+  authenticate,
   authorize('FACULTY', 'ADMIN'),
   AssessmentController.createAssessment
 );
@@ -21,20 +21,20 @@ router.post(
 // Individual assessment routes
 router.get(
   '/assessments/:assessmentId',
-  protect,
+  authenticate,
   AssessmentController.getAssessmentById
 );
 
 router.put(
   '/assessments/:assessmentId',
-  protect,
+  authenticate,
   authorize('FACULTY', 'ADMIN'),
   AssessmentController.updateAssessment
 );
 
 router.delete(
   '/assessments/:assessmentId',
-  protect,
+  authenticate,
   authorize('FACULTY', 'ADMIN'),
   AssessmentController.deleteAssessment
 );
@@ -42,28 +42,28 @@ router.delete(
 // Submissions & Grading routes
 router.post(
   '/assessments/:assessmentId/submit',
-  protect,
+  authenticate,
   authorize('STUDENT', 'ADMIN'),
   SubmissionController.submitAssessment
 );
 
 router.get(
   '/assessments/:assessmentId/my-submission',
-  protect,
+  authenticate,
   authorize('STUDENT', 'ADMIN'),
   SubmissionController.getStudentSubmission
 );
 
 router.get(
   '/assessments/:assessmentId/submissions',
-  protect,
+  authenticate,
   authorize('FACULTY', 'ADMIN'),
   SubmissionController.getAssessmentSubmissions
 );
 
 router.put(
   '/submissions/:submissionId/grade',
-  protect,
+  authenticate,
   authorize('FACULTY', 'ADMIN'),
   SubmissionController.gradeSubmission
 );
