@@ -157,6 +157,13 @@ const LearningViewPage = () => {
           >
             <ArrowLeft className="w-3.5 h-3.5" /> Back to Courses
           </Link>
+
+          <Link
+            to={`/courses/${courseId}/assessments`}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-indigo-600/20 border border-indigo-500/30 text-indigo-300 hover:text-white hover:bg-indigo-600 rounded-xl text-xs font-semibold transition-all"
+          >
+            <Award className="w-3.5 h-3.5" /> Course Assessments & Quizzes
+          </Link>
         </div>
 
         {error && (
