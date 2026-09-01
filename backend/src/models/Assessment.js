@@ -25,6 +25,11 @@ const questionSchema = new mongoose.Schema({
     type: String,
     trim: true,
     default: ''
+  },
+  topic: {
+    type: String,
+    trim: true,
+    default: ''
   }
 });
 
