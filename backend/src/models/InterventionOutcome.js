@@ -56,6 +56,5 @@ const interventionOutcomeSchema = new mongoose.Schema(
 );
 
 interventionOutcomeSchema.index({ studentId: 1, courseId: 1 });
-interventionOutcomeSchema.index({ interventionId: 1 });
 
 module.exports = mongoose.model('InterventionOutcome', interventionOutcomeSchema);
