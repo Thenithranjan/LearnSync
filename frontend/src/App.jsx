@@ -17,6 +17,13 @@ import AdminCoursesPage from './pages/admin/AdminCoursesPage';
 import FacultyCoursesPage from './pages/faculty/FacultyCoursesPage';
 import CourseContentPage from './pages/faculty/CourseContentPage';
 
+// Module 3 Pages: Assessments & Quizzes
+import AssessmentsListPage from './pages/assessments/AssessmentsListPage';
+import QuizTakingPage from './pages/assessments/QuizTakingPage';
+import AssignmentSubmissionPage from './pages/assessments/AssignmentSubmissionPage';
+import CreateAssessmentPage from './pages/faculty/CreateAssessmentPage';
+import SubmissionsReviewPage from './pages/faculty/SubmissionsReviewPage';
+
 const PublicOnlyRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
 
@@ -99,6 +106,48 @@ const App = () => {
         element={
           <ProtectedRoute>
             <LearningViewPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Module 3: Assessments & Quizzes Routes */}
+      <Route
+        path="/courses/:courseId/assessments"
+        element={
+          <ProtectedRoute>
+            <AssessmentsListPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/assessments/:assessmentId/quiz"
+        element={
+          <ProtectedRoute allowedRoles={['STUDENT', 'ADMIN', 'FACULTY']}>
+            <QuizTakingPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/assessments/:assessmentId/submit"
+        element={
+          <ProtectedRoute allowedRoles={['STUDENT', 'ADMIN', 'FACULTY']}>
+            <AssignmentSubmissionPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/faculty/courses/:courseId/assessments/create"
+        element={
+          <ProtectedRoute allowedRoles={['FACULTY', 'ADMIN']}>
+            <CreateAssessmentPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/assessments/:assessmentId/submissions"
+        element={
+          <ProtectedRoute allowedRoles={['FACULTY', 'ADMIN']}>
+            <SubmissionsReviewPage />
           </ProtectedRoute>
         }
       />
