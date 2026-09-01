@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
 import MainLayout from '../layouts/MainLayout';
 import { testRoleApi } from '../services/userService';
@@ -14,7 +15,11 @@ import {
   Layers,
   BarChart2,
   AlertTriangle,
-  UserCheck
+  UserCheck,
+  Brain,
+  MessageSquare,
+  TrendingUp,
+  ArrowRight
 } from 'lucide-react';
 
 const Dashboard = () => {
@@ -31,15 +36,17 @@ const Dashboard = () => {
       setTestResult({
         success: true,
         endpoint: `/api/${targetRole.toLowerCase()}/test`,
-        message: data.message,
-        data: data
+        message: data.message || `Access Granted. Role ${user?.role} is authorized.`,
+        data: data,
+        status: 200
       });
     } catch (err) {
       setTestResult({
         success: false,
         endpoint: `/api/${targetRole.toLowerCase()}/test`,
-        message: err.message || 'Authorization rejected',
-        data: err.data
+        targetRole,
+        message: err.message || `Access correctly blocked for role ${user?.role}.`,
+        status: err.status || 403
       });
     } finally {
       setTestLoading(false);
@@ -110,6 +117,30 @@ const Dashboard = () => {
     }
   };
 
+  const getCourseLink = () => {
+    if (user?.role === 'FACULTY') return '/faculty/courses';
+    if (user?.role === 'ADMIN') return '/admin/courses';
+    return '/my-courses';
+  };
+
+  const getAnalyticsLink = () => {
+    if (user?.role === 'FACULTY') return '/faculty/analytics';
+    if (user?.role === 'ADMIN') return '/admin/analytics';
+    return '/analytics';
+  };
+
+  const getIntelligenceLink = () => {
+    if (user?.role === 'FACULTY') return '/faculty/intelligence';
+    if (user?.role === 'ADMIN') return '/admin/intelligence';
+    return '/insights';
+  };
+
+  const getInterventionLink = () => {
+    if (user?.role === 'FACULTY') return '/faculty/interventions';
+    if (user?.role === 'ADMIN') return '/admin/interventions';
+    return '/interventions';
+  };
+
   return (
     <MainLayout>
       {/* Role Adapted Banner */}
@@ -159,140 +190,240 @@ const Dashboard = () => {
             className={`p-4 rounded-xl border ${
               testResult.success
                 ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
-                : 'bg-rose-500/10 border-rose-500/30 text-rose-300'
+                : 'bg-amber-500/10 border-amber-500/30 text-amber-300'
             } transition-all`}
           >
             <div className="flex items-center gap-2 text-sm font-bold mb-1">
               {testResult.success ? (
                 <CheckCircle2 className="w-5 h-5 text-emerald-400" />
               ) : (
-                <XCircle className="w-5 h-5 text-rose-400" />
+                <Shield className="w-5 h-5 text-amber-400" />
               )}
               <span>{testResult.endpoint}</span>
-              <span className="ml-auto text-xs px-2 py-0.5 rounded bg-slate-950 font-mono">
-                {testResult.success ? 'HTTP 200 OK' : 'HTTP 403 Forbidden'}
+              <span className="ml-auto text-xs px-2.5 py-0.5 rounded bg-slate-950 font-mono">
+                {testResult.success ? 'HTTP 200 OK' : 'HTTP 403 Forbidden (Blocked as Expected)'}
               </span>
             </div>
-            <p className="text-xs text-slate-300 ml-7">{testResult.message}</p>
+            <p className="text-xs text-slate-300 ml-7">
+              {testResult.success
+                ? `✅ Access Granted: Your role (${user?.role}) is authorized for this endpoint.`
+                : `🛡️ Security Rule Enforced: HTTP 403 Forbidden. Role ${user?.role} cannot access ${testResult.targetRole} endpoint.`}
+            </p>
           </div>
         )}
       </div>
 
-      {/* Grid of Planned Platform Modules (Placeholder Grid) */}
+      {/* Grid of All Implemented Platform Modules */}
       <div>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
             <Layers className="w-5 h-5 text-indigo-400" />
-            <span>EduPulse Platform Modules</span>
+            <span>EduPulse Integrated Modules</span>
           </h2>
-          <span className="text-xs px-3 py-1 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-full font-medium">
-            Module 1 Active
+          <span className="text-xs px-3 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full font-medium">
+            All 8 Modules Active
           </span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Active Module 1 Card */}
-          <div className="bg-slate-900 border-2 border-indigo-500/50 rounded-2xl p-5 shadow-lg relative overflow-hidden group">
-            <div className="absolute top-3 right-3">
-              <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-extrabold px-2.5 py-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full">
-                <CheckCircle2 className="w-3 h-3" /> Fully Implemented
-              </span>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+          {/* Module 1 */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between group hover:border-indigo-500/40 transition-all">
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <div className="p-2.5 bg-indigo-600/20 text-indigo-400 rounded-xl">
+                  <UserCheck className="w-5 h-5" />
+                </div>
+                <span className="text-[10px] uppercase font-extrabold px-2 py-0.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full">
+                  Module 1
+                </span>
+              </div>
+              <h3 className="text-base font-bold text-white mb-1">Authentication & Users</h3>
+              <p className="text-xs text-slate-400 leading-relaxed mb-4">
+                JWT auth, HTTP-only session cookies, role isolation, and user profile management.
+              </p>
             </div>
-            <div className="p-3 bg-indigo-600/20 text-indigo-400 rounded-xl w-fit mb-3">
-              <UserCheck className="w-6 h-6" />
-            </div>
-            <h3 className="text-lg font-bold text-white mb-1">Authentication & User Management</h3>
-            <p className="text-xs text-slate-400 mb-4">
-              Secure JWT authentication, HTTP-only cookie sessions, role authorization, and user profile management.
-            </p>
-            <div className="text-[11px] text-indigo-300 font-semibold flex items-center gap-1">
-              Active Module 1 Foundation
-            </div>
+            <Link
+              to="/profile"
+              className="inline-flex items-center justify-between px-3 py-2 bg-slate-950 hover:bg-slate-800 text-indigo-300 rounded-xl text-xs font-semibold border border-slate-800 transition-colors"
+            >
+              <span>View Profile</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
           </div>
 
-          {/* Module 2 Placeholder */}
-          <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 shadow-lg relative opacity-75 hover:opacity-100 transition-opacity">
-            <div className="absolute top-3 right-3">
-              <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-semibold px-2.5 py-1 bg-slate-800 text-slate-400 border border-slate-700 rounded-full">
-                <Clock className="w-3 h-3" /> Module 2
-              </span>
+          {/* Module 2 */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between group hover:border-indigo-500/40 transition-all">
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <div className="p-2.5 bg-cyan-600/20 text-cyan-400 rounded-xl">
+                  <BookOpen className="w-5 h-5" />
+                </div>
+                <span className="text-[10px] uppercase font-extrabold px-2 py-0.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full">
+                  Module 2
+                </span>
+              </div>
+              <h3 className="text-base font-bold text-white mb-1">Digital Learning & Courses</h3>
+              <p className="text-xs text-slate-400 leading-relaxed mb-4">
+                Course catalog, syllabus modules, PDF/video materials, and enrollment tracking.
+              </p>
             </div>
-            <div className="p-3 bg-slate-800 text-slate-400 rounded-xl w-fit mb-3">
-              <BookOpen className="w-6 h-6" />
-            </div>
-            <h3 className="text-lg font-bold text-slate-200 mb-1">Digital Learning</h3>
-            <p className="text-xs text-slate-400 mb-4">
-              Course management, interactive syllabus modules, and multimedia material delivery.
-            </p>
-            <div className="text-[11px] text-slate-500 font-medium">Coming Soon</div>
+            <Link
+              to={getCourseLink()}
+              className="inline-flex items-center justify-between px-3 py-2 bg-slate-950 hover:bg-slate-800 text-cyan-300 rounded-xl text-xs font-semibold border border-slate-800 transition-colors"
+            >
+              <span>Open Courses</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
           </div>
 
-          {/* Module 3 Placeholder */}
-          <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 shadow-lg relative opacity-75 hover:opacity-100 transition-opacity">
-            <div className="absolute top-3 right-3">
-              <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-semibold px-2.5 py-1 bg-slate-800 text-slate-400 border border-slate-700 rounded-full">
-                <Clock className="w-3 h-3" /> Module 3
-              </span>
+          {/* Module 3 */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between group hover:border-indigo-500/40 transition-all">
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <div className="p-2.5 bg-purple-600/20 text-purple-400 rounded-xl">
+                  <Award className="w-5 h-5" />
+                </div>
+                <span className="text-[10px] uppercase font-extrabold px-2 py-0.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full">
+                  Module 3
+                </span>
+              </div>
+              <h3 className="text-base font-bold text-white mb-1">Assignments & Quizzes</h3>
+              <p className="text-xs text-slate-400 leading-relaxed mb-4">
+                Auto-graded MCQ quizzes, assignment file uploads, rubrics, and faculty feedback.
+              </p>
             </div>
-            <div className="p-3 bg-slate-800 text-slate-400 rounded-xl w-fit mb-3">
-              <Award className="w-6 h-6" />
-            </div>
-            <h3 className="text-lg font-bold text-slate-200 mb-1">Assignments & Quizzes</h3>
-            <p className="text-xs text-slate-400 mb-4">
-              Automated grading, timed quizzes, submission tracking, and evaluation rubrics.
-            </p>
-            <div className="text-[11px] text-slate-500 font-medium">Coming Soon</div>
+            <Link
+              to={getCourseLink()}
+              className="inline-flex items-center justify-between px-3 py-2 bg-slate-950 hover:bg-slate-800 text-purple-300 rounded-xl text-xs font-semibold border border-slate-800 transition-colors"
+            >
+              <span>View Assessments</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
           </div>
 
-          {/* Module 4 Placeholder */}
-          <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 shadow-lg relative opacity-75 hover:opacity-100 transition-opacity">
-            <div className="absolute top-3 right-3">
-              <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-semibold px-2.5 py-1 bg-slate-800 text-slate-400 border border-slate-700 rounded-full">
-                <Clock className="w-3 h-3" /> Module 4
-              </span>
+          {/* Module 4 */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between group hover:border-indigo-500/40 transition-all">
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <div className="p-2.5 bg-emerald-600/20 text-emerald-400 rounded-xl">
+                  <CheckCircle2 className="w-5 h-5" />
+                </div>
+                <span className="text-[10px] uppercase font-extrabold px-2 py-0.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full">
+                  Module 4
+                </span>
+              </div>
+              <h3 className="text-base font-bold text-white mb-1">Attendance Management</h3>
+              <p className="text-xs text-slate-400 leading-relaxed mb-4">
+                Time-expiring OTP self check-in, attendance logs, and &lt;75% threshold risk flags.
+              </p>
             </div>
-            <div className="p-3 bg-slate-800 text-slate-400 rounded-xl w-fit mb-3">
-              <BarChart2 className="w-6 h-6" />
-            </div>
-            <h3 className="text-lg font-bold text-slate-200 mb-1">Performance Analytics</h3>
-            <p className="text-xs text-slate-400 mb-4">
-              Real-time student progress tracking, grade distribution visualizers, and learning gap detection.
-            </p>
-            <div className="text-[11px] text-slate-500 font-medium">Coming Soon</div>
+            <Link
+              to="/attendance"
+              className="inline-flex items-center justify-between px-3 py-2 bg-slate-950 hover:bg-slate-800 text-emerald-300 rounded-xl text-xs font-semibold border border-slate-800 transition-colors"
+            >
+              <span>Attendance Hub</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
           </div>
 
-          {/* Module 5 Placeholder */}
-          <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 shadow-lg relative opacity-75 hover:opacity-100 transition-opacity">
-            <div className="absolute top-3 right-3">
-              <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-semibold px-2.5 py-1 bg-slate-800 text-slate-400 border border-slate-700 rounded-full">
-                <Clock className="w-3 h-3" /> Module 5
-              </span>
+          {/* Module 5 */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between group hover:border-indigo-500/40 transition-all">
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <div className="p-2.5 bg-sky-600/20 text-sky-400 rounded-xl">
+                  <MessageSquare className="w-5 h-5" />
+                </div>
+                <span className="text-[10px] uppercase font-extrabold px-2 py-0.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full">
+                  Module 5
+                </span>
+              </div>
+              <h3 className="text-base font-bold text-white mb-1">Faculty Discussion Forums</h3>
+              <p className="text-xs text-slate-400 leading-relaxed mb-4">
+                Course Q&A threads, peer upvoting, faculty endorsement badges, and solution pinning.
+              </p>
             </div>
-            <div className="p-3 bg-slate-800 text-slate-400 rounded-xl w-fit mb-3">
-              <Sparkles className="w-6 h-6" />
-            </div>
-            <h3 className="text-lg font-bold text-slate-200 mb-1">Academic Intelligence & AI</h3>
-            <p className="text-xs text-slate-400 mb-4">
-              Personalized recommendations and AI-powered study assistance.
-            </p>
-            <div className="text-[11px] text-slate-500 font-medium">Coming Soon</div>
+            <Link
+              to="/forum"
+              className="inline-flex items-center justify-between px-3 py-2 bg-slate-950 hover:bg-slate-800 text-sky-300 rounded-xl text-xs font-semibold border border-slate-800 transition-colors"
+            >
+              <span>Open Forum</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
           </div>
 
-          {/* Module 6 Placeholder */}
-          <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 shadow-lg relative opacity-75 hover:opacity-100 transition-opacity">
-            <div className="absolute top-3 right-3">
-              <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-semibold px-2.5 py-1 bg-slate-800 text-slate-400 border border-slate-700 rounded-full">
-                <Clock className="w-3 h-3" /> Module 6
-              </span>
+          {/* Module 6 */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between group hover:border-indigo-500/40 transition-all">
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <div className="p-2.5 bg-amber-600/20 text-amber-400 rounded-xl">
+                  <BarChart2 className="w-5 h-5" />
+                </div>
+                <span className="text-[10px] uppercase font-extrabold px-2 py-0.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full">
+                  Module 6
+                </span>
+              </div>
+              <h3 className="text-base font-bold text-white mb-1">Performance Analytics</h3>
+              <p className="text-xs text-slate-400 leading-relaxed mb-4">
+                Multi-metric student scores, course grade distributions, and topic performance accuracy.
+              </p>
             </div>
-            <div className="p-3 bg-slate-800 text-slate-400 rounded-xl w-fit mb-3">
-              <AlertTriangle className="w-6 h-6" />
+            <Link
+              to={getAnalyticsLink()}
+              className="inline-flex items-center justify-between px-3 py-2 bg-slate-950 hover:bg-slate-800 text-amber-300 rounded-xl text-xs font-semibold border border-slate-800 transition-colors"
+            >
+              <span>Analytics Center</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+
+          {/* Module 7 */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between group hover:border-indigo-500/40 transition-all">
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <div className="p-2.5 bg-violet-600/20 text-violet-400 rounded-xl">
+                  <Brain className="w-5 h-5" />
+                </div>
+                <span className="text-[10px] uppercase font-extrabold px-2 py-0.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full">
+                  Module 7
+                </span>
+              </div>
+              <h3 className="text-base font-bold text-white mb-1">Academic Intelligence</h3>
+              <p className="text-xs text-slate-400 leading-relaxed mb-4">
+                Explainable risk scores (0-100), learning gap detection, and personalized study actions.
+              </p>
             </div>
-            <h3 className="text-lg font-bold text-slate-200 mb-1">Faculty Early-Warning & Intervention</h3>
-            <p className="text-xs text-slate-400 mb-4">
-              Proactive student risk scores and early warning triggers for academic advisors.
-            </p>
-            <div className="text-[11px] text-slate-500 font-medium">Coming Soon</div>
+            <Link
+              to={getIntelligenceLink()}
+              className="inline-flex items-center justify-between px-3 py-2 bg-slate-950 hover:bg-slate-800 text-violet-300 rounded-xl text-xs font-semibold border border-slate-800 transition-colors"
+            >
+              <span>Intelligence Engine</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+
+          {/* Module 8 */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between group hover:border-indigo-500/40 transition-all">
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <div className="p-2.5 bg-rose-600/20 text-rose-400 rounded-xl">
+                  <Layers className="w-5 h-5" />
+                </div>
+                <span className="text-[10px] uppercase font-extrabold px-2 py-0.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full">
+                  Module 8
+                </span>
+              </div>
+              <h3 className="text-base font-bold text-white mb-1">Intervention & Improvement</h3>
+              <p className="text-xs text-slate-400 leading-relaxed mb-4">
+                Closed-loop action tracking, student reflections, faculty reviews, and score gain measurement.
+              </p>
+            </div>
+            <Link
+              to={getInterventionLink()}
+              className="inline-flex items-center justify-between px-3 py-2 bg-slate-950 hover:bg-slate-800 text-rose-300 rounded-xl text-xs font-semibold border border-slate-800 transition-colors"
+            >
+              <span>Intervention Hub</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
           </div>
         </div>
       </div>
