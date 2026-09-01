@@ -305,7 +305,7 @@ const FacultyAttendancePage = () => {
         )}
 
         {/* Roster & Session Management */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
           {/* Sessions List */}
           <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-4">
             <h2 className="text-lg font-bold text-white flex items-center justify-between">
@@ -382,7 +382,7 @@ const FacultyAttendancePage = () => {
                 No students found in roster for this session.
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-3 max-h-[460px] overflow-y-auto pr-1">
                 {rosterData.roster.map((item) => {
                   const student = item.studentId;
                   if (!student) return null;
@@ -429,6 +429,97 @@ const FacultyAttendancePage = () => {
             )}
           </div>
         </div>
+
+        {/* Full Enrolled Student Attendance Summary Report */}
+        {report && report.studentStats && (
+          <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+              <div>
+                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                  <Users className="w-5 h-5 text-amber-400" />
+                  <span>Enrolled Students Cumulative Attendance Report</span>
+                </h2>
+                <p className="text-xs text-slate-400 mt-1">
+                  Overall attendance percentages, sessions attended, and low attendance risk warnings (&lt;75%) for all enrolled students.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 self-start sm:self-auto">
+                <span className="text-xs px-3 py-1.5 rounded-xl font-bold bg-slate-950 text-slate-300 border border-slate-800">
+                  Total Enrolled: {report.studentStats.length} Students
+                </span>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto rounded-2xl border border-slate-800 bg-slate-950/40">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-800 bg-slate-900/80 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                    <th className="py-3.5 px-4">Student</th>
+                    <th className="py-3.5 px-4">Department</th>
+                    <th className="py-3.5 px-4">Attended / Total</th>
+                    <th className="py-3.5 px-4">Absences</th>
+                    <th className="py-3.5 px-4">Attendance Rate</th>
+                    <th className="py-3.5 px-4 text-right">Risk Indicator</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/60 text-xs">
+                  {report.studentStats.map((st) => (
+                    <tr key={st.studentId} className="hover:bg-slate-800/30 transition-colors">
+                      <td className="py-3.5 px-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-7 h-7 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-200 font-bold text-[10px]">
+                            {st.name?.charAt(0)}
+                          </div>
+                          <div>
+                            <span className="font-bold text-slate-200 block">{st.name}</span>
+                            <span className="text-[11px] text-slate-400">{st.email}</span>
+                          </div>
+                        </div>
+                      </td>
+
+                      <td className="py-3.5 px-4 text-slate-300">{st.department || 'Computer Science'}</td>
+
+                      <td className="py-3.5 px-4 font-semibold text-slate-200">
+                        {st.presentCount} / {st.totalSessions} sessions
+                      </td>
+
+                      <td className="py-3.5 px-4 font-semibold text-rose-400">
+                        {st.absentCount}
+                      </td>
+
+                      <td className="py-3.5 px-4">
+                        <div className="flex items-center gap-2">
+                          <div className="w-16 bg-slate-800 rounded-full h-2 overflow-hidden border border-slate-700">
+                            <div
+                              className={`h-full rounded-full ${st.isAtRisk ? 'bg-rose-500' : 'bg-emerald-500'}`}
+                              style={{ width: `${Math.min(st.percentage, 100)}%` }}
+                            />
+                          </div>
+                          <span className={`font-extrabold text-xs ${st.isAtRisk ? 'text-rose-400' : 'text-emerald-400'}`}>
+                            {st.percentage}%
+                          </span>
+                        </div>
+                      </td>
+
+                      <td className="py-3.5 px-4 text-right">
+                        {st.isAtRisk ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                            <AlertCircle className="w-3 h-3" /> At Risk (&lt;75%)
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                            <CheckCircle2 className="w-3 h-3" /> Regular
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
         {/* Create Session Modal */}
         {showCreateModal && (

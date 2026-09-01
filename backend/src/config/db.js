@@ -19,44 +19,9 @@ const connectDB = async () => {
         const conn = await mongoose.connect(memoryUri);
         console.log(`[MongoDB] ✅ Connected to in-memory MongoDB dev database: ${conn.connection.host}`);
 
-        // Seed default demo accounts so the user can immediately log in
-        const User = require('../models/User');
-        const count = await User.countDocuments();
-        if (count === 0) {
-          console.log('[Seed] Creating demo accounts for Student, Faculty, and Admin...');
-          const demoAccounts = [
-            {
-              name: 'Dr. Alan Faculty',
-              email: 'faculty@example.com',
-              password: 'Password123!',
-              role: 'FACULTY',
-              department: 'Computer Science'
-            },
-            {
-              name: 'John Student',
-              email: 'student@example.com',
-              password: 'Password123!',
-              role: 'STUDENT',
-              department: 'Computer Science'
-            },
-            {
-              name: 'System Admin',
-              email: 'admin@example.com',
-              password: 'Password123!',
-              role: 'ADMIN',
-              department: 'Administration'
-            }
-          ];
-
-          for (const acc of demoAccounts) {
-            await User.create(acc);
-          }
-
-          console.log('[Seed] ✅ Demo accounts created successfully:');
-          console.log('       👩‍🎓 Student: student@example.com / Password123!');
-          console.log('       👨‍🏫 Faculty: faculty@example.com / Password123!');
-          console.log('       🛡️ Admin:   admin@example.com   / Password123!');
-        }
+        // Seed comprehensive 20-student demo dataset
+        const seedDemoData = require('./demoSeeder');
+        await seedDemoData();
       } catch (memErr) {
         console.error(`[MongoDB Error] Failed to initialize in-memory database: ${memErr.message}`);
         process.exit(1);
