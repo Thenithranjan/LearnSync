@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import MainLayout from '../../layouts/MainLayout';
 import attendanceService from '../../services/attendanceService';
 import courseService from '../../services/courseService';
+import { getMyEnrolledCoursesApi } from '../../services/enrollmentService';
 import {
   CalendarCheck,
   CheckCircle2,
@@ -17,7 +18,9 @@ import {
 } from 'lucide-react';
 
 const StudentAttendancePage = () => {
-  const { courseId } = useParams();
+  const { courseId: paramCourseId } = useParams();
+  const [enrolledCourses, setEnrolledCourses] = useState([]);
+  const [selectedCourseId, setSelectedCourseId] = useState(paramCourseId || '');
   const [course, setCourse] = useState(null);
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -28,12 +31,40 @@ const StudentAttendancePage = () => {
   const [checkingIn, setCheckingIn] = useState(false);
   const [checkInSuccess, setCheckInSuccess] = useState('');
 
-  const fetchAttendanceData = async () => {
+  // 1. Fetch available enrolled courses if no courseId param is in URL
+  useEffect(() => {
+    const initEnrolledCourses = async () => {
+      if (!paramCourseId) {
+        try {
+          const res = await getMyEnrolledCoursesApi();
+          const list = res.data || [];
+          setEnrolledCourses(list);
+          if (list.length > 0) {
+            const firstId = list[0].course?._id || list[0]._id;
+            setSelectedCourseId(firstId);
+          } else {
+            setLoading(false);
+          }
+        } catch (err) {
+          setError('Failed to load enrolled courses.');
+          setLoading(false);
+        }
+      } else {
+        setSelectedCourseId(paramCourseId);
+      }
+    };
+    initEnrolledCourses();
+  }, [paramCourseId]);
+
+  // 2. Fetch attendance data whenever selectedCourseId changes
+  const fetchAttendanceData = async (targetId) => {
+    if (!targetId) return;
     try {
       setLoading(true);
+      setError('');
       const [courseRes, summaryRes] = await Promise.all([
-        courseService.getCourseById(courseId),
-        attendanceService.getMyAttendanceSummary(courseId)
+        courseService.getCourseById(targetId),
+        attendanceService.getMyAttendanceSummary(targetId)
       ]);
 
       if (courseRes?.success) setCourse(courseRes.data);
@@ -46,22 +77,24 @@ const StudentAttendancePage = () => {
   };
 
   useEffect(() => {
-    if (courseId) fetchAttendanceData();
-  }, [courseId]);
+    if (selectedCourseId) {
+      fetchAttendanceData(selectedCourseId);
+    }
+  }, [selectedCourseId]);
 
   const handleOtpCheckIn = async (e) => {
     e.preventDefault();
-    if (!otpCode.trim()) return;
+    if (!otpCode.trim() || !selectedCourseId) return;
 
     try {
       setCheckingIn(true);
       setError('');
       setCheckInSuccess('');
-      const res = await attendanceService.selfCheckIn(courseId, otpCode);
+      const res = await attendanceService.selfCheckIn(selectedCourseId, otpCode);
       if (res?.success) {
         setCheckInSuccess('You have successfully checked in for today’s session!');
         setOtpCode('');
-        fetchAttendanceData();
+        fetchAttendanceData(selectedCourseId);
       }
     } catch (err) {
       setError(err.response?.data?.message || 'Invalid or expired check-in code.');
@@ -70,7 +103,7 @@ const StudentAttendancePage = () => {
     }
   };
 
-  if (loading) {
+  if (loading && !course) {
     return (
       <MainLayout>
         <div className="min-h-[70vh] flex flex-col items-center justify-center">
@@ -86,11 +119,31 @@ const StudentAttendancePage = () => {
   return (
     <MainLayout>
       <div className="max-w-5xl mx-auto px-4 py-8">
-        {/* Navigation Breadcrumb */}
-        <div className="mb-6 flex items-center gap-2 text-sm text-slate-400">
-          <Link to={`/learning/${courseId}`} className="hover:text-slate-200 transition-colors flex items-center gap-1">
-            <ChevronLeft className="w-4 h-4" /> Back to Course
+        {/* Navigation & Course Switcher */}
+        <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <Link to={selectedCourseId ? `/learning/${selectedCourseId}` : '/my-courses'} className="hover:text-slate-200 text-slate-400 text-sm transition-colors flex items-center gap-1">
+            <ChevronLeft className="w-4 h-4" /> Back to Courses
           </Link>
+
+          {!paramCourseId && enrolledCourses.length > 0 && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-400 font-semibold">Select Course:</span>
+              <select
+                value={selectedCourseId}
+                onChange={(e) => setSelectedCourseId(e.target.value)}
+                className="px-3.5 py-1.5 bg-slate-900 border border-slate-800 rounded-xl text-xs font-semibold text-slate-200 focus:outline-none focus:border-indigo-500"
+              >
+                {enrolledCourses.map((e) => {
+                  const cObj = e.course || e;
+                  return (
+                    <option key={cObj._id} value={cObj._id}>
+                      {cObj.title} ({cObj.code})
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+          )}
         </div>
 
         {/* Page Header */}
@@ -100,7 +153,7 @@ const StudentAttendancePage = () => {
             Attendance & Participation
           </h1>
           <p className="mt-1 text-slate-400 text-sm">
-            Course record for: <span className="text-slate-200 font-medium">{course?.title}</span>
+            Course record for: <span className="text-slate-200 font-medium">{course?.title || 'Selected Course'}</span>
           </p>
         </div>
 
@@ -141,7 +194,7 @@ const StudentAttendancePage = () => {
               />
               <button
                 type="submit"
-                disabled={checkingIn || otpCode.length < 6}
+                disabled={checkingIn || otpCode.length < 6 || !selectedCourseId}
                 className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-semibold text-sm rounded-xl shadow-lg shadow-indigo-600/30 transition-all whitespace-nowrap"
               >
                 {checkingIn ? 'Verifying...' : 'Check In'}
@@ -184,7 +237,7 @@ const StudentAttendancePage = () => {
           <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-lg">
             <span className="text-xs font-semibold uppercase tracking-wider text-indigo-400">Attendance Rate</span>
             <p className={`text-2xl sm:text-3xl font-extrabold mt-1 ${isAtRisk ? 'text-rose-400' : 'text-indigo-400'}`}>
-              {summary?.percentage}%
+              {summary?.percentage || 0}%
             </p>
           </div>
         </div>

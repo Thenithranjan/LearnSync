@@ -14,7 +14,9 @@ import {
   TrendingUp,
   BarChart3,
   Brain,
-  Sparkles
+  Sparkles,
+  CalendarCheck,
+  MessageSquare
 } from 'lucide-react';
 
 const Navbar = () => {
@@ -151,6 +153,28 @@ const Navbar = () => {
             {user?.role === 'STUDENT' && (
               <>
                 <Link
+                  to="/attendance"
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
+                    isActive('/attendance')
+                      ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                  }`}
+                >
+                  <CalendarCheck className="w-4 h-4 text-emerald-400" />
+                  <span>Attendance</span>
+                </Link>
+                <Link
+                  to="/forum"
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
+                    isActive('/forum')
+                      ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                  }`}
+                >
+                  <MessageSquare className="w-4 h-4 text-sky-400" />
+                  <span>Forum</span>
+                </Link>
+                <Link
                   to="/analytics"
                   className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
                     isActive('/analytics')
@@ -189,6 +213,28 @@ const Navbar = () => {
             {user?.role === 'FACULTY' && (
               <>
                 <Link
+                  to="/faculty/attendance"
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
+                    isActive('/faculty/attendance')
+                      ? 'bg-amber-600/20 text-amber-300 border border-amber-500/30'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                  }`}
+                >
+                  <CalendarCheck className="w-4 h-4 text-amber-400" />
+                  <span>Attendance</span>
+                </Link>
+                <Link
+                  to="/forum"
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
+                    isActive('/forum')
+                      ? 'bg-amber-600/20 text-amber-300 border border-amber-500/30'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                  }`}
+                >
+                  <MessageSquare className="w-4 h-4 text-sky-400" />
+                  <span>Forum</span>
+                </Link>
+                <Link
                   to="/faculty/analytics"
                   className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
                     isActive('/faculty/analytics')
@@ -226,6 +272,28 @@ const Navbar = () => {
 
             {user?.role === 'ADMIN' && (
               <>
+                <Link
+                  to="/faculty/attendance"
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
+                    isActive('/faculty/attendance')
+                      ? 'bg-rose-600/20 text-rose-300 border border-rose-500/30'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                  }`}
+                >
+                  <CalendarCheck className="w-4 h-4 text-rose-400" />
+                  <span>Attendance</span>
+                </Link>
+                <Link
+                  to="/forum"
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
+                    isActive('/forum')
+                      ? 'bg-rose-600/20 text-rose-300 border border-rose-500/30'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                  }`}
+                >
+                  <MessageSquare className="w-4 h-4 text-sky-400" />
+                  <span>Forum</span>
+                </Link>
                 <Link
                   to="/admin/analytics"
                   className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
