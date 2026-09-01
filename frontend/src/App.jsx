@@ -24,6 +24,10 @@ import AssignmentSubmissionPage from './pages/assessments/AssignmentSubmissionPa
 import CreateAssessmentPage from './pages/faculty/CreateAssessmentPage';
 import SubmissionsReviewPage from './pages/faculty/SubmissionsReviewPage';
 
+// Module 4 Pages: Attendance Management
+import StudentAttendancePage from './pages/attendance/StudentAttendancePage';
+import FacultyAttendancePage from './pages/faculty/FacultyAttendancePage';
+
 const PublicOnlyRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
 
@@ -148,6 +152,24 @@ const App = () => {
         element={
           <ProtectedRoute allowedRoles={['FACULTY', 'ADMIN']}>
             <SubmissionsReviewPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Module 4: Attendance Management Routes */}
+      <Route
+        path="/courses/:courseId/attendance"
+        element={
+          <ProtectedRoute allowedRoles={['STUDENT', 'ADMIN', 'FACULTY']}>
+            <StudentAttendancePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/faculty/courses/:courseId/attendance"
+        element={
+          <ProtectedRoute allowedRoles={['FACULTY', 'ADMIN']}>
+            <FacultyAttendancePage />
           </ProtectedRoute>
         }
       />

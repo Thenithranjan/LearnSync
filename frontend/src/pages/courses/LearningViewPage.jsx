@@ -150,7 +150,7 @@ const LearningViewPage = () => {
     <MainLayout>
       <div className="space-y-6">
         {/* Navigation Bar */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <Link
             to={user?.role === 'STUDENT' ? '/my-courses' : '/courses'}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-900 border border-slate-800 text-slate-300 hover:text-white rounded-xl text-xs font-semibold transition-all"
@@ -158,12 +158,21 @@ const LearningViewPage = () => {
             <ArrowLeft className="w-3.5 h-3.5" /> Back to Courses
           </Link>
 
-          <Link
-            to={`/courses/${courseId}/assessments`}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-indigo-600/20 border border-indigo-500/30 text-indigo-300 hover:text-white hover:bg-indigo-600 rounded-xl text-xs font-semibold transition-all"
-          >
-            <Award className="w-3.5 h-3.5" /> Course Assessments & Quizzes
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link
+              to={user?.role === 'FACULTY' || user?.role === 'ADMIN' ? `/faculty/courses/${courseId}/attendance` : `/courses/${courseId}/attendance`}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-amber-500/10 border border-amber-500/20 text-amber-300 hover:text-white hover:bg-amber-600 rounded-xl text-xs font-semibold transition-all"
+            >
+              <CalendarCheck className="w-3.5 h-3.5" /> Attendance
+            </Link>
+
+            <Link
+              to={`/courses/${courseId}/assessments`}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-indigo-600/20 border border-indigo-500/30 text-indigo-300 hover:text-white hover:bg-indigo-600 rounded-xl text-xs font-semibold transition-all"
+            >
+              <Award className="w-3.5 h-3.5" /> Course Assessments
+            </Link>
+          </div>
         </div>
 
         {error && (
