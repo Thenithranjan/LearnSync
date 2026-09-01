@@ -130,6 +130,19 @@ The frontend application runs on `http://localhost:5173`.
 - `GET /api/faculty/test` - Protected (ADMIN, FACULTY)
 - `GET /api/student/test` - Protected (ADMIN, FACULTY, STUDENT)
 
+## Module 3: Assignments & Quizzes Management (Completed ✅)
+
+- **MCQ Quiz Engine**: Timed evaluations, question builders, automatic scoring upon submission, answer obfuscation for students, and result scorecards.
+- **Assignments**: Open-ended submissions with written responses, repository/attachment links, passing grade criteria, and instructor grading with feedback.
+- **Endpoints**:
+  - `POST /api/courses/:courseId/assessments` - Create assignment/quiz (Faculty/Admin)
+  - `GET /api/courses/:courseId/assessments` - List course assessments
+  - `GET /api/assessments/:assessmentId` - Assessment details (answers hidden for students)
+  - `POST /api/assessments/:assessmentId/submit` - Submit quiz or assignment
+  - `GET /api/assessments/:assessmentId/my-submission` - View student submission & grade
+  - `GET /api/assessments/:assessmentId/submissions` - View all submissions for grading (Faculty)
+  - `PUT /api/submissions/:submissionId/grade` - Grade assignment and provide feedback
+
 ---
 
 ## 🔄 Authentication Flow
@@ -143,8 +156,6 @@ The frontend application runs on `http://localhost:5173`.
 
 ## 🔮 Future Modules (Designed for Compatibility)
 EduPulse is architected so that future modules will seamlessly integrate with the `User` schema:
-- Digital Learning
-- Assignments & Quizzes
 - Attendance Management
 - Discussion Forums
 - Performance Analytics & Academic Intelligence
