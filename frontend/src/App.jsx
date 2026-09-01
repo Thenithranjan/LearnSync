@@ -32,6 +32,11 @@ import FacultyAttendancePage from './pages/faculty/FacultyAttendancePage';
 import ForumThreadsPage from './pages/forum/ForumThreadsPage';
 import ThreadDetailsPage from './pages/forum/ThreadDetailsPage';
 
+// Module 6 Pages: Performance Analytics
+import StudentAnalyticsPage from './pages/analytics/StudentAnalyticsPage';
+import FacultyAnalyticsPage from './pages/analytics/FacultyAnalyticsPage';
+import AdminAnalyticsPage from './pages/analytics/AdminAnalyticsPage';
+
 const PublicOnlyRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
 
@@ -220,6 +225,32 @@ const App = () => {
         element={
           <ProtectedRoute allowedRoles={['FACULTY', 'ADMIN']}>
             <CourseContentPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Module 6: Performance Analytics Routes */}
+      <Route
+        path="/analytics"
+        element={
+          <ProtectedRoute allowedRoles={['STUDENT', 'ADMIN']}>
+            <StudentAnalyticsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/faculty/analytics"
+        element={
+          <ProtectedRoute allowedRoles={['FACULTY', 'ADMIN']}>
+            <FacultyAnalyticsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/analytics"
+        element={
+          <ProtectedRoute allowedRoles={['ADMIN']}>
+            <AdminAnalyticsPage />
           </ProtectedRoute>
         }
       />
