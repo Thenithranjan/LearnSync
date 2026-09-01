@@ -178,10 +178,26 @@ const App = () => {
 
       {/* Module 4: Attendance Management Routes */}
       <Route
+        path="/attendance"
+        element={
+          <ProtectedRoute allowedRoles={['STUDENT', 'ADMIN', 'FACULTY']}>
+            <StudentAttendancePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/courses/:courseId/attendance"
         element={
           <ProtectedRoute allowedRoles={['STUDENT', 'ADMIN', 'FACULTY']}>
             <StudentAttendancePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/faculty/attendance"
+        element={
+          <ProtectedRoute allowedRoles={['FACULTY', 'ADMIN']}>
+            <FacultyAttendancePage />
           </ProtectedRoute>
         }
       />
@@ -195,6 +211,14 @@ const App = () => {
       />
 
       {/* Module 5: Discussion & Collaboration Forums Routes */}
+      <Route
+        path="/forum"
+        element={
+          <ProtectedRoute>
+            <ForumThreadsPage />
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/courses/:courseId/forum"
         element={
