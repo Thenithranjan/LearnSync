@@ -10,7 +10,7 @@ class SubmissionController {
         assessmentId,
         req.body
       );
-      return sendSuccess(res, 200, 'Assessment submitted successfully', submission);
+      return sendSuccess(res, 200, 'Assessment submitted successfully', { data: submission });
     } catch (error) {
       next(error);
     }
@@ -23,7 +23,7 @@ class SubmissionController {
         assessmentId,
         req.user._id
       );
-      return sendSuccess(res, 200, 'Submission retrieved', submission);
+      return sendSuccess(res, 200, 'Submission retrieved', { data: submission });
     } catch (error) {
       next(error);
     }
@@ -33,7 +33,7 @@ class SubmissionController {
     try {
       const { assessmentId } = req.params;
       const submissions = await SubmissionService.getAssessmentSubmissions(assessmentId);
-      return sendSuccess(res, 200, 'All submissions retrieved', submissions);
+      return sendSuccess(res, 200, 'All submissions retrieved', { data: submissions });
     } catch (error) {
       next(error);
     }
@@ -48,7 +48,7 @@ class SubmissionController {
         req.user._id,
         { score, feedback }
       );
-      return sendSuccess(res, 200, 'Submission graded successfully', graded);
+      return sendSuccess(res, 200, 'Submission graded successfully', { data: graded });
     } catch (error) {
       next(error);
     }

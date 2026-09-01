@@ -10,7 +10,7 @@ class AssessmentController {
         courseId,
         req.body
       );
-      return sendSuccess(res, 201, 'Assessment created successfully', assessment);
+      return sendSuccess(res, 201, 'Assessment created successfully', { data: assessment });
     } catch (error) {
       next(error);
     }
@@ -23,7 +23,7 @@ class AssessmentController {
         courseId,
         req.user.role
       );
-      return sendSuccess(res, 200, 'Assessments retrieved successfully', assessments);
+      return sendSuccess(res, 200, 'Assessments retrieved successfully', { data: assessments });
     } catch (error) {
       next(error);
     }
@@ -36,7 +36,7 @@ class AssessmentController {
         assessmentId,
         req.user.role
       );
-      return sendSuccess(res, 200, 'Assessment details retrieved', assessment);
+      return sendSuccess(res, 200, 'Assessment details retrieved', { data: assessment });
     } catch (error) {
       next(error);
     }
@@ -51,7 +51,7 @@ class AssessmentController {
         req.user.role,
         req.body
       );
-      return sendSuccess(res, 200, 'Assessment updated successfully', assessment);
+      return sendSuccess(res, 200, 'Assessment updated successfully', { data: assessment });
     } catch (error) {
       next(error);
     }
