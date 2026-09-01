@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { authenticate, authorizeRole } = require('../middleware/auth.middleware');
+const { authenticate, authorize } = require('../middleware/auth.middleware');
 
 const StudentAnalyticsController = require('../controllers/analytics/studentAnalytics.controller');
 const CourseAnalyticsController = require('../controllers/analytics/courseAnalytics.controller');
@@ -14,28 +14,28 @@ const AdminAnalyticsController = require('../controllers/analytics/adminAnalytic
 router.get(
   '/analytics/student/overview',
   authenticate,
-  authorizeRole('STUDENT', 'ADMIN'),
+  authorize('STUDENT', 'ADMIN'),
   StudentAnalyticsController.getOverview
 );
 
 router.get(
   '/analytics/student/courses',
   authenticate,
-  authorizeRole('STUDENT', 'ADMIN'),
+  authorize('STUDENT', 'ADMIN'),
   StudentAnalyticsController.getCourses
 );
 
 router.get(
   '/analytics/student/trends',
   authenticate,
-  authorizeRole('STUDENT', 'ADMIN'),
+  authorize('STUDENT', 'ADMIN'),
   StudentAnalyticsController.getTrends
 );
 
 router.get(
   '/analytics/student/topics',
   authenticate,
-  authorizeRole('STUDENT', 'ADMIN'),
+  authorize('STUDENT', 'ADMIN'),
   StudentAnalyticsController.getTopics
 );
 
@@ -46,7 +46,7 @@ router.get(
 router.get(
   '/analytics/faculty/overview',
   authenticate,
-  authorizeRole('FACULTY', 'ADMIN'),
+  authorize('FACULTY', 'ADMIN'),
   FacultyAnalyticsController.getOverview
 );
 
@@ -57,28 +57,28 @@ router.get(
 router.get(
   '/analytics/course/:courseId/trends',
   authenticate,
-  authorizeRole('FACULTY', 'ADMIN'),
+  authorize('FACULTY', 'ADMIN'),
   CourseAnalyticsController.getTrends
 );
 
 router.get(
   '/analytics/course/:courseId/distribution',
   authenticate,
-  authorizeRole('FACULTY', 'ADMIN'),
+  authorize('FACULTY', 'ADMIN'),
   CourseAnalyticsController.getDistribution
 );
 
 router.get(
   '/analytics/course/:courseId/topics',
   authenticate,
-  authorizeRole('FACULTY', 'ADMIN'),
+  authorize('FACULTY', 'ADMIN'),
   CourseAnalyticsController.getTopics
 );
 
 router.get(
   '/analytics/course/:courseId/students',
   authenticate,
-  authorizeRole('FACULTY', 'ADMIN'),
+  authorize('FACULTY', 'ADMIN'),
   CourseAnalyticsController.getStudents
 );
 
@@ -89,14 +89,14 @@ router.get(
 router.get(
   '/analytics/admin/overview',
   authenticate,
-  authorizeRole('ADMIN'),
+  authorize('ADMIN'),
   AdminAnalyticsController.getOverview
 );
 
 router.get(
   '/analytics/admin/departments',
   authenticate,
-  authorizeRole('ADMIN'),
+  authorize('ADMIN'),
   AdminAnalyticsController.getDepartments
 );
 
