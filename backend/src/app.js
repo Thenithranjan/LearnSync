@@ -11,6 +11,7 @@ const progressRoutes = require('./routes/progress.routes');
 const assessmentRoutes = require('./routes/assessment.routes');
 const attendanceRoutes = require('./routes/attendance.routes');
 const forumRoutes = require('./routes/forum.routes');
+const analyticsRoutes = require('./routes/analytics.routes');
 const testRoutes = require('./routes/test.routes');
 const errorHandler = require('./middleware/error.middleware');
 const { sendError } = require('./utils/apiResponse');
@@ -62,6 +63,7 @@ app.use('/api', progressRoutes);
 app.use('/api', assessmentRoutes);
 app.use('/api', attendanceRoutes);
 app.use('/api', forumRoutes);
+app.use('/api', analyticsRoutes);
 app.use('/api', testRoutes);
 
 // Handle 404 for undefined routes
