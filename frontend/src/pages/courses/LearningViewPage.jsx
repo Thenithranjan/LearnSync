@@ -158,7 +158,14 @@ const LearningViewPage = () => {
             <ArrowLeft className="w-3.5 h-3.5" /> Back to Courses
           </Link>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              to={`/courses/${courseId}/forum`}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 hover:text-white hover:bg-indigo-600 rounded-xl text-xs font-semibold transition-all"
+            >
+              <MessageSquare className="w-3.5 h-3.5" /> Discussion Forum
+            </Link>
+
             <Link
               to={user?.role === 'FACULTY' || user?.role === 'ADMIN' ? `/faculty/courses/${courseId}/attendance` : `/courses/${courseId}/attendance`}
               className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-amber-500/10 border border-amber-500/20 text-amber-300 hover:text-white hover:bg-amber-600 rounded-xl text-xs font-semibold transition-all"
