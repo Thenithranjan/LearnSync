@@ -2,6 +2,7 @@ const Recommendation = require('../../models/Recommendation');
 const Material = require('../../models/Material');
 const Module = require('../../models/Module');
 const Assessment = require('../../models/Assessment');
+const Enrollment = require('../../models/Enrollment');
 const LearningGapService = require('./learningGap.service');
 
 class RecommendationService {
@@ -59,6 +60,19 @@ class RecommendationService {
         'questions.topic': { $regex: gap.topic, $options: 'i' }
       }).lean();
 
+      let targetCourseId = gap.courseId;
+      if (!targetCourseId && relatedMaterial) {
+        const mod = await Module.findById(relatedMaterial.moduleId).lean();
+        if (mod) targetCourseId = mod.courseId;
+      }
+      if (!targetCourseId && relatedQuiz) {
+        targetCourseId = relatedQuiz.courseId;
+      }
+      if (!targetCourseId) {
+        const enr = await Enrollment.findOne({ studentId, status: 'ACTIVE' }).lean();
+        if (enr) targetCourseId = enr.courseId;
+      }
+
       let priority = 'MEDIUM';
       if (gap.accuracy < 40) priority = 'HIGH';
       else if (gap.accuracy >= 60) priority = 'LOW';
@@ -67,7 +81,7 @@ class RecommendationService {
       if (relatedMaterial) {
         generated.push({
           studentId,
-          courseId: gap.courseId || relatedMaterial.moduleId,
+          courseId: targetCourseId,
           topic: gap.topic,
           type: 'MATERIAL',
           title: `Review Learning Material: ${relatedMaterial.title}`,
@@ -81,7 +95,7 @@ class RecommendationService {
       } else {
         generated.push({
           studentId,
-          courseId: gap.courseId,
+          courseId: targetCourseId,
           topic: gap.topic,
           type: 'REVIEW',
           title: `Study Session: ${gap.topic} Mastery`,
@@ -96,7 +110,7 @@ class RecommendationService {
       if (relatedQuiz) {
         generated.push({
           studentId,
-          courseId: gap.courseId || relatedQuiz.courseId,
+          courseId: targetCourseId,
           topic: gap.topic,
           type: 'PRACTICE',
           title: `Practice Concept: ${gap.topic} Quiz`,

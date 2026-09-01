@@ -13,11 +13,11 @@ class RiskScoreService {
     const overview = await StudentAnalyticsService.getStudentOverview(studentId, { courseId });
     const trends = await StudentAnalyticsService.getStudentTrends(studentId, courseId);
 
-    // Check data sufficiency
+    // Check data sufficiency: require student to have actually attempted an assessment or had attendance marked
     const hasAssessments = (overview.metrics?.quizzesAttempted || 0) > 0 || (overview.metrics?.assignmentsSubmitted || 0) > 0;
-    const hasAttendance = (overview.metrics?.attendanceSessionsTotal || 0) > 0;
+    const hasAttendanceRecords = (overview.metrics?.attendancePresentCount || 0) > 0;
 
-    if (!hasAssessments && !hasAttendance) {
+    if (!hasAssessments && !hasAttendanceRecords) {
       return {
         riskScore: null,
         riskLevel: 'INSUFFICIENT_DATA',
