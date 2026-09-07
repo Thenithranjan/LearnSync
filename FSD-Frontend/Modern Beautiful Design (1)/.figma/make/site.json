@@ -1,0 +1,10 @@
+{
+  "description": "Create stunning, modern designs effortlessly with this web application, tailored for designers and businesses seeking to enhance their visual presence.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
