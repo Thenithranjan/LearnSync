@@ -1,0 +1,10 @@
+{
+  "description": "EduPulse — Intelligent Academic Learning & Performance Platform",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
