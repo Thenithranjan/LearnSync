@@ -71,18 +71,8 @@ const performanceTrend = [
   { week: 'W7', score: 74, avg: 70 }, { week: 'W8', score: 82, avg: 72 },
 ];
 
-const subjectRadar = [
-  { subject: 'Algorithms', score: 78 }, { subject: 'Databases', score: 62 },
-  { subject: 'Networks',   score: 55 }, { subject: 'OS',         score: 71 },
-  { subject: 'Maths',      score: 84 }, { subject: 'Compilers',  score: 48 },
-];
-
-const studentCourses = [
-  { code: 'CSE301', name: 'Algorithms & Complexity', score: 78, attendance: 88, status: 'good',    credits: 4, instructor: 'Dr. Ramesh K.',  modules: 12, done: 8  },
-  { code: 'CSE302', name: 'Database Systems',         score: 62, attendance: 74, status: 'warning', credits: 3, instructor: 'Dr. Meera S.',   modules: 10, done: 6  },
-  { code: 'CSE303', name: 'Computer Networks',        score: 55, attendance: 68, status: 'danger',  credits: 4, instructor: 'Prof. Ali H.',   modules: 14, done: 7  },
-  { code: 'MAT201', name: 'Discrete Mathematics',     score: 84, attendance: 92, status: 'good',    credits: 3, instructor: 'Dr. Priya R.',   modules: 11, done: 10 },
-];
+const subjectRadar: any[] = [];
+const studentCourses: any[] = [];
 
 const intelligenceLoop = [
   { id: 'detect',    label: 'Detect',    icon: Radar,      desc: 'Attendance drops & quiz slumps flagged in real-time' },
@@ -92,157 +82,27 @@ const intelligenceLoop = [
   { id: 'improve',   label: 'Improve',   icon: TrendingUp, desc: 'Progress tracked and loop restarts on next signal' },
 ];
 
-const recentActivity = [
-  { icon: Trophy,       text: 'Scored 82% on Algorithms Quiz 4',      time: '2h ago',  type: 'success' },
-  { icon: AlertCircle,  text: 'Attendance warning: Networks < 75%',   time: '1d ago',  type: 'warning' },
-  { icon: Star,         text: 'Completed recommended practice set',    time: '2d ago',  type: 'info'    },
-  { icon: Flame,        text: '5-day study streak achieved!',          time: '3d ago',  type: 'success' },
-];
-
-const assignments = [
-  { id: 1, course: 'CSE301', title: 'Divide & Conquer Problems',  due: 'Sep 10',  status: 'pending',   score: null, weight: '10%' },
-  { id: 2, course: 'CSE302', title: 'ER Diagram Design',          due: 'Sep 8',   status: 'submitted', score: null, weight: '15%' },
-  { id: 3, course: 'CSE303', title: 'TCP/IP Socket Programming',  due: 'Aug 30',  status: 'graded',    score: 72,   weight: '12%' },
-  { id: 4, course: 'MAT201', title: 'Graph Theory Proofs',        due: 'Sep 14',  status: 'pending',   score: null, weight: '10%' },
-  { id: 5, course: 'CSE301', title: 'Dynamic Programming Set',    due: 'Aug 25',  status: 'graded',    score: 85,   weight: '10%' },
-  { id: 6, course: 'CSE302', title: 'SQL Query Optimization',     due: 'Sep 18',  status: 'pending',   score: null, weight: '8%'  },
-];
-
-const quizzes = [
-  { id: 1, course: 'CSE301', title: 'Quiz 4 — Greedy Algorithms',    date: 'Sep 7',  status: 'upcoming', score: null, duration: '30 min', questions: 20 },
-  { id: 2, course: 'CSE302', title: 'Quiz 3 — Normalization',        date: 'Aug 28', status: 'graded',   score: 68,  duration: '25 min', questions: 15 },
-  { id: 3, course: 'CSE303', title: 'Quiz 3 — Routing Protocols',    date: 'Aug 26', status: 'graded',   score: 55,  duration: '30 min', questions: 20 },
-  { id: 4, course: 'MAT201', title: 'Quiz 3 — Propositional Logic',  date: 'Aug 22', status: 'graded',   score: 82,  duration: '20 min', questions: 15 },
-  { id: 5, course: 'CSE301', title: 'Quiz 3 — Sorting Algorithms',   date: 'Aug 15', status: 'graded',   score: 78,  duration: '30 min', questions: 20 },
-  { id: 6, course: 'CSE302', title: 'Quiz 2 — ER Diagrams',          date: 'Aug 8',  status: 'graded',   score: 74,  duration: '25 min', questions: 15 },
-];
-
-const attendanceData = [
-  { month: 'Aug', week: 1, days: ['P','P','A','P','P'] },
-  { month: 'Aug', week: 2, days: ['P','A','P','P','P'] },
-  { month: 'Aug', week: 3, days: ['P','P','P','A','P'] },
-  { month: 'Aug', week: 4, days: ['A','P','P','P','P'] },
-  { month: 'Sep', week: 1, days: ['P','P','P','P','-'] },
-];
-
-const attendanceByCourse = [
-  { course: 'CSE301 — Algorithms', present: 22, absent: 3,  total: 25, pct: 88 },
-  { course: 'CSE302 — Databases',  present: 18, absent: 6,  total: 24, pct: 75 },
-  { course: 'CSE303 — Networks',   present: 17, absent: 8,  total: 25, pct: 68 },
-  { course: 'MAT201 — Maths',      present: 23, absent: 2,  total: 25, pct: 92 },
-];
-
-const discussions = [
-  { id: 1, course: 'CSE301', title: 'Doubt on Quicksort pivot selection', author: 'Arun Kumar', replies: 4, time: '1h ago', solved: true,  you: true  },
-  { id: 2, course: 'CSE303', title: 'How does BGP handle loop prevention?', author: 'Neha R.',   replies: 7, time: '3h ago', solved: false, you: false },
-  { id: 3, course: 'MAT201', title: 'Proof for handshaking lemma',         author: 'Vijay S.',  replies: 2, time: '6h ago', solved: false, you: false },
-  { id: 4, course: 'CSE302', title: 'Is 3NF always better than BCNF?',     author: 'Arun Kumar', replies: 5, time: '1d ago', solved: true,  you: true  },
-  { id: 5, course: 'CSE303', title: 'Difference between TCP and SCTP',      author: 'Rani P.',  replies: 3, time: '2d ago', solved: false, you: false },
-];
+const recentActivity: any[] = [];
+const assignments: any[] = [];
+const quizzes: any[] = [];
+const attendanceData: any[] = [];
+const attendanceByCourse: any[] = [];
+const discussions: any[] = [];
 
 // Faculty / Admin shared
-const allStudents = [
-  { id: 1, name: 'Arun Kumar',    roll: 'CSE21001', course: 'Data Structures', score: 42, attendance: 61, risk: 'high',   trend: 'down' },
-  { id: 2, name: 'Karthik S.',    roll: 'CSE21004', course: 'Data Structures', score: 54, attendance: 70, risk: 'high',   trend: 'down' },
-  { id: 3, name: 'Neha R.',       roll: 'CSE21009', course: 'Database Systems', score: 61, attendance: 74, risk: 'medium', trend: 'flat' },
-  { id: 4, name: 'Vijay S.',      roll: 'CSE21012', course: 'Data Structures', score: 68, attendance: 82, risk: 'low',    trend: 'up'   },
-  { id: 5, name: 'Priya M.',      roll: 'CSE21015', course: 'Database Systems', score: 74, attendance: 88, risk: 'low',    trend: 'up'   },
-  { id: 6, name: 'Rahul D.',      roll: 'CSE21018', course: 'Data Structures', score: 48, attendance: 58, risk: 'high',   trend: 'down' },
-  { id: 7, name: 'Sneha K.',      roll: 'CSE21021', course: 'Computer Networks', score: 55, attendance: 65, risk: 'medium', trend: 'flat' },
-  { id: 8, name: 'Arjun V.',      roll: 'CSE21025', course: 'Database Systems', score: 80, attendance: 94, risk: 'low',    trend: 'up'   },
-];
-
-const interventionsList = [
-  { id: 1, student: 'Arun Kumar',  type: 'Office Hours Scheduled', date: 'Sep 5',  status: 'active',   outcome: null,      course: 'Data Structures'  },
-  { id: 2, student: 'Karthik S.',  type: 'Peer Tutoring Assigned', date: 'Sep 3',  status: 'active',   outcome: null,      course: 'Data Structures'  },
-  { id: 3, student: 'Rahul D.',    type: 'Parent Communication',   date: 'Aug 28', status: 'pending',  outcome: null,      course: 'Data Structures'  },
-  { id: 4, student: 'Sneha K.',    type: 'Resource Recommendation',date: 'Aug 20', status: 'resolved', outcome: 'improved',course: 'Computer Networks'},
-  { id: 5, student: 'Rohan T.',    type: 'Office Hours Scheduled', date: 'Aug 12', status: 'resolved', outcome: 'improved',course: 'Database Systems' },
-  { id: 6, student: 'Meena B.',    type: 'Counseling Referral',    date: 'Aug 8',  status: 'resolved', outcome: 'stable',  course: 'Data Structures'  },
-];
-
-const courseAnalytics = [
-  { topic: 'Arrays & Sorting', avgScore: 76, students: 62, completion: 92 },
-  { topic: 'Linked Lists',      avgScore: 71, students: 62, completion: 88 },
-  { topic: 'Trees',             avgScore: 53, students: 62, completion: 74 },
-  { topic: 'Graphs',            avgScore: 49, students: 62, completion: 65 },
-  { topic: 'Dynamic Prog.',     avgScore: 41, students: 62, completion: 58 },
-  { topic: 'Hashing',           avgScore: 68, students: 62, completion: 80 },
-];
-
-const attentionTopics = [
-  { name: 'Dynamic Prog.', score: 41 },
-  { name: 'Graphs', score: 49 },
-  { name: 'Trees', score: 53 },
-];
-
-const departmentData = [
-  { dept: 'Computer Sci.', avg: 74, students: 312, atRisk: 28, trend: 2.1,  faculty: 18, courses: 24 },
-  { dept: 'Mathematics',   avg: 68, students: 248, atRisk: 41, trend: -1.4, faculty: 12, courses: 16 },
-  { dept: 'Physics',       avg: 71, students: 194, atRisk: 22, trend: 0.8,  faculty: 10, courses: 14 },
-  { dept: 'Chemistry',     avg: 65, students: 176, atRisk: 48, trend: -3.2, faculty: 9,  courses: 12 },
-  { dept: 'Electronics',   avg: 77, students: 228, atRisk: 18, trend: 3.6,  faculty: 14, courses: 18 },
-  { dept: 'Civil Eng.',    avg: 69, students: 156, atRisk: 35, trend: -0.6, faculty: 8,  courses: 10 },
-];
-
-const enrollmentTrend = [
-  { month: 'Jan', active: 1180, atRisk: 124 }, { month: 'Feb', active: 1204, atRisk: 118 },
-  { month: 'Mar', active: 1221, atRisk: 131 }, { month: 'Apr', active: 1198, atRisk: 108 },
-  { month: 'May', active: 1243, atRisk: 96  }, { month: 'Jun', active: 1267, atRisk: 88  },
-  { month: 'Jul', active: 1314, atRisk: 192 },
-];
-
-const interventionOutcomes = [
-  { month: 'Mar', success: 14, pending: 6 }, { month: 'Apr', success: 18, pending: 9 },
-  { month: 'May', success: 23, pending: 7 }, { month: 'Jun', success: 31, pending: 11 },
-  { month: 'Jul', success: 27, pending: 14 },
-];
-
-const recentAlerts = [
-  { id: 1, type: 'critical', dept: 'Chemistry',    message: '12 students flagged as high-risk after mid-term',        time: '2h ago' },
-  { id: 2, type: 'warning',  dept: 'Mathematics',  message: 'Average score dropped below 65% for Calculus II',        time: '5h ago' },
-  { id: 3, type: 'info',     dept: 'Electronics',  message: 'Intervention success rate up 8% this month',            time: '1d ago' },
-  { id: 4, type: 'critical', dept: 'Computer Sci.',message: '3 students missed 5+ consecutive sessions',              time: '1d ago' },
-  { id: 5, type: 'success',  dept: 'Physics',      message: '9 at-risk students moved to stable status',             time: '2d ago' },
-];
-
-const topFaculty = [
-  { name: 'Dr. Emily Chen',    dept: 'Electronics',   interventions: 24, successRate: 88 },
-  { name: 'Prof. Mark Rivera', dept: 'Computer Sci.', interventions: 19, successRate: 84 },
-  { name: 'Dr. Aisha Patel',   dept: 'Physics',       interventions: 16, successRate: 81 },
-];
-
-const facultyRoster = [
-  { id: 1, name: 'Dr. Emily Chen',    dept: 'Electronics',   courses: 3, students: 94,  rating: 4.8, status: 'active'   },
-  { id: 2, name: 'Prof. Mark Rivera', dept: 'Computer Sci.', courses: 4, students: 128, rating: 4.6, status: 'active'   },
-  { id: 3, name: 'Dr. Aisha Patel',   dept: 'Physics',       courses: 3, students: 86,  rating: 4.7, status: 'active'   },
-  { id: 4, name: 'Dr. Ramesh K.',     dept: 'Computer Sci.', courses: 2, students: 62,  rating: 4.4, status: 'active'   },
-  { id: 5, name: 'Prof. Sunita G.',   dept: 'Mathematics',   courses: 3, students: 102, rating: 4.2, status: 'active'   },
-  { id: 6, name: 'Dr. Vikram M.',     dept: 'Chemistry',     courses: 2, students: 58,  rating: 3.9, status: 'on-leave' },
-];
-
-const adminInterventions = [
-  { id: 1, student: 'Arun Kumar',  dept: 'CSE', faculty: 'Dr. Ramesh K.',    type: 'Office Hours',    status: 'active',   date: 'Sep 5' },
-  { id: 2, student: 'Meena B.',    dept: 'CHE', faculty: 'Dr. Vikram M.',    type: 'Counseling',      status: 'resolved', date: 'Aug 8' },
-  { id: 3, student: 'Rohan T.',    dept: 'PHY', faculty: 'Dr. Aisha Patel',  type: 'Tutoring',        status: 'resolved', date: 'Aug 12'},
-  { id: 4, student: 'Karthik S.',  dept: 'CSE', faculty: 'Dr. Ramesh K.',    type: 'Peer Tutoring',   status: 'active',   date: 'Sep 3' },
-  { id: 5, student: 'Sneha K.',    dept: 'CSE', faculty: 'Prof. Mark Rivera',type: 'Resources',       status: 'resolved', date: 'Aug 20'},
-  { id: 6, student: 'Priya M.',    dept: 'MAT', faculty: 'Prof. Sunita G.',  type: 'Parent Meeting',  status: 'pending',  date: 'Sep 6' },
-];
-
-const analyticsScoreDist = [
-  { range: '90-100', count: 48 }, { range: '80-89', count: 112 },
-  { range: '70-79', count: 198 }, { range: '60-69', count: 243 },
-  { range: '50-59', count: 187 }, { range: '<50',   count: 192 },
-];
-
-const deptTrendData = [
-  { month: 'Mar', cse: 72, maths: 65, phy: 70, che: 61, ele: 74 },
-  { month: 'Apr', cse: 71, maths: 66, phy: 69, che: 63, ele: 75 },
-  { month: 'May', cse: 73, maths: 64, phy: 71, che: 62, ele: 76 },
-  { month: 'Jun', cse: 72, maths: 67, phy: 70, che: 64, ele: 76 },
-  { month: 'Jul', cse: 74, maths: 68, phy: 71, che: 65, ele: 77 },
-];
+const allStudents: any[] = [];
+const interventionsList: any[] = [];
+const courseAnalytics: any[] = [];
+const attentionTopics: any[] = [];
+const departmentData: any[] = [];
+const enrollmentTrend: any[] = [];
+const interventionOutcomes: any[] = [];
+const recentAlerts: any[] = [];
+const topFaculty: any[] = [];
+const facultyRoster: any[] = [];
+const adminInterventions: any[] = [];
+const analyticsScoreDist: any[] = [];
+const deptTrendData: any[] = [];
 
 // ─── App Shell ────────────────────────────────────────────────────────────────
 
