@@ -1261,7 +1261,7 @@ function FacultyDashboardPage({ onOpenModal }: { onOpenModal?: (type: string, da
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-function FacultyIntelligencePage() {
+function FacultyIntelligencePage({ onOpenModal }: { onOpenModal?: (type: string, data?: any) => void }) {
   return (
     <div className="max-w-7xl mx-auto space-y-10">
       <PageHeader icon={Lightbulb} title="Academic Intelligence" subtitle="Identify areas requiring attention and coordinate student support.">
@@ -1333,14 +1333,14 @@ function FacultyIntelligencePage() {
             <div className="mt-auto pt-6 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
               <p className="text-sm text-slate-500"><span className="font-medium text-slate-700">Suggested:</span> Review Trees material, targeted practice.</p>
               <div className="flex gap-3 w-full sm:w-auto">
-                <button className="flex-1 sm:flex-none px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors">View Details</button>
-                <button className="flex-1 sm:flex-none px-4 py-2 bg-brand-600 text-white rounded-lg text-sm font-medium hover:bg-brand-700 transition-colors shadow-sm shadow-brand-500/20 flex items-center justify-center gap-2"><PlusCircle className="w-4 h-4" />Create Intervention</button>
+                <button onClick={() => onOpenModal?.('create-intervention', { name: 'Arun Kumar' })} className="flex-1 sm:flex-none px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors">View Details</button>
+                <button onClick={() => onOpenModal?.('create-intervention', { name: 'Arun Kumar' })} className="flex-1 sm:flex-none px-4 py-2 bg-brand-600 text-white rounded-lg text-sm font-medium hover:bg-brand-700 transition-colors shadow-sm shadow-brand-500/20 flex items-center justify-center gap-2"><PlusCircle className="w-4 h-4" />Create Intervention</button>
               </div>
             </div>
           </div>
         </div>
         {allStudents.filter(s=>s.risk==='high').slice(1).map(s => (
-          <div key={s.id} className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex items-center justify-between hover:border-brand-300 transition-colors cursor-pointer group">
+          <div key={s.id} onClick={() => onOpenModal?.('create-intervention', s)} className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex items-center justify-between hover:border-brand-300 transition-colors cursor-pointer group">
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-bold text-sm">{s.name.split(' ').map(w=>w[0]).join('').slice(0,2)}</div>
               <div><h3 className="font-bold text-slate-900 group-hover:text-brand-600 transition-colors">{s.name}</h3><p className="text-xs text-slate-500">{s.course} · Score: {s.score}%</p></div>
@@ -1358,7 +1358,7 @@ function FacultyIntelligencePage() {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-function FacultyStudentsPage() {
+function FacultyStudentsPage({ onOpenModal }: { onOpenModal?: (type: string, data?: any) => void }) {
   const [riskFilter, setRiskFilter] = useState<'all'|'high'|'medium'|'low'>('all');
   const [search, setSearch] = useState('');
   const filtered = allStudents.filter(s =>
@@ -1422,7 +1422,7 @@ function FacultyStudentsPage() {
                     {s.trend === 'up' ? <ArrowUpRight className="w-4 h-4 text-success-500" /> : s.trend === 'down' ? <ArrowDownRight className="w-4 h-4 text-danger-500" /> : <span className="w-4 h-0.5 bg-slate-400 inline-block"></span>}
                   </td>
                   <td className="px-6 py-4">
-                    <button className="text-xs text-brand-600 font-semibold opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 hover:underline">Intervene <ChevronRight className="w-3 h-3" /></button>
+                    <button onClick={() => onOpenModal?.('create-intervention', s)} className="text-xs text-brand-600 font-semibold opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 hover:underline">Intervene <ChevronRight className="w-3 h-3" /></button>
                   </td>
                 </tr>
               ))}
@@ -1436,7 +1436,7 @@ function FacultyStudentsPage() {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-function FacultyAssignmentsPage() {
+function FacultyAssignmentsPage({ onOpenModal }: { onOpenModal?: (type: string, data?: any) => void }) {
   const facultyAssignments = [
     { id:1, title:'Divide & Conquer Problems', course:'CSE301', due:'Sep 10', submitted:48, total:62, graded:30 },
     { id:2, title:'Dynamic Programming Set',   course:'CSE301', due:'Aug 25', submitted:62, total:62, graded:62 },
@@ -1446,7 +1446,7 @@ function FacultyAssignmentsPage() {
   return (
     <div className="max-w-7xl mx-auto space-y-8">
       <PageHeader icon={ClipboardList} title="Assignments" subtitle="Manage, review, and grade assignments across your courses.">
-        <button className="flex items-center gap-2 px-4 py-2.5 bg-brand-600 text-white text-sm font-semibold rounded-xl hover:bg-brand-700 transition-colors shadow-sm shadow-brand-500/20"><PlusCircle className="w-4 h-4" />New Assignment</button>
+        <button onClick={() => onOpenModal?.('create-course')} className="flex items-center gap-2 px-4 py-2.5 bg-brand-600 text-white text-sm font-semibold rounded-xl hover:bg-brand-700 transition-colors shadow-sm shadow-brand-500/20"><PlusCircle className="w-4 h-4" />New Assignment</button>
       </PageHeader>
 
       <div className="space-y-4">
@@ -1462,8 +1462,8 @@ function FacultyAssignmentsPage() {
                   <p className="text-xs text-slate-400 mt-1 flex items-center gap-1"><CalendarCheck className="w-3 h-3" />Due {a.due}</p>
                 </div>
                 <div className="flex gap-2">
-                  <button className="p-2 border border-slate-200 rounded-lg text-slate-500 hover:bg-slate-50 transition-colors"><Edit3 className="w-4 h-4" /></button>
-                  {a.graded < a.total && <button className="px-3 py-2 bg-brand-600 text-white text-xs font-semibold rounded-lg hover:bg-brand-700 transition-colors">Grade ({a.submitted - a.graded} left)</button>}
+                  <button onClick={() => onOpenModal?.('submit-assignment', a)} className="p-2 border border-slate-200 rounded-lg text-slate-500 hover:bg-slate-50 transition-colors"><Edit3 className="w-4 h-4" /></button>
+                  {a.graded < a.total && <button onClick={() => onOpenModal?.('submit-assignment', a)} className="px-3 py-2 bg-brand-600 text-white text-xs font-semibold rounded-lg hover:bg-brand-700 transition-colors">Grade ({a.submitted - a.graded} left)</button>}
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-4">
@@ -1490,7 +1490,7 @@ function FacultyAssignmentsPage() {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-function FacultyAttendancePage() {
+function FacultyAttendancePage({ onOpenModal }: { onOpenModal?: (type: string, data?: any) => void }) {
   const sessions = [
     { date:'Sep 5', day:'Thu', present:54, absent:8, topic:'Greedy Algorithms' },
     { date:'Sep 3', day:'Tue', present:57, absent:5, topic:'DP Introduction'   },
@@ -1501,7 +1501,7 @@ function FacultyAttendancePage() {
   return (
     <div className="max-w-7xl mx-auto space-y-8">
       <PageHeader icon={CalendarCheck} title="Attendance" subtitle="Track and manage student attendance across all sessions.">
-        <button className="flex items-center gap-2 px-4 py-2.5 bg-brand-600 text-white text-sm font-semibold rounded-xl hover:bg-brand-700 transition-colors shadow-sm shadow-brand-500/20"><PlusCircle className="w-4 h-4" />Mark Today</button>
+        <button onClick={() => onOpenModal?.('record-attendance')} className="flex items-center gap-2 px-4 py-2.5 bg-brand-600 text-white text-sm font-semibold rounded-xl hover:bg-brand-700 transition-colors shadow-sm shadow-brand-500/20"><PlusCircle className="w-4 h-4" />Mark Today</button>
       </PageHeader>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1514,7 +1514,7 @@ function FacultyAttendancePage() {
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="p-6 border-b border-slate-100 flex items-center justify-between">
           <h2 className="font-semibold text-slate-900">Session Log — Data Structures (CSE201)</h2>
-          <button className="flex items-center gap-2 text-xs text-brand-600 font-medium hover:underline"><Download className="w-3 h-3" />Export</button>
+          <button onClick={() => onOpenModal?.('record-attendance')} className="flex items-center gap-2 text-xs text-brand-600 font-medium hover:underline"><Download className="w-3 h-3" />Export</button>
         </div>
         <div className="divide-y divide-slate-100">
           {sessions.map((s,i) => {
@@ -1533,7 +1533,7 @@ function FacultyAttendancePage() {
                   <div className="w-24 h-2 bg-slate-100 rounded-full overflow-hidden"><div className={`h-full rounded-full ${pct>=80 ? 'bg-success-500' : 'bg-warning-500'}`} style={{width:`${pct}%`}}></div></div>
                   <span className={`text-sm font-bold w-10 text-right ${pct>=80 ? 'text-success-600':'text-warning-600'}`}>{pct}%</span>
                 </div>
-                <button className="text-xs text-brand-600 font-medium hover:underline ml-2">Edit</button>
+                <button onClick={() => onOpenModal?.('record-attendance', s)} className="text-xs text-brand-600 font-medium hover:underline ml-2">Edit</button>
               </div>
             );
           })}
@@ -1615,7 +1615,7 @@ function FacultyAnalyticsPage() {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-function FacultyInterventionsPage() {
+function FacultyInterventionsPage({ onOpenModal }: { onOpenModal?: (type: string, data?: any) => void }) {
   const statusColors: Record<string, string> = {
     active:   'bg-brand-50 text-brand-700',
     pending:  'bg-warning-50 text-warning-700',
