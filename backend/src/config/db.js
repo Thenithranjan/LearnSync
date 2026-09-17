@@ -18,10 +18,6 @@ const connectDB = async () => {
         const memoryUri = mongoServer.getUri();
         const conn = await mongoose.connect(memoryUri);
         console.log(`[MongoDB] ✅ Connected to in-memory MongoDB dev database: ${conn.connection.host}`);
-
-        // Seed comprehensive 20-student demo dataset
-        const seedDemoData = require('./demoSeeder');
-        await seedDemoData();
       } catch (memErr) {
         console.error(`[MongoDB Error] Failed to initialize in-memory database: ${memErr.message}`);
         process.exit(1);
