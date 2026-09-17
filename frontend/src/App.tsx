@@ -987,11 +987,15 @@ function StudentQuizzesPage({ onOpenModal }: { onOpenModal?: (type: string, data
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-function StudentAttendancePage() {
+function StudentAttendancePage({ onOpenModal }: { onOpenModal?: (type: string, data?: any) => void }) {
   const days = ['Mon','Tue','Wed','Thu','Fri'];
   return (
     <div className="max-w-7xl mx-auto space-y-8">
-      <PageHeader icon={CalendarCheck} title="Attendance" subtitle="Your attendance record across all enrolled courses." />
+      <PageHeader icon={CalendarCheck} title="Attendance" subtitle="Your attendance record across all enrolled courses.">
+        <button onClick={() => onOpenModal?.('self-checkin')} className="flex items-center gap-2 px-4 py-2.5 bg-brand-600 text-white text-sm font-semibold rounded-xl hover:bg-brand-700 transition-colors shadow-sm shadow-brand-500/20">
+          <Zap className="w-4 h-4" />Self Check-in (OTP)
+        </button>
+      </PageHeader>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {attendanceByCourse.map(c => (
@@ -1038,12 +1042,11 @@ function StudentAttendancePage() {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-function StudentDiscussionsPage() {
-  const [compose, setCompose] = useState(false);
+function StudentDiscussionsPage({ onOpenModal }: { onOpenModal?: (type: string, data?: any) => void }) {
   return (
     <div className="max-w-7xl mx-auto space-y-8">
       <PageHeader icon={MessageSquare} title="Discussions" subtitle="Ask questions, share insights, and collaborate with peers and faculty.">
-        <button onClick={() => setCompose(!compose)} className="flex items-center gap-2 px-4 py-2.5 bg-brand-600 text-white text-sm font-semibold rounded-xl hover:bg-brand-700 transition-colors shadow-sm shadow-brand-500/20">
+        <button onClick={() => onOpenModal?.('new-thread')} className="flex items-center gap-2 px-4 py-2.5 bg-brand-600 text-white text-sm font-semibold rounded-xl hover:bg-brand-700 transition-colors shadow-sm shadow-brand-500/20">
           <PlusCircle className="w-4 h-4" />New Post
         </button>
       </PageHeader>
