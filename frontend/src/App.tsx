@@ -1165,7 +1165,7 @@ function StudentProgressPage() {
 // FACULTY PAGES
 // ════════════════════════════════════════════════════════════════════════════
 
-function FacultyDashboardPage() {
+function FacultyDashboardPage({ onOpenModal }: { onOpenModal?: (type: string, data?: any) => void }) {
   return (
     <div className="max-w-7xl mx-auto space-y-10">
       <PageHeader icon={LayoutDashboard} title="Faculty Dashboard" subtitle="Your daily overview — classes, students, and pending actions." />
@@ -1250,7 +1250,7 @@ function FacultyDashboardPage() {
                 <p className="text-sm font-bold text-danger-600">{s.score}%</p>
                 <p className="text-xs text-slate-400">Attendance: {s.attendance}%</p>
               </div>
-              <button className="px-3 py-1.5 bg-brand-600 text-white text-xs font-semibold rounded-lg hover:bg-brand-700 transition-colors ml-4">Intervene</button>
+              <button onClick={() => onOpenModal?.('create-intervention', s)} className="px-3 py-1.5 bg-brand-600 text-white text-xs font-semibold rounded-lg hover:bg-brand-700 transition-colors ml-4 shadow-sm">Intervene</button>
             </div>
           ))}
         </div>
