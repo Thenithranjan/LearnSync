@@ -67,12 +67,7 @@ const ADMIN_NAV: { label: string; icon: React.ElementType; pageId: Page }[] = [
 
 // ─── Shared Data ─────────────────────────────────────────────────────────────
 
-const performanceTrend = [
-  { week: 'W1', score: 61, avg: 68 }, { week: 'W2', score: 65, avg: 67 },
-  { week: 'W3', score: 58, avg: 69 }, { week: 'W4', score: 72, avg: 70 },
-  { week: 'W5', score: 69, avg: 68 }, { week: 'W6', score: 78, avg: 71 },
-  { week: 'W7', score: 74, avg: 70 }, { week: 'W8', score: 82, avg: 72 },
-];
+const performanceTrend: any[] = [];
 
 const subjectRadar: any[] = [];
 const studentCourses: any[] = [];
@@ -490,7 +485,7 @@ export default function App() {
 
 function StudentDashboardPage() {
   const [activeLoop, setActiveLoop] = useState(0);
-  const overallScore = 74;
+  const overallScore = 0;
   const gradients = ['from-brand-500 to-brand-600','from-violet-500 to-violet-600','from-amber-500 to-amber-600','from-rose-500 to-rose-600','from-emerald-500 to-emerald-600'];
 
   return (
@@ -505,12 +500,12 @@ function StudentDashboardPage() {
               <span className="relative flex h-2 w-2"><span className="animate-ping absolute h-full w-full rounded-full bg-white opacity-60"></span><span className="relative h-2 w-2 rounded-full bg-white"></span></span>
               Live Academic Pulse
             </span>
-            <h1 className="text-3xl lg:text-4xl font-bold text-white tracking-tight mb-2">Good morning, Arun.</h1>
-            <p className="text-white/70 text-base max-w-md leading-relaxed">You're performing above class average in 2 of 4 courses. Your streak is strong — keep it up.</p>
+            <h1 className="text-3xl lg:text-4xl font-bold text-white tracking-tight mb-2">Welcome to EduPulse</h1>
+            <p className="text-white/70 text-base max-w-md leading-relaxed">Your academic dashboard will populate once courses and data are available from the system.</p>
             <div className="flex flex-wrap items-center gap-4 mt-6">
-              <PulseStat label="Overall Score" value="74%" /><div className="w-px h-8 bg-white/20"></div>
-              <PulseStat label="Attendance" value="81%" /><div className="w-px h-8 bg-white/20"></div>
-              <PulseStat label="Streak" value="5 days" icon={Flame} />
+              <PulseStat label="Overall Score" value="—" /><div className="w-px h-8 bg-white/20"></div>
+              <PulseStat label="Attendance" value="—" /><div className="w-px h-8 bg-white/20"></div>
+              <PulseStat label="Streak" value="—" icon={Flame} />
             </div>
           </div>
           <div className="w-36 h-36 lg:w-44 lg:h-44 relative flex-none">
@@ -532,7 +527,7 @@ function StudentDashboardPage() {
         <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm p-6 lg:p-8">
           <div className="flex items-center justify-between mb-6">
             <div><h2 className="text-lg font-semibold text-slate-900">Performance Trend</h2><p className="text-sm text-slate-400 mt-0.5">Your quiz scores vs. class average</p></div>
-            <span className="text-xs font-semibold text-success-600 bg-success-50 px-2.5 py-1 rounded-full flex items-center gap-1"><TrendingUp className="w-3 h-3" /> +17pts</span>
+            {performanceTrend.length > 0 && <span className="text-xs font-semibold text-success-600 bg-success-50 px-2.5 py-1 rounded-full flex items-center gap-1"><TrendingUp className="w-3 h-3" /> +17pts</span>}
           </div>
           <div className="h-52">
             <ResponsiveContainer width="100%" height="100%">
@@ -553,9 +548,9 @@ function StudentDashboardPage() {
           </div>
         </div>
         <div className="flex flex-col gap-4">
-          <StudentStatCard label="Assignments Completed" value="18 / 22" sub="4 pending" accent="warning" icon={ClipboardList} />
-          <StudentStatCard label="Quiz Average" value="71%" sub="Above class avg" accent="success" icon={Star} />
-          <StudentStatCard label="Topics Needing Work" value="3 topics" sub="Networks, Compilers, DB" accent="danger" icon={AlertCircle} />
+          <StudentStatCard label="Assignments Completed" value="— / —" sub="No data yet" accent="warning" icon={ClipboardList} />
+          <StudentStatCard label="Quiz Average" value="—" sub="No data yet" accent="success" icon={Star} />
+          <StudentStatCard label="Topics Needing Work" value="—" sub="No data yet" accent="danger" icon={AlertCircle} />
         </div>
       </div>
 
@@ -639,13 +634,20 @@ function StudentCoursesPage() {
     warning: { bar: 'bg-warning-500', badge: 'bg-warning-50 text-warning-700', text: 'Needs Attention', border: 'border-warning-200' },
     danger:  { bar: 'bg-danger-500',  badge: 'bg-danger-50 text-danger-700',   text: 'At Risk',         border: 'border-danger-200'  },
   };
-  const moduleProgress = [
-    { name: 'Module 1 — Introduction',       done: true  },
-    { name: 'Module 2 — Sorting Algorithms', done: true  },
-    { name: 'Module 3 — Divide & Conquer',   done: true  },
-    { name: 'Module 4 — Greedy Algorithms',  done: false },
-    { name: 'Module 5 — Dynamic Prog.',      done: false },
-  ];
+
+  if (studentCourses.length === 0) {
+    return (
+      <div className="max-w-7xl mx-auto space-y-8">
+        <PageHeader icon={BookOpen} title="My Courses" subtitle="Track your enrolled courses, progress, and upcoming deliverables." />
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-12 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-brand-50 flex items-center justify-center mx-auto mb-4"><BookOpen className="w-8 h-8 text-brand-400" /></div>
+          <h3 className="text-lg font-bold text-slate-900 mb-2">No Courses Enrolled</h3>
+          <p className="text-sm text-slate-500 max-w-md mx-auto">You haven't enrolled in any courses yet. Once you're enrolled, your courses and progress will appear here.</p>
+        </div>
+      </div>
+    );
+  }
+
   const selCourse = studentCourses.find(c => c.code === selected) ?? studentCourses[0];
 
   return (
@@ -657,7 +659,7 @@ function StudentCoursesPage() {
         <div className="lg:col-span-2 space-y-3">
           {studentCourses.map(course => {
             const s = sm[course.status];
-            const active = (selected ?? studentCourses[0].code) === course.code;
+            const active = (selected ?? studentCourses[0]?.code) === course.code;
             return (
               <button key={course.code} onClick={() => setSelected(course.code)}
                 className={`w-full text-left bg-white rounded-2xl border shadow-sm p-5 transition-all hover:shadow-md ${active ? `${s.border} ring-1 ring-inset ${s.border}` : 'border-slate-200 hover:border-brand-200'}`}>
@@ -692,24 +694,13 @@ function StudentCoursesPage() {
               <MiniStat label="Attendance" value={`${selCourse.attendance}%`} />
               <MiniStat label="Modules" value={`${selCourse.done}/${selCourse.modules}`} />
             </div>
-            <h3 className="text-sm font-semibold text-slate-700 mb-3">Module Progress</h3>
-            <div className="space-y-2">
-              {moduleProgress.map((m, i) => (
-                <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors">
-                  <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${m.done ? 'bg-success-500' : 'bg-slate-200'}`}>
-                    {m.done ? <CheckCircle2 className="w-3 h-3 text-white" /> : <Circle className="w-3 h-3 text-slate-400" />}
-                  </div>
-                  <span className={`text-sm ${m.done ? 'text-slate-500 line-through' : 'text-slate-800 font-medium'}`}>{m.name}</span>
-                  {!m.done && i === moduleProgress.findIndex(x => !x.done) && (
-                    <span className="ml-auto text-xs bg-brand-100 text-brand-700 font-semibold px-2 py-0.5 rounded-full">Current</span>
-                  )}
-                </div>
-              ))}
-            </div>
           </div>
 
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
             <h3 className="text-sm font-semibold text-slate-700 mb-4">Upcoming Deadlines</h3>
+            {assignments.filter(a => a.course === selCourse.code).length === 0 && (
+              <p className="text-sm text-slate-400 py-4 text-center">No upcoming deadlines for this course.</p>
+            )}
             {assignments.filter(a => a.course === selCourse.code).map(a => (
               <div key={a.id} className="flex items-center justify-between py-3 border-b border-slate-100 last:border-0">
                 <div><p className="text-sm font-medium text-slate-800">{a.title}</p><p className="text-xs text-slate-400 mt-0.5">Due {a.due} · {a.weight}</p></div>
@@ -1031,10 +1022,10 @@ function FacultyDashboardPage({ onOpenModal }: { onOpenModal?: (type: string, da
       <PageHeader icon={LayoutDashboard} title="Faculty Dashboard" subtitle="Your daily overview — classes, students, and pending actions." />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-        <KpiCard label="My Students"       value="62"  delta="Data Structures"     deltaDir="up"  icon={Users}      accent="brand"   />
-        <KpiCard label="At-Risk Students"  value="7"   delta="Immediate attention"  deltaDir="down" icon={ShieldAlert} accent="danger"  />
-        <KpiCard label="Avg. Class Score"  value="68%" delta="+3% vs last week"    deltaDir="up"  icon={BarChart2}  accent="success" />
-        <KpiCard label="Pending Reviews"   value="11"  delta="Assignments to grade" deltaDir="up"  icon={ClipboardList} accent="brand" />
+        <KpiCard label="My Students"       value="—"  delta="No data loaded"     deltaDir="up"  icon={Users}      accent="brand"   />
+        <KpiCard label="At-Risk Students"  value="—"  delta="No data loaded"      deltaDir="up"   icon={ShieldAlert} accent="danger"  />
+        <KpiCard label="Avg. Class Score"  value="—"  delta="No data loaded"      deltaDir="up"  icon={BarChart2}  accent="success" />
+        <KpiCard label="Pending Reviews"   value="—"  delta="No data loaded"      deltaDir="up"  icon={ClipboardList} accent="brand" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -1060,32 +1051,13 @@ function FacultyDashboardPage({ onOpenModal }: { onOpenModal?: (type: string, da
         <div className="space-y-4">
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
             <h3 className="font-semibold text-slate-900 mb-4 text-sm">Today's Tasks</h3>
-            <div className="space-y-3">
-              {[
-                { text: 'Grade 8 TCP/IP assignments', done: false, urgent: true },
-                { text: 'Review Arun Kumar intervention', done: false, urgent: true },
-                { text: 'Update attendance for Sep 5', done: true,  urgent: false },
-                { text: 'Post Week 9 lecture notes', done: false, urgent: false },
-              ].map((t, i) => (
-                <div key={i} className={`flex items-center gap-3 p-2.5 rounded-lg ${t.done ? 'bg-slate-50' : t.urgent ? 'bg-danger-50' : 'bg-white'}`}>
-                  <div className={`w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center ${t.done ? 'border-success-500 bg-success-500' : t.urgent ? 'border-danger-400' : 'border-slate-300'}`}>
-                    {t.done && <CheckCircle2 className="w-2.5 h-2.5 text-white" />}
-                  </div>
-                  <span className={`text-sm ${t.done ? 'line-through text-slate-400' : 'text-slate-700'}`}>{t.text}</span>
-                  {t.urgent && !t.done && <span className="ml-auto text-xs text-danger-600 font-semibold shrink-0">Urgent</span>}
-                </div>
-              ))}
-            </div>
+            <p className="text-sm text-slate-400 py-4 text-center">No tasks scheduled for today.</p>
           </div>
 
           <div className="bg-gradient-to-br from-brand-600 to-brand-800 rounded-2xl p-5 text-white shadow-lg shadow-brand-500/20">
-            <p className="font-semibold mb-1">Class this week</p>
-            <p className="text-xs text-white/60 mb-4">Data Structures — CSE201</p>
-            <div className="space-y-2">
-              {['Mon 9:00 AM — Lecture', 'Wed 9:00 AM — Lab', 'Fri 2:00 PM — Office Hours'].map((s, i) => (
-                <div key={i} className="flex items-center gap-2 text-sm text-white/80"><Clock className="w-3.5 h-3.5 shrink-0" />{s}</div>
-              ))}
-            </div>
+            <p className="font-semibold mb-1">Class Schedule</p>
+            <p className="text-xs text-white/60 mb-4">No schedule data loaded</p>
+            <p className="text-sm text-white/50 py-2 text-center">Schedule will appear once courses are assigned.</p>
           </div>
         </div>
       </div>
@@ -1094,7 +1066,7 @@ function FacultyDashboardPage({ onOpenModal }: { onOpenModal?: (type: string, da
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="p-6 border-b border-slate-100 flex items-center justify-between">
           <h2 className="font-semibold text-slate-900 flex items-center gap-2"><ShieldAlert className="w-4 h-4 text-danger-500" />Students Requiring Immediate Attention</h2>
-          <span className="text-xs bg-danger-100 text-danger-700 font-bold px-2.5 py-1 rounded-full">7 students</span>
+          <span className="text-xs bg-danger-100 text-danger-700 font-bold px-2.5 py-1 rounded-full">{allStudents.filter(s => s.risk === 'high').length} students</span>
         </div>
         <div className="divide-y divide-slate-100">
           {allStudents.filter(s => s.risk === 'high').map(s => (
@@ -1133,19 +1105,25 @@ function FacultyIntelligencePage({ onOpenModal }: { onOpenModal?: (type: string,
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white p-6 lg:p-8 rounded-2xl border border-slate-200 shadow-sm">
           <h2 className="text-lg font-semibold text-slate-900 mb-6 flex items-center gap-2"><Users className="w-5 h-5 text-slate-400" />Students Requiring Attention</h2>
-          <div className="flex items-center justify-between gap-4">
-            <RiskMetric label="High Risk" value={7} color="danger" /><div className="w-px h-12 bg-slate-100"></div>
-            <RiskMetric label="Moderate" value={14} color="warning" /><div className="w-px h-12 bg-slate-100"></div>
-            <RiskMetric label="Low Risk" value={41} color="success" />
-          </div>
-          <div className="mt-8">
-            <p className="text-sm font-medium text-slate-500 mb-2">Class Distribution</p>
-            <div className="flex h-3 w-full rounded-full overflow-hidden gap-1">
-              <div className="bg-danger-500" style={{ width: `${(7/62)*100}%` }}></div>
-              <div className="bg-warning-500" style={{ width: `${(14/62)*100}%` }}></div>
-              <div className="bg-success-500" style={{ width: `${(41/62)*100}%` }}></div>
-            </div>
-          </div>
+          {allStudents.length > 0 ? (
+            <>
+              <div className="flex items-center justify-between gap-4">
+                <RiskMetric label="High Risk" value={allStudents.filter(s => s.risk === 'high').length} color="danger" /><div className="w-px h-12 bg-slate-100"></div>
+                <RiskMetric label="Moderate" value={allStudents.filter(s => s.risk === 'medium').length} color="warning" /><div className="w-px h-12 bg-slate-100"></div>
+                <RiskMetric label="Low Risk" value={allStudents.filter(s => s.risk === 'low').length} color="success" />
+              </div>
+              <div className="mt-8">
+                <p className="text-sm font-medium text-slate-500 mb-2">Class Distribution</p>
+                <div className="flex h-3 w-full rounded-full overflow-hidden gap-1">
+                  <div className="bg-danger-500" style={{ width: `${(allStudents.filter(s=>s.risk==='high').length / Math.max(allStudents.length,1))*100}%` }}></div>
+                  <div className="bg-warning-500" style={{ width: `${(allStudents.filter(s=>s.risk==='medium').length / Math.max(allStudents.length,1))*100}%` }}></div>
+                  <div className="bg-success-500" style={{ width: `${(allStudents.filter(s=>s.risk==='low').length / Math.max(allStudents.length,1))*100}%` }}></div>
+                </div>
+              </div>
+            </>
+          ) : (
+            <p className="text-sm text-slate-400 py-6 text-center">No student data available yet.</p>
+          )}
         </div>
 
         <div className="bg-white p-6 lg:p-8 rounded-2xl border border-slate-200 shadow-sm">
@@ -1167,50 +1145,27 @@ function FacultyIntelligencePage({ onOpenModal }: { onOpenModal?: (type: string,
       </div>
 
       <div className="space-y-6">
-        <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2">Action Required <span className="bg-danger-100 text-danger-700 text-xs font-bold px-2 py-0.5 rounded-full">7 Students</span></h2>
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col lg:flex-row hover:shadow-md transition-shadow">
-          <div className="p-6 lg:w-1/3 border-b lg:border-b-0 lg:border-r border-slate-100 bg-slate-50/50 flex flex-col">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 rounded-full bg-slate-200 border-2 border-white shadow-sm flex items-center justify-center text-slate-600 font-bold text-lg">AK</div>
-              <div><h3 className="text-lg font-bold text-slate-900">Arun Kumar</h3><p className="text-sm text-slate-500">Data Structures</p></div>
-            </div>
-            <div className="mt-auto pt-6 p-3 bg-white rounded-xl border border-danger-100 shadow-sm">
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Risk Status</p>
-              <p className="text-danger-600 font-bold flex items-center gap-1.5">
-                <span className="relative flex h-2.5 w-2.5"><span className="animate-ping absolute h-full w-full rounded-full bg-danger-400 opacity-75"></span><span className="relative h-2.5 w-2.5 rounded-full bg-danger-500"></span></span>
-                HIGH PRIORITY
-              </p>
-            </div>
+        <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2">Action Required <span className="bg-danger-100 text-danger-700 text-xs font-bold px-2 py-0.5 rounded-full">{allStudents.filter(s => s.risk === 'high').length} Students</span></h2>
+        {allStudents.filter(s => s.risk === 'high').length === 0 ? (
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-12 text-center">
+            <div className="w-14 h-14 rounded-2xl bg-success-50 flex items-center justify-center mx-auto mb-3"><CheckCircle2 className="w-7 h-7 text-success-400" /></div>
+            <h3 className="font-bold text-slate-900 mb-1">No High-Risk Students</h3>
+            <p className="text-sm text-slate-400">All students are performing within acceptable thresholds.</p>
           </div>
-          <div className="p-6 lg:w-2/3 flex flex-col">
-            <h4 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2"><AlertCircle className="w-4 h-4 text-brand-500" />Why is attention required?</h4>
-            <div className="grid sm:grid-cols-2 gap-4 mb-6">
-              <DataPoint label="Quiz Performance" value="42%" status="danger" />
-              <DataPoint label="Attendance" value="61%" status="warning" />
-              <DataPoint label="Topic: Trees" value="38%" status="danger" />
-              <DataPoint label="Recent Trend" value="Declining" icon={TrendingDown} status="danger" />
-            </div>
-            <div className="mt-auto pt-6 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <p className="text-sm text-slate-500"><span className="font-medium text-slate-700">Suggested:</span> Review Trees material, targeted practice.</p>
-              <div className="flex gap-3 w-full sm:w-auto">
-                <button onClick={() => onOpenModal?.('create-intervention', { name: 'Arun Kumar' })} className="flex-1 sm:flex-none px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors">View Details</button>
-                <button onClick={() => onOpenModal?.('create-intervention', { name: 'Arun Kumar' })} className="flex-1 sm:flex-none px-4 py-2 bg-brand-600 text-white rounded-lg text-sm font-medium hover:bg-brand-700 transition-colors shadow-sm shadow-brand-500/20 flex items-center justify-center gap-2"><PlusCircle className="w-4 h-4" />Create Intervention</button>
+        ) : (
+          allStudents.filter(s=>s.risk==='high').map(s => (
+            <div key={s.id} onClick={() => onOpenModal?.('create-intervention', s)} className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex items-center justify-between hover:border-brand-300 transition-colors cursor-pointer group">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-bold text-sm">{s.name.split(' ').map((w: string)=>w[0]).join('').slice(0,2)}</div>
+                <div><h3 className="font-bold text-slate-900 group-hover:text-brand-600 transition-colors">{s.name}</h3><p className="text-xs text-slate-500">{s.course} · Score: {s.score}%</p></div>
+              </div>
+              <div className="flex items-center gap-6">
+                <span className="text-danger-600 text-sm font-bold bg-danger-50 px-2.5 py-1 rounded-md">HIGH</span>
+                <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-brand-500 transition-colors" />
               </div>
             </div>
-          </div>
-        </div>
-        {allStudents.filter(s=>s.risk==='high').slice(1).map(s => (
-          <div key={s.id} onClick={() => onOpenModal?.('create-intervention', s)} className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex items-center justify-between hover:border-brand-300 transition-colors cursor-pointer group">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-bold text-sm">{s.name.split(' ').map(w=>w[0]).join('').slice(0,2)}</div>
-              <div><h3 className="font-bold text-slate-900 group-hover:text-brand-600 transition-colors">{s.name}</h3><p className="text-xs text-slate-500">{s.course} · Score: {s.score}%</p></div>
-            </div>
-            <div className="flex items-center gap-6">
-              <span className="text-danger-600 text-sm font-bold bg-danger-50 px-2.5 py-1 rounded-md">HIGH</span>
-              <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-brand-500 transition-colors" />
-            </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
     </div>
   );
@@ -1297,53 +1252,56 @@ function FacultyStudentsPage({ onOpenModal }: { onOpenModal?: (type: string, dat
 // ─────────────────────────────────────────────────────────────────────────────
 
 function FacultyAssignmentsPage({ onOpenModal }: { onOpenModal?: (type: string, data?: any) => void }) {
-  const facultyAssignments = [
-    { id:1, title:'Divide & Conquer Problems', course:'CSE301', due:'Sep 10', submitted:48, total:62, graded:30 },
-    { id:2, title:'Dynamic Programming Set',   course:'CSE301', due:'Aug 25', submitted:62, total:62, graded:62 },
-    { id:3, title:'ER Diagram Design',         course:'CSE302', due:'Sep 8',  submitted:41, total:55, graded:15 },
-    { id:4, title:'SQL Query Optimization',    course:'CSE302', due:'Sep 18', submitted:0,  total:55, graded:0  },
-  ];
+  const facultyAssignments: any[] = [];
   return (
     <div className="max-w-7xl mx-auto space-y-8">
       <PageHeader icon={ClipboardList} title="Assignments" subtitle="Manage, review, and grade assignments across your courses.">
         <button onClick={() => onOpenModal?.('create-course')} className="flex items-center gap-2 px-4 py-2.5 bg-brand-600 text-white text-sm font-semibold rounded-xl hover:bg-brand-700 transition-colors shadow-sm shadow-brand-500/20"><PlusCircle className="w-4 h-4" />New Assignment</button>
       </PageHeader>
 
-      <div className="space-y-4">
-        {facultyAssignments.map(a => {
-          const submittedPct = Math.round(a.submitted / a.total * 100);
-          const gradedPct = Math.round(a.graded / a.total * 100);
-          return (
-            <div key={a.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 hover:shadow-md transition-shadow">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <span className="text-xs font-semibold bg-brand-50 text-brand-700 px-2 py-0.5 rounded-md">{a.course}</span>
-                  <h3 className="font-bold text-slate-900 mt-2">{a.title}</h3>
-                  <p className="text-xs text-slate-400 mt-1 flex items-center gap-1"><CalendarCheck className="w-3 h-3" />Due {a.due}</p>
+      {facultyAssignments.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-12 text-center">
+          <div className="w-14 h-14 rounded-2xl bg-brand-50 flex items-center justify-center mx-auto mb-3"><ClipboardList className="w-7 h-7 text-brand-400" /></div>
+          <h3 className="font-bold text-slate-900 mb-1">No Assignments Yet</h3>
+          <p className="text-sm text-slate-400">Create your first assignment using the button above.</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {facultyAssignments.map(a => {
+            const submittedPct = Math.round(a.submitted / a.total * 100);
+            const gradedPct = Math.round(a.graded / a.total * 100);
+            return (
+              <div key={a.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 hover:shadow-md transition-shadow">
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <span className="text-xs font-semibold bg-brand-50 text-brand-700 px-2 py-0.5 rounded-md">{a.course}</span>
+                    <h3 className="font-bold text-slate-900 mt-2">{a.title}</h3>
+                    <p className="text-xs text-slate-400 mt-1 flex items-center gap-1"><CalendarCheck className="w-3 h-3" />Due {a.due}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => onOpenModal?.('submit-assignment', a)} className="p-2 border border-slate-200 rounded-lg text-slate-500 hover:bg-slate-50 transition-colors"><Edit3 className="w-4 h-4" /></button>
+                    {a.graded < a.total && <button onClick={() => onOpenModal?.('submit-assignment', a)} className="px-3 py-2 bg-brand-600 text-white text-xs font-semibold rounded-lg hover:bg-brand-700 transition-colors">Grade ({a.submitted - a.graded} left)</button>}
+                  </div>
                 </div>
-                <div className="flex gap-2">
-                  <button onClick={() => onOpenModal?.('submit-assignment', a)} className="p-2 border border-slate-200 rounded-lg text-slate-500 hover:bg-slate-50 transition-colors"><Edit3 className="w-4 h-4" /></button>
-                  {a.graded < a.total && <button onClick={() => onOpenModal?.('submit-assignment', a)} className="px-3 py-2 bg-brand-600 text-white text-xs font-semibold rounded-lg hover:bg-brand-700 transition-colors">Grade ({a.submitted - a.graded} left)</button>}
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <div className="flex justify-between text-xs text-slate-400 mb-1.5"><span>Submitted</span><span className="font-semibold text-slate-700">{a.submitted}/{a.total}</span></div>
+                    <div className="h-2 bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-brand-500 rounded-full" style={{width:`${submittedPct}%`}}></div></div>
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-xs text-slate-400 mb-1.5"><span>Graded</span><span className="font-semibold text-slate-700">{a.graded}/{a.total}</span></div>
+                    <div className="h-2 bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-success-500 rounded-full" style={{width:`${gradedPct}%`}}></div></div>
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-xs text-slate-400 mb-1.5"><span>Not submitted</span><span className="font-semibold text-slate-700">{a.total-a.submitted}</span></div>
+                    <div className="h-2 bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-danger-400 rounded-full" style={{width:`${100-submittedPct}%`}}></div></div>
+                  </div>
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <div className="flex justify-between text-xs text-slate-400 mb-1.5"><span>Submitted</span><span className="font-semibold text-slate-700">{a.submitted}/{a.total}</span></div>
-                  <div className="h-2 bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-brand-500 rounded-full" style={{width:`${submittedPct}%`}}></div></div>
-                </div>
-                <div>
-                  <div className="flex justify-between text-xs text-slate-400 mb-1.5"><span>Graded</span><span className="font-semibold text-slate-700">{a.graded}/{a.total}</span></div>
-                  <div className="h-2 bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-success-500 rounded-full" style={{width:`${gradedPct}%`}}></div></div>
-                </div>
-                <div>
-                  <div className="flex justify-between text-xs text-slate-400 mb-1.5"><span>Not submitted</span><span className="font-semibold text-slate-700">{a.total-a.submitted}</span></div>
-                  <div className="h-2 bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-danger-400 rounded-full" style={{width:`${100-submittedPct}%`}}></div></div>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -1351,13 +1309,7 @@ function FacultyAssignmentsPage({ onOpenModal }: { onOpenModal?: (type: string, 
 // ─────────────────────────────────────────────────────────────────────────────
 
 function FacultyAttendancePage({ onOpenModal }: { onOpenModal?: (type: string, data?: any) => void }) {
-  const sessions = [
-    { date:'Sep 5', day:'Thu', present:54, absent:8, topic:'Greedy Algorithms' },
-    { date:'Sep 3', day:'Tue', present:57, absent:5, topic:'DP Introduction'   },
-    { date:'Aug 29',day:'Thu', present:50, absent:12,topic:'Tree Traversal'     },
-    { date:'Aug 27',day:'Tue', present:58, absent:4, topic:'BST Operations'     },
-    { date:'Aug 22',day:'Thu', present:55, absent:7, topic:'Graph BFS/DFS'      },
-  ];
+  const sessions: any[] = [];
   return (
     <div className="max-w-7xl mx-auto space-y-8">
       <PageHeader icon={CalendarCheck} title="Attendance" subtitle="Track and manage student attendance across all sessions.">
@@ -1366,9 +1318,9 @@ function FacultyAttendancePage({ onOpenModal }: { onOpenModal?: (type: string, d
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <SummaryCard label="Total Sessions" value={sessions.length} color="brand" icon={CalendarCheck} />
-        <SummaryCard label="Avg Attendance" value="88%" color="success" icon={Users} />
-        <SummaryCard label="Below 75%" value="4 students" color="danger" icon={AlertCircle} />
-        <SummaryCard label="Perfect Attendance" value="31 students" color="success" icon={Award} />
+        <SummaryCard label="Avg Attendance" value="—" color="success" icon={Users} />
+        <SummaryCard label="Below 75%" value="—" color="danger" icon={AlertCircle} />
+        <SummaryCard label="Perfect Attendance" value="—" color="success" icon={Award} />
       </div>
 
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
@@ -1558,10 +1510,10 @@ function AdminDashboardPage({ onOpenModal, onToast }: { onOpenModal?: (type: str
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-        <KpiCard label="Total Students"    value="1,314" delta="+47 this month"          deltaDir="up"  icon={Users}      accent="brand"   />
-        <KpiCard label="At-Risk Students"  value="192"   delta="↑ 14.6% vs last month"  deltaDir="down" icon={ShieldAlert} accent="danger"  />
-        <KpiCard label="Avg. Performance"  value="71.4%" delta="+2.1% this semester"     deltaDir="up"  icon={BarChart2}  accent="success" />
-        <KpiCard label="Intervention Rate" value="83%"   delta="success rate (last 30d)" deltaDir="up"  icon={Zap}        accent="brand"   />
+        <KpiCard label="Total Students"    value="—" delta="No data loaded"          deltaDir="up"  icon={Users}      accent="brand"   />
+        <KpiCard label="At-Risk Students"  value="—" delta="No data loaded"          deltaDir="up"  icon={ShieldAlert} accent="danger"  />
+        <KpiCard label="Avg. Performance"  value="—" delta="No data loaded"          deltaDir="up"  icon={BarChart2}  accent="success" />
+        <KpiCard label="Intervention Rate" value="—" delta="No data loaded"          deltaDir="up"  icon={Zap}        accent="brand"   />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
@@ -1602,8 +1554,8 @@ function AdminDashboardPage({ onOpenModal, onToast }: { onOpenModal?: (type: str
             </ResponsiveContainer>
           </div>
           <div className="mt-auto pt-5 border-t border-slate-100 grid grid-cols-2 gap-4">
-            <div><p className="text-2xl font-bold text-slate-900">113</p><p className="text-xs text-slate-400 mt-0.5">Total resolved</p></div>
-            <div><p className="text-2xl font-bold text-warning-600">47</p><p className="text-xs text-slate-400 mt-0.5">Currently open</p></div>
+            <div><p className="text-2xl font-bold text-slate-900">—</p><p className="text-xs text-slate-400 mt-0.5">Total resolved</p></div>
+            <div><p className="text-2xl font-bold text-warning-600">—</p><p className="text-xs text-slate-400 mt-0.5">Currently open</p></div>
           </div>
         </div>
       </div>
