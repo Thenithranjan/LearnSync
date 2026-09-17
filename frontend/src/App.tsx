@@ -457,16 +457,16 @@ export default function App() {
           {activePage === 'student-discussions' && <StudentDiscussionsPage onOpenModal={(type, data) => { setModalType(type); setModalData(data); }} />}
           {activePage === 'student-progress'    && <StudentProgressPage />}
           {activePage === 'faculty-dashboard'   && <FacultyDashboardPage onOpenModal={(type, data) => { setModalType(type); setModalData(data); }} />}
-          {activePage === 'faculty-intelligence'&& <FacultyIntelligencePage/>}
+          {activePage === 'faculty-intelligence'&& <FacultyIntelligencePage onOpenModal={(type, data) => { setModalType(type); setModalData(data); }} />}
           {activePage === 'faculty-students'    && <FacultyStudentsPage onOpenModal={(type, data) => { setModalType(type); setModalData(data); }} />}
           {activePage === 'faculty-assignments' && <FacultyAssignmentsPage onOpenModal={(type, data) => { setModalType(type); setModalData(data); }} />}
           {activePage === 'faculty-attendance'  && <FacultyAttendancePage onOpenModal={(type, data) => { setModalType(type); setModalData(data); }} />}
           {activePage === 'faculty-analytics'   && <FacultyAnalyticsPage />}
-          {activePage === 'faculty-interventions'&&<FacultyInterventionsPage onOpenModal={(type, data) => { setModalType(type); setModalData(data); }} />}
-          {activePage === 'admin-dashboard'     && <AdminDashboardPage onOpenModal={(type, data) => { setModalType(type); setModalData(data); }} />}
-          {activePage === 'admin-departments'   && <AdminDepartmentsPage />}
-          {activePage === 'admin-faculty'       && <AdminFacultyPage onOpenModal={(type, data) => { setModalType(type); setModalData(data); }} />}
-          {activePage === 'admin-interventions' && <AdminInterventionsPage onOpenModal={(type, data) => { setModalType(type); setModalData(data); }} />}
+          {activePage === 'faculty-interventions'&& <FacultyInterventionsPage onOpenModal={(type, data) => { setModalType(type); setModalData(data); }} />}
+          {activePage === 'admin-dashboard'     && <AdminDashboardPage onOpenModal={(type, data) => { setModalType(type); setModalData(data); }} onToast={showToast} />}
+          {activePage === 'admin-departments'   && <AdminDepartmentsPage onToast={showToast} />}
+          {activePage === 'admin-faculty'       && <AdminFacultyPage onOpenModal={(type, data) => { setModalType(type); setModalData(data); }} onToast={showToast} />}
+          {activePage === 'admin-interventions' && <AdminInterventionsPage onOpenModal={(type, data) => { setModalType(type); setModalData(data); }} onToast={showToast} />}
           {activePage === 'admin-analytics'     && <AdminAnalyticsPage />}
           {activePage === 'admin-settings'      && <AdminSettingsPage onToast={showToast} />}
         </div>
@@ -1624,7 +1624,7 @@ function FacultyInterventionsPage({ onOpenModal }: { onOpenModal?: (type: string
   return (
     <div className="max-w-7xl mx-auto space-y-8">
       <PageHeader icon={ShieldAlert} title="Interventions" subtitle="Track all student interventions — active, pending, and resolved.">
-        <button className="flex items-center gap-2 px-4 py-2.5 bg-brand-600 text-white text-sm font-semibold rounded-xl hover:bg-brand-700 transition-colors shadow-sm shadow-brand-500/20"><PlusCircle className="w-4 h-4" />New Intervention</button>
+        <button onClick={() => onOpenModal?.('create-intervention')} className="flex items-center gap-2 px-4 py-2.5 bg-brand-600 text-white text-sm font-semibold rounded-xl hover:bg-brand-700 transition-colors shadow-sm shadow-brand-500/20"><PlusCircle className="w-4 h-4" />New Intervention</button>
       </PageHeader>
 
       <div className="grid grid-cols-3 gap-4">
@@ -1662,7 +1662,7 @@ function FacultyInterventionsPage({ onOpenModal }: { onOpenModal?: (type: string
                     {item.outcome ? <span className="text-xs text-success-600 font-semibold capitalize">{item.outcome}</span> : <span className="text-xs text-slate-400">—</span>}
                   </td>
                   <td className="px-6 py-4">
-                    <button className="text-xs text-brand-600 font-semibold opacity-0 group-hover:opacity-100 transition-opacity hover:underline">View</button>
+                    <button onClick={() => onOpenModal?.('create-intervention', item)} className="text-xs text-brand-600 font-semibold opacity-0 group-hover:opacity-100 transition-opacity hover:underline">View</button>
                   </td>
                 </tr>
               ))}
