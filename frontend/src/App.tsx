@@ -1,4 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import api from './services/api';
+import { loginApi, logoutApi, getMeApi } from './services/authService';
+import { getCoursesApi } from './services/courseService';
 import {
   LayoutDashboard, BookOpen, Users, ClipboardList, FileQuestion,
   CalendarCheck, MessageSquare, BarChart2, Lightbulb, ShieldAlert,
