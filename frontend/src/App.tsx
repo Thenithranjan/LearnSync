@@ -252,15 +252,66 @@ const deptTrendData = [
 export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activePage, setActivePage] = useState<Page>('student-dashboard');
+  const [apiConnected, setApiConnected] = useState<boolean | null>(null);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  // Health check & session restore on mount
+  useEffect(() => {
+    let isMounted = true;
+    const checkApi = async () => {
+      try {
+        const res = await api.get('/health');
+        if (isMounted && res.data?.status === 'ok') {
+          setApiConnected(true);
+        }
+      } catch (err) {
+        if (isMounted) setApiConnected(false);
+      }
+    };
+
+    const restoreUser = async () => {
+      try {
+        const me = await getMeApi();
+        if (isMounted && me?.user) {
+          setCurrentUser(me.user);
+        }
+      } catch (err) {
+        // Unauthenticated or default fallback
+      }
+    };
+
+    checkApi();
+    restoreUser();
+    const interval = setInterval(checkApi, 15000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, []);
 
   const role = activePage.startsWith('admin') ? 'admin'
     : activePage.startsWith('faculty') ? 'faculty' : 'student';
 
+  const handleRoleSwitch = async (r: 'student' | 'faculty' | 'admin') => {
+    const targetPage = r === 'student' ? 'student-dashboard' : r === 'faculty' ? 'faculty-dashboard' : 'admin-dashboard';
+    setActivePage(targetPage);
+    // Auto sync session with demo account for selected portal
+    const demoEmail = r === 'admin' ? 'admin@example.com' : r === 'faculty' ? 'faculty@example.com' : 'student@example.com';
+    try {
+      const authRes = await loginApi(demoEmail, 'Password123!');
+      if (authRes?.user) {
+        setCurrentUser(authRes.user);
+      }
+    } catch (e) {
+      // Demo credentials fallback
+    }
+  };
+
   const navItems = role === 'admin' ? ADMIN_NAV : role === 'faculty' ? FACULTY_NAV : STUDENT_NAV;
 
-  const userName = role === 'admin' ? 'Dr. Priya Sharma' : role === 'faculty' ? 'Dr. John Doe' : 'Arun Kumar';
+  const userName = currentUser?.name || (role === 'admin' ? 'System Admin' : role === 'faculty' ? 'Dr. Alan Faculty' : 'John Student');
   const userRole = role === 'admin' ? 'Administrator' : role === 'faculty' ? 'Faculty' : 'Student · CSE Yr 2';
-  const userInitials = role === 'admin' ? 'PS' : role === 'faculty' ? 'JD' : 'AK';
+  const userInitials = userName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase();
   const searchPlaceholder = role === 'admin' ? 'Search departments, faculty...' : role === 'faculty' ? 'Search students, courses...' : 'Search courses, topics...';
 
   return (
@@ -285,7 +336,7 @@ export default function App() {
         <div className="px-4 pt-4 pb-2">
           <div className="flex rounded-lg bg-slate-100 p-1 gap-1">
             {(['student', 'faculty', 'admin'] as const).map(r => (
-              <button key={r} onClick={() => setActivePage(r === 'student' ? 'student-dashboard' : r === 'faculty' ? 'faculty-dashboard' : 'admin-dashboard')}
+              <button key={r} onClick={() => handleRoleSwitch(r)}
                 className={`flex-1 py-1.5 rounded-md text-xs font-semibold transition-all capitalize ${role === r ? 'bg-white shadow-sm text-brand-700' : 'text-slate-500 hover:text-slate-700'}`}>
                 {r}
               </button>
@@ -321,6 +372,11 @@ export default function App() {
             <div className="hidden md:flex items-center gap-2 px-4 py-2.5 bg-slate-100/50 hover:bg-slate-100 rounded-xl border border-transparent focus-within:border-brand-300 focus-within:bg-white focus-within:shadow-sm transition-all w-80">
               <Search className="w-4 h-4 text-slate-400" />
               <input type="text" placeholder={searchPlaceholder} className="bg-transparent border-none outline-none text-sm w-full text-slate-900 placeholder-slate-400" />
+            </div>
+            {/* Live API status badge */}
+            <div className={`hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${apiConnected ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : apiConnected === false ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
+              <span className={`w-2 h-2 rounded-full ${apiConnected ? 'bg-emerald-500 animate-pulse' : apiConnected === false ? 'bg-rose-500' : 'bg-amber-500 animate-ping'}`}></span>
+              {apiConnected ? 'API Connected (v1.0)' : apiConnected === false ? 'Backend Offline' : 'Connecting API...'}
             </div>
           </div>
           <div className="flex items-center gap-5">
