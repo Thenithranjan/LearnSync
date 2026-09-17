@@ -865,7 +865,7 @@ function StudentCoursesPage() {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-function StudentAssignmentsPage() {
+function StudentAssignmentsPage({ onOpenModal }: { onOpenModal?: (type: string, data?: any) => void }) {
   const [tab, setTab] = useState<'all'|'pending'|'submitted'|'graded'>('all');
   const filtered = tab === 'all' ? assignments : assignments.filter(a => a.status === tab);
 
@@ -909,8 +909,8 @@ function StudentAssignmentsPage() {
                   <td className="px-4 py-4"><span className={`text-sm font-bold ${a.score ? (a.score >= 70 ? 'text-success-600' : 'text-warning-600') : 'text-slate-400'}`}>{a.score ? `${a.score}%` : '—'}</span></td>
                   <td className="px-4 py-4"><StatusBadge status={a.status} /></td>
                   <td className="px-6 py-4">
-                    {a.status === 'pending' && <button className="text-xs bg-brand-600 text-white px-3 py-1.5 rounded-lg font-medium hover:bg-brand-700 transition-colors flex items-center gap-1"><Upload className="w-3 h-3" />Submit</button>}
-                    {a.status === 'graded'  && <button className="text-xs text-brand-600 font-semibold hover:underline">View</button>}
+                    {a.status === 'pending' && <button onClick={() => onOpenModal?.('submit-assignment', a)} className="text-xs bg-brand-600 text-white px-3 py-1.5 rounded-lg font-medium hover:bg-brand-700 transition-colors flex items-center gap-1 shadow-sm"><Upload className="w-3 h-3" />Submit</button>}
+                    {a.status === 'graded'  && <button onClick={() => onOpenModal?.('submit-assignment', a)} className="text-xs text-brand-600 font-semibold hover:underline">View</button>}
                   </td>
                 </tr>
               ))}
