@@ -255,6 +255,17 @@ export default function App() {
   const [apiConnected, setApiConnected] = useState<boolean | null>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
 
+  // Interactive Toast & Modal State
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'warning' | 'info' | 'danger' } | null>(null);
+  const [modalType, setModalType] = useState<string | null>(null);
+  const [modalData, setModalData] = useState<any>(null);
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+
+  const showToast = (message: string, type: 'success' | 'warning' | 'info' | 'danger' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 4000);
+  };
+
   // Health check & session restore on mount
   useEffect(() => {
     let isMounted = true;
@@ -301,9 +312,23 @@ export default function App() {
       const authRes = await loginApi(demoEmail, 'Password123!');
       if (authRes?.user) {
         setCurrentUser(authRes.user);
+        showToast(`Switched to ${r.toUpperCase()} Portal (${authRes.user.name})`, 'info');
       }
     } catch (e) {
-      // Demo credentials fallback
+      showToast(`Switched to ${r.toUpperCase()} Portal`, 'info');
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await logoutApi();
+      setCurrentUser(null);
+      setProfileDropdownOpen(false);
+      showToast('Signed out successfully', 'info');
+    } catch (err) {
+      setCurrentUser(null);
+      setProfileDropdownOpen(false);
+      showToast('Signed out', 'info');
     }
   };
 
@@ -315,7 +340,16 @@ export default function App() {
   const searchPlaceholder = role === 'admin' ? 'Search departments, faculty...' : role === 'faculty' ? 'Search students, courses...' : 'Search courses, topics...';
 
   return (
-    <div className="flex h-screen bg-slate-50 overflow-hidden font-sans">
+    <div className="flex h-screen bg-slate-50 overflow-hidden font-sans relative">
+      {/* Toast Notification Banner */}
+      {toast && (
+        <div className="fixed top-5 right-5 z-50 flex items-center gap-3 px-5 py-3 rounded-2xl bg-slate-900 text-white shadow-2xl border border-slate-700 animate-bounce">
+          <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+          <span className="text-sm font-semibold">{toast.message}</span>
+          <button onClick={() => setToast(null)} className="ml-2 text-slate-400 hover:text-white"><X className="w-4 h-4" /></button>
+        </div>
+      )}
+
       {sidebarOpen && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />
       )}
@@ -358,7 +392,7 @@ export default function App() {
         </div>
 
         <div className="p-4 border-t border-slate-100">
-          <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors">
+          <button onClick={() => { setActivePage('admin-settings'); setSidebarOpen(false); }} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors">
             <Settings className="w-5 h-5 text-slate-400" />Settings
           </button>
         </div>
@@ -379,46 +413,213 @@ export default function App() {
               {apiConnected ? 'API Connected (v1.0)' : apiConnected === false ? 'Backend Offline' : 'Connecting API...'}
             </div>
           </div>
-          <div className="flex items-center gap-5">
-            <button className="relative p-2.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors">
+          <div className="flex items-center gap-5 relative">
+            <button onClick={() => setModalType('notifications')} className="relative p-2.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors">
               <Bell className="w-5 h-5" />
               <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-danger-500 rounded-full border-2 border-white"></span>
             </button>
             <div className="h-8 w-px bg-slate-200"></div>
-            <button className="flex items-center gap-3 group">
-              <div className="text-right hidden sm:block">
-                <p className="text-sm font-semibold text-slate-900 leading-none group-hover:text-brand-600 transition-colors">{userName}</p>
-                <p className="text-xs text-slate-500 mt-1">{userRole}</p>
-              </div>
-              <div className="w-10 h-10 rounded-full bg-slate-200 border-2 border-slate-100 group-hover:border-brand-200 transition-colors shadow-sm flex items-center justify-center text-slate-600 font-bold text-sm">{userInitials}</div>
-              <ChevronDown className="w-4 h-4 text-slate-400" />
-            </button>
+            
+            <div className="relative">
+              <button onClick={() => setProfileDropdownOpen(!profileDropdownOpen)} className="flex items-center gap-3 group">
+                <div className="text-right hidden sm:block">
+                  <p className="text-sm font-semibold text-slate-900 leading-none group-hover:text-brand-600 transition-colors">{userName}</p>
+                  <p className="text-xs text-slate-500 mt-1">{userRole}</p>
+                </div>
+                <div className="w-10 h-10 rounded-full bg-slate-200 border-2 border-slate-100 group-hover:border-brand-200 transition-colors shadow-sm flex items-center justify-center text-slate-600 font-bold text-sm">{userInitials}</div>
+                <ChevronDown className="w-4 h-4 text-slate-400" />
+              </button>
+
+              {profileDropdownOpen && (
+                <div className="absolute right-0 mt-3 w-56 bg-white rounded-2xl shadow-2xl border border-slate-200 p-2 z-50">
+                  <div className="px-3 py-2 border-b border-slate-100 mb-1">
+                    <p className="text-sm font-bold text-slate-900">{userName}</p>
+                    <p className="text-xs text-slate-500">{currentUser?.email || 'user@edupulse.edu'}</p>
+                  </div>
+                  <button onClick={() => { setActivePage('admin-settings'); setProfileDropdownOpen(false); }} className="w-full text-left px-3 py-2 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2">
+                    <Settings className="w-4 h-4 text-slate-400" /> Profile & Account Settings
+                  </button>
+                  <button onClick={handleSignOut} className="w-full text-left px-3 py-2 rounded-xl text-xs font-semibold text-rose-600 hover:bg-rose-50 flex items-center gap-2 mt-1">
+                    <UserX className="w-4 h-4" /> Sign Out
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </header>
 
         <div className="flex-1 overflow-y-auto p-4 lg:p-10 pb-20">
-          {activePage === 'student-dashboard'   && <StudentDashboardPage   />}
-          {activePage === 'student-courses'     && <StudentCoursesPage     />}
-          {activePage === 'student-assignments' && <StudentAssignmentsPage />}
-          {activePage === 'student-quizzes'     && <StudentQuizzesPage     />}
-          {activePage === 'student-attendance'  && <StudentAttendancePage  />}
-          {activePage === 'student-discussions' && <StudentDiscussionsPage />}
-          {activePage === 'student-progress'    && <StudentProgressPage    />}
-          {activePage === 'faculty-dashboard'   && <FacultyDashboardPage   />}
+          {activePage === 'student-dashboard'   && <StudentDashboardPage onOpenModal={(type, data) => { setModalType(type); setModalData(data); }} />}
+          {activePage === 'student-courses'     && <StudentCoursesPage onOpenModal={(type, data) => { setModalType(type); setModalData(data); }} onToast={showToast} />}
+          {activePage === 'student-assignments' && <StudentAssignmentsPage onOpenModal={(type, data) => { setModalType(type); setModalData(data); }} />}
+          {activePage === 'student-quizzes'     && <StudentQuizzesPage onOpenModal={(type, data) => { setModalType(type); setModalData(data); }} />}
+          {activePage === 'student-attendance'  && <StudentAttendancePage onOpenModal={(type, data) => { setModalType(type); setModalData(data); }} />}
+          {activePage === 'student-discussions' && <StudentDiscussionsPage onOpenModal={(type, data) => { setModalType(type); setModalData(data); }} />}
+          {activePage === 'student-progress'    && <StudentProgressPage />}
+          {activePage === 'faculty-dashboard'   && <FacultyDashboardPage onOpenModal={(type, data) => { setModalType(type); setModalData(data); }} />}
           {activePage === 'faculty-intelligence'&& <FacultyIntelligencePage/>}
-          {activePage === 'faculty-students'    && <FacultyStudentsPage    />}
-          {activePage === 'faculty-assignments' && <FacultyAssignmentsPage />}
-          {activePage === 'faculty-attendance'  && <FacultyAttendancePage  />}
-          {activePage === 'faculty-analytics'   && <FacultyAnalyticsPage   />}
-          {activePage === 'faculty-interventions'&&<FacultyInterventionsPage/>}
-          {activePage === 'admin-dashboard'     && <AdminDashboardPage     />}
-          {activePage === 'admin-departments'   && <AdminDepartmentsPage   />}
-          {activePage === 'admin-faculty'       && <AdminFacultyPage       />}
-          {activePage === 'admin-interventions' && <AdminInterventionsPage />}
-          {activePage === 'admin-analytics'     && <AdminAnalyticsPage     />}
-          {activePage === 'admin-settings'      && <AdminSettingsPage      />}
+          {activePage === 'faculty-students'    && <FacultyStudentsPage onOpenModal={(type, data) => { setModalType(type); setModalData(data); }} />}
+          {activePage === 'faculty-assignments' && <FacultyAssignmentsPage onOpenModal={(type, data) => { setModalType(type); setModalData(data); }} />}
+          {activePage === 'faculty-attendance'  && <FacultyAttendancePage onOpenModal={(type, data) => { setModalType(type); setModalData(data); }} />}
+          {activePage === 'faculty-analytics'   && <FacultyAnalyticsPage />}
+          {activePage === 'faculty-interventions'&&<FacultyInterventionsPage onOpenModal={(type, data) => { setModalType(type); setModalData(data); }} />}
+          {activePage === 'admin-dashboard'     && <AdminDashboardPage onOpenModal={(type, data) => { setModalType(type); setModalData(data); }} />}
+          {activePage === 'admin-departments'   && <AdminDepartmentsPage />}
+          {activePage === 'admin-faculty'       && <AdminFacultyPage onOpenModal={(type, data) => { setModalType(type); setModalData(data); }} />}
+          {activePage === 'admin-interventions' && <AdminInterventionsPage onOpenModal={(type, data) => { setModalType(type); setModalData(data); }} />}
+          {activePage === 'admin-analytics'     && <AdminAnalyticsPage />}
+          {activePage === 'admin-settings'      && <AdminSettingsPage onToast={showToast} />}
         </div>
       </main>
+
+      {/* Universal Interactive Action Modal */}
+      {modalType && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-lg w-full p-6 lg:p-8 animate-in fade-in zoom-in duration-200">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-6">
+              <h3 className="text-xl font-bold text-slate-900 capitalize">
+                {modalType.replace('-', ' ')}
+              </h3>
+              <button onClick={() => { setModalType(null); setModalData(null); }} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body Forms */}
+            {modalType === 'submit-assignment' && (
+              <div className="space-y-4">
+                <p className="text-xs text-slate-500 font-medium">Submitting for: <span className="text-slate-900 font-bold">{modalData?.title || 'Assignment'}</span></p>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Solution Summary / Text</label>
+                  <textarea rows={4} placeholder="Type your solution summary, GitHub link, or answers here..." className="w-full p-3 rounded-xl border border-slate-200 text-sm focus:border-brand-500 outline-none" />
+                </div>
+                <div className="p-4 border-2 border-dashed border-slate-200 rounded-2xl text-center bg-slate-50 hover:bg-slate-100/50 cursor-pointer">
+                  <Upload className="w-6 h-6 text-slate-400 mx-auto mb-1" />
+                  <p className="text-xs font-semibold text-slate-700">Attach Document / Code File</p>
+                  <p className="text-[10px] text-slate-400">PDF, ZIP, or DOCX up to 10MB</p>
+                </div>
+                <button onClick={() => { setModalType(null); showToast('Assignment Submitted Successfully!', 'success'); }} className="w-full py-3 bg-brand-600 text-white font-bold text-sm rounded-xl hover:bg-brand-700 transition-all shadow-lg shadow-brand-500/20">
+                  Submit Work
+                </button>
+              </div>
+            )}
+
+            {modalType === 'take-quiz' && (
+              <div className="space-y-4">
+                <div className="p-3 bg-brand-50 rounded-xl border border-brand-100 flex justify-between items-center text-xs text-brand-700 font-semibold">
+                  <span>Quiz: {modalData?.title || 'Knowledge Assessment'}</span>
+                  <span>Time Left: 24:12</span>
+                </div>
+                <div className="space-y-3">
+                  <p className="text-sm font-bold text-slate-900">Q1: Which algorithmic paradigm is used in Divide & Conquer?</p>
+                  {['Breaking problem into independent subproblems', 'Greedy local choice', 'Brute force enumeration', 'Backtracking state tree'].map((opt, i) => (
+                    <label key={i} className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer text-xs font-medium text-slate-700">
+                      <input type="radio" name="q1" defaultChecked={i===0} className="text-brand-600" />
+                      {opt}
+                    </label>
+                  ))}
+                </div>
+                <button onClick={() => { setModalType(null); showToast('Quiz Completed! Score: 100%', 'success'); }} className="w-full py-3 bg-emerald-600 text-white font-bold text-sm rounded-xl hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-500/20">
+                  Submit Quiz Answers
+                </button>
+              </div>
+            )}
+
+            {modalType === 'self-checkin' && (
+              <div className="space-y-4">
+                <p className="text-xs text-slate-500">Enter the 6-digit OTP code displayed on the classroom screen to record your attendance.</p>
+                <input type="text" maxLength={6} defaultValue="849201" placeholder="OTP Code" className="w-full text-center tracking-widest text-2xl font-bold py-3 border border-slate-200 rounded-2xl outline-none focus:border-brand-500" />
+                <button onClick={() => { setModalType(null); showToast('Attendance Recorded Successfully!', 'success'); }} className="w-full py-3 bg-brand-600 text-white font-bold text-sm rounded-xl hover:bg-brand-700 transition-all shadow-lg shadow-brand-500/20">
+                  Verify OTP & Check-In
+                </button>
+              </div>
+            )}
+
+            {modalType === 'new-thread' && (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Thread Title</label>
+                  <input type="text" placeholder="e.g. Question regarding BGP Routing table updates" className="w-full p-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-brand-500" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Details & Context</label>
+                  <textarea rows={4} placeholder="Describe your question or discussion point in detail..." className="w-full p-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-brand-500" />
+                </div>
+                <button onClick={() => { setModalType(null); showToast('Discussion Thread Published!', 'success'); }} className="w-full py-3 bg-brand-600 text-white font-bold text-sm rounded-xl hover:bg-brand-700 transition-all shadow-lg shadow-brand-500/20">
+                  Post Thread
+                </button>
+              </div>
+            )}
+
+            {modalType === 'create-course' && (
+              <div className="space-y-3">
+                <input type="text" placeholder="Course Title (e.g. Cloud Computing Systems)" className="w-full p-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-brand-500" />
+                <input type="text" placeholder="Course Code (e.g. CSE402)" className="w-full p-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-brand-500" />
+                <div className="grid grid-cols-2 gap-3">
+                  <input type="number" placeholder="Credits (e.g. 4)" className="p-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-brand-500" />
+                  <input type="text" placeholder="Department (e.g. CSE)" className="p-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-brand-500" />
+                </div>
+                <button onClick={() => { setModalType(null); showToast('Course Created & Published!', 'success'); }} className="w-full py-3 bg-brand-600 text-white font-bold text-sm rounded-xl hover:bg-brand-700 transition-all shadow-lg shadow-brand-500/20">
+                  Save Course
+                </button>
+              </div>
+            )}
+
+            {modalType === 'record-attendance' && (
+              <div className="space-y-4">
+                <p className="text-xs text-slate-500">Mark student roster attendance for today's session.</p>
+                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                  {['Arun Kumar', 'Karthik S.', 'Neha R.', 'Vijay S.', 'Priya M.'].map((st, i) => (
+                    <div key={i} className="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl text-xs font-semibold">
+                      <span>{st}</span>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" defaultChecked={i!==1} className="w-4 h-4 text-emerald-600 rounded" />
+                        <span className="text-slate-600">Present</span>
+                      </label>
+                    </div>
+                  ))}
+                </div>
+                <button onClick={() => { setModalType(null); showToast('Attendance Roster Saved!', 'success'); }} className="w-full py-3 bg-emerald-600 text-white font-bold text-sm rounded-xl hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-500/20">
+                  Confirm & Save Attendance
+                </button>
+              </div>
+            )}
+
+            {modalType === 'create-intervention' && (
+              <div className="space-y-3">
+                <input type="text" placeholder="Student Name (e.g. Arun Kumar)" className="w-full p-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-brand-500" />
+                <select className="w-full p-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-brand-500 text-slate-700">
+                  <option>Office Hours Scheduled</option>
+                  <option>Peer Tutoring Assigned</option>
+                  <option>Resource Recommendation</option>
+                  <option>Counseling Referral</option>
+                </select>
+                <textarea rows={3} placeholder="Notes and intervention objective..." className="w-full p-3 rounded-xl border border-slate-200 text-sm outline-none focus:border-brand-500" />
+                <button onClick={() => { setModalType(null); showToast('Intervention Scheduled & Student Notified!', 'success'); }} className="w-full py-3 bg-amber-600 text-white font-bold text-sm rounded-xl hover:bg-amber-700 transition-all shadow-lg shadow-amber-500/20">
+                  Schedule Intervention
+                </button>
+              </div>
+            )}
+
+            {modalType === 'notifications' && (
+              <div className="space-y-3">
+                {recentAlerts.map((alt) => (
+                  <div key={alt.id} className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-start gap-3 text-xs">
+                    <AlertDot type={alt.type} />
+                    <div className="flex-1">
+                      <p className="font-semibold text-slate-900">{alt.message}</p>
+                      <p className="text-[10px] text-slate-400 mt-0.5">{alt.dept} · {alt.time}</p>
+                    </div>
+                  </div>
+                ))}
+                <button onClick={() => { setModalType(null); showToast('All notifications marked as read', 'info'); }} className="w-full py-2.5 bg-slate-100 text-slate-700 font-semibold text-xs rounded-xl hover:bg-slate-200">
+                  Mark All as Read
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
