@@ -924,7 +924,7 @@ function StudentAssignmentsPage({ onOpenModal }: { onOpenModal?: (type: string, 
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-function StudentQuizzesPage() {
+function StudentQuizzesPage({ onOpenModal }: { onOpenModal?: (type: string, data?: any) => void }) {
   return (
     <div className="max-w-7xl mx-auto space-y-8">
       <PageHeader icon={FileQuestion} title="Quizzes" subtitle="Your quiz history, upcoming tests, and performance breakdown." />
@@ -951,7 +951,7 @@ function StudentQuizzesPage() {
                 <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{q.duration}</span>
                 <span className="flex items-center gap-1"><Hash className="w-3 h-3" />{q.questions} Qs</span>
               </div>
-              <button className="w-full py-2 bg-brand-600 text-white text-xs font-semibold rounded-xl hover:bg-brand-700 transition-colors">Start Quiz</button>
+              <button onClick={() => onOpenModal?.('take-quiz', q)} className="w-full py-2 bg-brand-600 text-white text-xs font-semibold rounded-xl hover:bg-brand-700 transition-colors shadow-sm">Start Quiz</button>
             </div>
           ))}
         </div>
@@ -960,7 +960,7 @@ function StudentQuizzesPage() {
         <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="p-5 border-b border-slate-100 flex items-center justify-between">
             <h2 className="font-semibold text-slate-900">Quiz History</h2>
-            <button className="text-xs text-brand-600 font-medium hover:underline flex items-center gap-1"><Download className="w-3 h-3" />Export</button>
+            <button onClick={() => onOpenModal?.('take-quiz')} className="text-xs text-brand-600 font-medium hover:underline flex items-center gap-1"><Download className="w-3 h-3" />Export</button>
           </div>
           <div className="divide-y divide-slate-100">
             {quizzes.filter(q => q.status === 'graded').map(q => (
@@ -974,7 +974,7 @@ function StudentQuizzesPage() {
                   <div className="w-20 h-1.5 bg-slate-100 rounded-full overflow-hidden">
                     <div className={`h-full rounded-full ${q.score! >= 70 ? 'bg-success-500' : q.score! >= 55 ? 'bg-warning-500' : 'bg-danger-500'}`} style={{ width: `${q.score}%` }}></div>
                   </div>
-                  <button className="text-xs text-brand-600 font-medium hover:underline ml-2">Review</button>
+                  <button onClick={() => onOpenModal?.('take-quiz', q)} className="text-xs text-brand-600 font-medium hover:underline ml-2">Review</button>
                 </div>
               </div>
             ))}
