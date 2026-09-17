@@ -1678,7 +1678,7 @@ function FacultyInterventionsPage({ onOpenModal }: { onOpenModal?: (type: string
 // ADMIN PAGES
 // ════════════════════════════════════════════════════════════════════════════
 
-function AdminDashboardPage() {
+function AdminDashboardPage({ onOpenModal, onToast }: { onOpenModal?: (type: string, data?: any) => void; onToast?: (msg: string, type?: 'success'|'warning'|'info') => void }) {
   const [alertFilter, setAlertFilter] = useState<'all'|'critical'|'warning'>('all');
   const filteredAlerts = alertFilter === 'all' ? recentAlerts : recentAlerts.filter(a => a.type === alertFilter);
 
@@ -1763,7 +1763,7 @@ function AdminDashboardPage() {
               <div key={a.id} className="px-6 py-4 flex items-start gap-4 hover:bg-slate-50/50 transition-colors">
                 <AlertDot type={a.type} />
                 <div className="flex-1 min-w-0"><p className="text-sm text-slate-800">{a.message}</p><p className="text-xs text-slate-400 mt-1">{a.dept} · {a.time}</p></div>
-                <button className="text-xs text-brand-600 font-medium hover:underline mt-0.5">Review</button>
+                <button onClick={() => onOpenModal?.('notifications', a)} className="text-xs text-brand-600 font-medium hover:underline mt-0.5">Review</button>
               </div>
             ))}
           </div>
@@ -1786,11 +1786,11 @@ function AdminDashboardPage() {
             <h3 className="font-semibold text-white/90 mb-1">Pending Actions</h3>
             <p className="text-xs text-white/60 mb-5">Requires your sign-off today</p>
             <div className="space-y-3">
-              <QuickAction icon={Clock} label="Approve 12 escalations" />
-              <QuickAction icon={Users} label="Review 3 faculty reports" />
-              <QuickAction icon={CheckCircle2} label="Close semester audits" />
+              <QuickAction icon={Clock} label="Approve 12 escalations" onClick={() => onToast?.("12 Escalations approved", "success")} />
+              <QuickAction icon={Users} label="Review 3 faculty reports" onClick={() => onToast?.("Faculty reports opened for review", "info")} />
+              <QuickAction icon={CheckCircle2} label="Close semester audits" onClick={() => onToast?.("Semester audit log finalized", "success")} />
             </div>
-            <button className="mt-6 w-full bg-white/15 hover:bg-white/25 transition-colors text-white text-sm font-semibold py-2.5 rounded-xl border border-white/20">View All Tasks</button>
+            <button onClick={() => onToast?.("Audit tasks logged", "info")} className="mt-6 w-full bg-white/15 hover:bg-white/25 transition-colors text-white text-sm font-semibold py-2.5 rounded-xl border border-white/20">View All Tasks</button>
           </div>
         </div>
       </div>
@@ -1800,7 +1800,7 @@ function AdminDashboardPage() {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-function AdminDepartmentsPage() {
+function AdminDepartmentsPage({ onToast }: { onToast?: (msg: string, type?: 'success'|'warning'|'info') => void }) {
   return (
     <div className="max-w-7xl mx-auto space-y-8">
       <PageHeader icon={Building2} title="Departments" subtitle="Institution-wide department performance and health metrics." />
@@ -1810,7 +1810,7 @@ function AdminDepartmentsPage() {
           const atRiskPct = Math.round(d.atRisk / d.students * 100);
           const positive = d.trend >= 0;
           return (
-            <div key={d.dept} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 hover:shadow-md hover:border-brand-200 transition-all cursor-pointer group">
+            <div key={d.dept} onClick={() => onToast?.(`Viewing ${d.dept} Department Details`, 'info')} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 hover:shadow-md hover:border-brand-200 transition-all cursor-pointer group">
               <div className="flex items-start justify-between mb-5">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center"><Building2 className="w-5 h-5 text-brand-500" /></div>
@@ -1864,14 +1864,14 @@ function AdminDepartmentsPage() {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-function AdminFacultyPage() {
+function AdminFacultyPage({ onOpenModal, onToast }: { onOpenModal?: (type: string, data?: any) => void; onToast?: (msg: string, type?: 'success'|'warning'|'info') => void }) {
   const [search, setSearch] = useState('');
   const filtered = facultyRoster.filter(f => f.name.toLowerCase().includes(search.toLowerCase()) || f.dept.toLowerCase().includes(search.toLowerCase()));
 
   return (
     <div className="max-w-7xl mx-auto space-y-8">
       <PageHeader icon={GraduationCap} title="Faculty Management" subtitle="Manage faculty accounts, course assignments, and performance.">
-        <button className="flex items-center gap-2 px-4 py-2.5 bg-brand-600 text-white text-sm font-semibold rounded-xl hover:bg-brand-700 transition-colors shadow-sm shadow-brand-500/20"><PlusCircle className="w-4 h-4" />Add Faculty</button>
+        <button onClick={() => onOpenModal?.('create-course', { title: 'Add Faculty' })} className="flex items-center gap-2 px-4 py-2.5 bg-brand-600 text-white text-sm font-semibold rounded-xl hover:bg-brand-700 transition-colors shadow-sm shadow-brand-500/20"><PlusCircle className="w-4 h-4" />Add Faculty</button>
       </PageHeader>
 
       <div className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-slate-500 focus-within:border-brand-300 focus-within:shadow-sm transition-all max-w-md">
@@ -1913,8 +1913,8 @@ function AdminFacultyPage() {
                     <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${f.status==='active'?'bg-success-50 text-success-700':'bg-warning-50 text-warning-700'}`}>{f.status}</span>
                   </td>
                   <td className="px-6 py-4 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button className="p-1.5 text-slate-400 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors"><Edit3 className="w-3.5 h-3.5" /></button>
-                    <button className="p-1.5 text-slate-400 hover:text-danger-600 hover:bg-danger-50 rounded-lg transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+                    <button onClick={() => onToast?.(`Editing faculty ${f.name}...`, 'info')} className="p-1.5 text-slate-400 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors"><Edit3 className="w-3.5 h-3.5" /></button>
+                    <button onClick={() => onToast?.(`Faculty ${f.name} deleted`, 'warning')} className="p-1.5 text-slate-400 hover:text-danger-600 hover:bg-danger-50 rounded-lg transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
                   </td>
                 </tr>
               ))}
@@ -1928,7 +1928,7 @@ function AdminFacultyPage() {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-function AdminInterventionsPage() {
+function AdminInterventionsPage({ onOpenModal, onToast }: { onOpenModal?: (type: string, data?: any) => void; onToast?: (msg: string, type?: 'success'|'warning'|'info') => void }) {
   const statusColors: Record<string, string> = {
     active:   'bg-brand-50 text-brand-700',
     pending:  'bg-warning-50 text-warning-700',
@@ -1947,7 +1947,7 @@ function AdminInterventionsPage() {
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="p-6 border-b border-slate-100 flex items-center justify-between">
           <h2 className="font-semibold text-slate-900">All Interventions</h2>
-          <button className="flex items-center gap-2 text-xs text-brand-600 font-medium hover:underline"><Download className="w-3 h-3" />Export</button>
+          <button onClick={() => onToast?.("Exporting interventions CSV report...", "info")} className="flex items-center gap-2 text-xs text-brand-600 font-medium hover:underline"><Download className="w-3 h-3" />Export</button>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -1977,8 +1977,8 @@ function AdminInterventionsPage() {
                   <td className="px-6 py-4">
                     {item.status === 'pending' && (
                       <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button className="p-1.5 bg-success-50 text-success-600 rounded-lg hover:bg-success-100 transition-colors"><UserCheck className="w-3.5 h-3.5" /></button>
-                        <button className="p-1.5 bg-danger-50 text-danger-600 rounded-lg hover:bg-danger-100 transition-colors"><UserX className="w-3.5 h-3.5" /></button>
+                        <button onClick={() => onToast?.(`Intervention approved for ${item.student}!`, "success")} className="p-1.5 bg-success-50 text-success-600 rounded-lg hover:bg-success-100 transition-colors"><UserCheck className="w-3.5 h-3.5" /></button>
+                        <button onClick={() => onToast?.(`Intervention rejected for ${item.student}`, "warning")} className="p-1.5 bg-danger-50 text-danger-600 rounded-lg hover:bg-danger-100 transition-colors"><UserX className="w-3.5 h-3.5" /></button>
                       </div>
                     )}
                   </td>
@@ -2157,8 +2157,8 @@ function AdminSettingsPage() {
       </SettingsCard>
 
       <div className="flex justify-end gap-3">
-        <button className="px-5 py-2.5 border border-slate-200 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors">Discard Changes</button>
-        <button className="px-5 py-2.5 bg-brand-600 text-white rounded-xl text-sm font-semibold hover:bg-brand-700 transition-colors shadow-sm shadow-brand-500/20">Save Settings</button>
+        <button onClick={() => onToast?.("Changes discarded", "info")} className="px-5 py-2.5 border border-slate-200 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors">Discard Changes</button>
+        <button onClick={() => onToast?.("System Configuration Saved!", "success")} className="px-5 py-2.5 bg-brand-600 text-white rounded-xl text-sm font-semibold hover:bg-brand-700 transition-colors shadow-sm shadow-brand-500/20">Save Settings</button>
       </div>
     </div>
   );
@@ -2292,9 +2292,9 @@ function AlertDot({ type }: { type: string }) {
   );
 }
 
-function QuickAction({ icon: Icon, label }: { icon: React.ElementType; label: string }) {
+function QuickAction({ icon: Icon, label, onClick }: { icon: React.ElementType; label: string; onClick?: () => void }) {
   return (
-    <div className="flex items-center gap-3 text-sm text-white/80">
+    <div onClick={onClick} className="flex items-center gap-3 text-sm text-white/80 cursor-pointer hover:text-white transition-colors">
       <div className="w-6 h-6 rounded-md bg-white/15 flex items-center justify-center shrink-0"><Icon className="w-3.5 h-3.5 text-white" /></div>
       {label}
     </div>
