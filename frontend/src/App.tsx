@@ -530,21 +530,28 @@ function StudentDashboardPage() {
             {performanceTrend.length > 0 && <span className="text-xs font-semibold text-success-600 bg-success-50 px-2.5 py-1 rounded-full flex items-center gap-1"><TrendingUp className="w-3 h-3" /> +17pts</span>}
           </div>
           <div className="h-52">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={performanceTrend} margin={{ top: 0, right: 0, left: -24, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="scoreGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.2} /><stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="week" tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} />
-                <YAxis domain={[50, 100]} tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} />
-                <Tooltip contentStyle={{ borderRadius: '10px', border: 'none', boxShadow: '0 8px 24px -4px rgb(0 0 0 / 0.12)', fontSize: '13px' }} />
-                <Area type="monotone" dataKey="score" stroke="#6366f1" strokeWidth={2.5} fill="url(#scoreGrad)" name="Your Score" dot={{ fill: '#6366f1', strokeWidth: 0, r: 3 }} activeDot={{ r: 5 }} />
-                <Line type="monotone" dataKey="avg" stroke="#cbd5e1" strokeWidth={1.5} strokeDasharray="4 4" name="Class Avg" dot={false} />
-              </AreaChart>
-            </ResponsiveContainer>
+            {performanceTrend.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center text-slate-400 text-sm">
+                <BarChart2 className="w-8 h-8 text-slate-300 mb-2" />
+                No performance data available yet.
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={performanceTrend} margin={{ top: 0, right: 0, left: -24, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="scoreGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#6366f1" stopOpacity={0.2} /><stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                  <XAxis dataKey="week" tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} />
+                  <YAxis domain={[50, 100]} tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} />
+                  <Tooltip contentStyle={{ borderRadius: '10px', border: 'none', boxShadow: '0 8px 24px -4px rgb(0 0 0 / 0.12)', fontSize: '13px' }} />
+                  <Area type="monotone" dataKey="score" stroke="#6366f1" strokeWidth={2.5} fill="url(#scoreGrad)" name="Your Score" dot={{ fill: '#6366f1', strokeWidth: 0, r: 3 }} activeDot={{ r: 5 }} />
+                  <Line type="monotone" dataKey="avg" stroke="#cbd5e1" strokeWidth={1.5} strokeDasharray="4 4" name="Class Avg" dot={false} />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
         <div className="flex flex-col gap-4">
@@ -557,28 +564,34 @@ function StudentDashboardPage() {
       {/* Courses */}
       <div>
         <h2 className="text-lg font-semibold text-slate-900 mb-4">My Courses</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          {studentCourses.map(course => {
-            const sm = { good: { bar:'bg-success-500', badge:'bg-success-50 text-success-700', text:'On Track' }, warning: { bar:'bg-warning-500', badge:'bg-warning-50 text-warning-700', text:'Needs Attention' }, danger: { bar:'bg-danger-500', badge:'bg-danger-50 text-danger-700', text:'At Risk' } };
-            const s = sm[course.status as keyof typeof sm];
-            return (
-              <div key={course.code} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 lg:p-6 hover:shadow-md hover:border-brand-200 transition-all cursor-pointer group">
-                <div className="flex items-start justify-between mb-4">
-                  <div><p className="text-xs font-semibold text-slate-400 mb-1">{course.code}</p><h3 className="font-bold text-slate-900 group-hover:text-brand-600 transition-colors">{course.name}</h3></div>
-                  <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${s.badge}`}>{s.text}</span>
+        {studentCourses.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8 text-center text-slate-400 text-sm">
+            No courses enrolled yet.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            {studentCourses.map(course => {
+              const sm = { good: { bar:'bg-success-500', badge:'bg-success-50 text-success-700', text:'On Track' }, warning: { bar:'bg-warning-500', badge:'bg-warning-50 text-warning-700', text:'Needs Attention' }, danger: { bar:'bg-danger-500', badge:'bg-danger-50 text-danger-700', text:'At Risk' } };
+              const s = sm[course.status as keyof typeof sm];
+              return (
+                <div key={course.code} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 lg:p-6 hover:shadow-md hover:border-brand-200 transition-all cursor-pointer group">
+                  <div className="flex items-start justify-between mb-4">
+                    <div><p className="text-xs font-semibold text-slate-400 mb-1">{course.code}</p><h3 className="font-bold text-slate-900 group-hover:text-brand-600 transition-colors">{course.name}</h3></div>
+                    <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${s.badge}`}>{s.text}</span>
+                  </div>
+                  <div className="mb-4">
+                    <div className="flex justify-between text-xs text-slate-400 mb-1.5"><span>Attendance</span><span className="font-semibold text-slate-600">{course.attendance}%</span></div>
+                    <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden"><div className={`h-full rounded-full ${s.bar}`} style={{ width: `${course.attendance}%` }}></div></div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-2xl font-bold text-slate-900">{course.score}%</span>
+                    <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-brand-500 transition-colors" />
+                  </div>
                 </div>
-                <div className="mb-4">
-                  <div className="flex justify-between text-xs text-slate-400 mb-1.5"><span>Attendance</span><span className="font-semibold text-slate-600">{course.attendance}%</span></div>
-                  <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden"><div className={`h-full rounded-full ${s.bar}`} style={{ width: `${course.attendance}%` }}></div></div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-2xl font-bold text-slate-900">{course.score}%</span>
-                  <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-brand-500 transition-colors" />
-                </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Intelligence Loop */}
