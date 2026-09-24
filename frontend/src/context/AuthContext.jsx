@@ -60,16 +60,15 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Logout handler
+  // Logout handler — do NOT set loading=true here; that blocks ProtectedRoute
+  // from redirecting. Clear user immediately so the route guard fires right away.
   const logout = async () => {
-    setLoading(true);
+    setUser(null); // triggers ProtectedRoute → navigate to /login immediately
     try {
-      await logoutApi();
+      await logoutApi(); // clear the HTTP-only cookie on the server
     } catch (err) {
-      console.error('Logout error:', err);
-    } finally {
-      setUser(null);
-      setLoading(false);
+      // Even if the API call fails the local session is already cleared
+      console.error('Logout API error (session already cleared):', err);
     }
   };
 
