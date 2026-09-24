@@ -458,15 +458,19 @@ export default function App() {
 
             {modalType === 'notifications' && (
               <div className="space-y-3">
-                {recentAlerts.map((alt) => (
-                  <div key={alt.id} className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-start gap-3 text-xs">
-                    <AlertDot type={alt.type} />
-                    <div className="flex-1">
-                      <p className="font-semibold text-slate-900">{alt.message}</p>
-                      <p className="text-[10px] text-slate-400 mt-0.5">{alt.dept} · {alt.time}</p>
+                {recentAlerts.length === 0 ? (
+                  <p className="text-sm text-slate-400 text-center py-6">No notifications at this time.</p>
+                ) : (
+                  recentAlerts.map((alt) => (
+                    <div key={alt.id} className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-start gap-3 text-xs">
+                      <AlertDot type={alt.type} />
+                      <div className="flex-1">
+                        <p className="font-semibold text-slate-900">{alt.message}</p>
+                        <p className="text-[10px] text-slate-400 mt-0.5">{alt.dept} · {alt.time}</p>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                )}
                 <button onClick={() => { setModalType(null); showToast('All notifications marked as read', 'info'); }} className="w-full py-2.5 bg-slate-100 text-slate-700 font-semibold text-xs rounded-xl hover:bg-slate-200">
                   Mark All as Read
                 </button>
@@ -1695,13 +1699,17 @@ function AdminDashboardPage({ onOpenModal, onToast }: { onOpenModal?: (type: str
             </div>
           </div>
           <div className="flex-1 divide-y divide-slate-100">
-            {filteredAlerts.map(a => (
-              <div key={a.id} className="px-6 py-4 flex items-start gap-4 hover:bg-slate-50/50 transition-colors">
-                <AlertDot type={a.type} />
-                <div className="flex-1 min-w-0"><p className="text-sm text-slate-800">{a.message}</p><p className="text-xs text-slate-400 mt-1">{a.dept} · {a.time}</p></div>
-                <button onClick={() => onOpenModal?.('notifications', a)} className="text-xs text-brand-600 font-medium hover:underline mt-0.5">Review</button>
-              </div>
-            ))}
+            {filteredAlerts.length === 0 ? (
+              <p className="text-sm text-slate-400 text-center py-10">No alerts to display.</p>
+            ) : (
+              filteredAlerts.map(a => (
+                <div key={a.id} className="px-6 py-4 flex items-start gap-4 hover:bg-slate-50/50 transition-colors">
+                  <AlertDot type={a.type} />
+                  <div className="flex-1 min-w-0"><p className="text-sm text-slate-800">{a.message}</p><p className="text-xs text-slate-400 mt-1">{a.dept} · {a.time}</p></div>
+                  <button onClick={() => onOpenModal?.('notifications', a)} className="text-xs text-brand-600 font-medium hover:underline mt-0.5">Review</button>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
@@ -1709,13 +1717,17 @@ function AdminDashboardPage({ onOpenModal, onToast }: { onOpenModal?: (type: str
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex-1">
             <h2 className="font-semibold text-slate-900 mb-5 flex items-center gap-2"><Award className="w-5 h-5 text-slate-400" />Top Interveners</h2>
             <div className="space-y-4">
-              {topFaculty.map((f,i) => (
-                <div key={f.name} className="flex items-center gap-3">
-                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${i===0?'bg-yellow-100 text-yellow-700':i===1?'bg-slate-100 text-slate-600':'bg-orange-100 text-orange-700'}`}>{i+1}</div>
-                  <div className="flex-1 min-w-0"><p className="text-sm font-semibold text-slate-800 truncate">{f.name}</p><p className="text-xs text-slate-400">{f.dept}</p></div>
-                  <div className="text-right shrink-0"><p className="text-sm font-bold text-success-600">{f.successRate}%</p><p className="text-xs text-slate-400">{f.interventions} cases</p></div>
-                </div>
-              ))}
+              {topFaculty.length === 0 ? (
+                <p className="text-sm text-slate-400 text-center py-4">No intervener data yet.</p>
+              ) : (
+                topFaculty.map((f,i) => (
+                  <div key={f.name} className="flex items-center gap-3">
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${i===0?'bg-yellow-100 text-yellow-700':i===1?'bg-slate-100 text-slate-600':'bg-orange-100 text-orange-700'}`}>{i+1}</div>
+                    <div className="flex-1 min-w-0"><p className="text-sm font-semibold text-slate-800 truncate">{f.name}</p><p className="text-xs text-slate-400">{f.dept}</p></div>
+                    <div className="text-right shrink-0"><p className="text-sm font-bold text-success-600">{f.successRate}%</p><p className="text-xs text-slate-400">{f.interventions} cases</p></div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
           <div className="bg-gradient-to-br from-brand-600 to-brand-800 rounded-2xl p-6 shadow-lg shadow-brand-500/20 text-white">
@@ -1742,7 +1754,12 @@ function AdminDepartmentsPage({ onToast }: { onToast?: (msg: string, type?: 'suc
       <PageHeader icon={Building2} title="Departments" subtitle="Institution-wide department performance and health metrics." />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-        {departmentData.map(d => {
+        {departmentData.length === 0 ? (
+          <div className="col-span-3 py-16 text-center">
+            <Building2 className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+            <p className="text-slate-400 text-sm">No department data available yet.</p>
+          </div>
+        ) : departmentData.map(d => {
           const atRiskPct = Math.round(d.atRisk / d.students * 100);
           const positive = d.trend >= 0;
           return (
@@ -1774,6 +1791,12 @@ function AdminDepartmentsPage({ onToast }: { onToast?: (msg: string, type?: 'suc
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 lg:p-8">
         <h2 className="font-semibold text-slate-900 mb-6">Department Score Trend (Mar–Jul)</h2>
         <div className="h-64">
+          {deptTrendData.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-slate-400">
+              <BarChart2 className="w-8 h-8 mb-2 opacity-40" />
+              <p className="text-sm">No trend data available yet.</p>
+            </div>
+          ) : (
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={deptTrendData} margin={{top:0,right:0,left:-20,bottom:0}}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
@@ -1787,6 +1810,7 @@ function AdminDepartmentsPage({ onToast }: { onToast?: (msg: string, type?: 'suc
               <Line type="monotone" dataKey="ele"   stroke="#8b5cf6" strokeWidth={2} dot={false} name="Elec" />
             </LineChart>
           </ResponsiveContainer>
+          )}
         </div>
         <div className="flex flex-wrap items-center gap-5 mt-3">
           {[['CS','#6366f1'],['Maths','#f59e0b'],['Physics','#10b981'],['Chem','#ef4444'],['Elec','#8b5cf6']].map(([name,color]) => (
@@ -1828,7 +1852,9 @@ function AdminFacultyPage({ onOpenModal, onToast }: { onOpenModal?: (type: strin
               <th className="px-6 py-3.5"></th>
             </tr></thead>
             <tbody className="divide-y divide-slate-100">
-              {filtered.map(f => (
+              {filtered.length === 0 ? (
+                <tr><td colSpan={7} className="px-6 py-10 text-center text-sm text-slate-400">No faculty records found.</td></tr>
+              ) : filtered.map(f => (
                 <tr key={f.id} className="hover:bg-slate-50/50 transition-colors group">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
@@ -1897,7 +1923,9 @@ function AdminInterventionsPage({ onOpenModal, onToast }: { onOpenModal?: (type:
               <th className="px-6 py-3.5"></th>
             </tr></thead>
             <tbody className="divide-y divide-slate-100">
-              {adminInterventions.map(item => (
+              {adminInterventions.length === 0 ? (
+                <tr><td colSpan={7} className="px-6 py-10 text-center text-sm text-slate-400">No interventions recorded yet.</td></tr>
+              ) : adminInterventions.map(item => (
                 <tr key={item.id} className="hover:bg-slate-50/50 transition-colors group">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
@@ -1939,6 +1967,12 @@ function AdminAnalyticsPage() {
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 lg:p-8">
           <h2 className="font-semibold text-slate-900 mb-6">Institution Score Distribution</h2>
           <div className="h-56">
+            {analyticsScoreDist.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full text-slate-400">
+                <BarChart2 className="w-8 h-8 mb-2 opacity-40" />
+                <p className="text-sm">No score distribution data yet.</p>
+              </div>
+            ) : (
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={analyticsScoreDist} margin={{top:0,right:0,left:-20,bottom:0}}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
@@ -1950,12 +1984,19 @@ function AdminAnalyticsPage() {
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
+            )}
           </div>
         </div>
 
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 lg:p-8">
           <h2 className="font-semibold text-slate-900 mb-6">Department Score Trends</h2>
           <div className="h-56">
+            {deptTrendData.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full text-slate-400">
+                <BarChart2 className="w-8 h-8 mb-2 opacity-40" />
+                <p className="text-sm">No trend data available yet.</p>
+              </div>
+            ) : (
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={deptTrendData} margin={{top:0,right:0,left:-20,bottom:0}}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
@@ -1969,6 +2010,7 @@ function AdminAnalyticsPage() {
                 <Line type="monotone" dataKey="ele" stroke="#8b5cf6" strokeWidth={2} dot={false} name="Elec" />
               </LineChart>
             </ResponsiveContainer>
+            )}
           </div>
         </div>
       </div>
@@ -1986,7 +2028,9 @@ function AdminAnalyticsPage() {
               <th className="px-4 py-3.5 text-xs font-semibold text-slate-400 uppercase tracking-wider">Trend</th>
             </tr></thead>
             <tbody className="divide-y divide-slate-100">
-              {departmentData.map(row => {
+              {departmentData.length === 0 ? (
+                <tr><td colSpan={6} className="px-6 py-10 text-center text-sm text-slate-400">No department data available yet.</td></tr>
+              ) : departmentData.map(row => {
                 const atRiskPct = Math.round(row.atRisk/row.students*100);
                 const positive = row.trend >= 0;
                 return (
