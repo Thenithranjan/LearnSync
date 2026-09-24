@@ -1101,17 +1101,24 @@ function FacultyDashboardPage({ onOpenModal }: { onOpenModal?: (type: string, da
         <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm p-6 lg:p-8">
           <h2 className="font-semibold text-slate-900 mb-6">Class Score Distribution</h2>
           <div className="h-52">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={analyticsScoreDist} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="range" tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} />
-                <Tooltip contentStyle={{ borderRadius:'10px', border:'none', boxShadow:'0 8px 24px -4px rgb(0 0 0/0.12)', fontSize:'13px' }} />
-                <Bar dataKey="count" radius={[4,4,0,0]} barSize={32}>
-                  {analyticsScoreDist.map((_, i) => <Cell key={i} fill={i < 2 ? '#10b981' : i < 4 ? '#f59e0b' : '#ef4444'} />)}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+            {analyticsScoreDist.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center text-slate-400 text-sm">
+                <BarChart2 className="w-8 h-8 text-slate-300 mb-2" />
+                No score distribution data available.
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={analyticsScoreDist} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis dataKey="range" tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} />
+                  <Tooltip contentStyle={{ borderRadius:'10px', border:'none', boxShadow:'0 8px 24px -4px rgb(0 0 0/0.12)', fontSize:'13px' }} />
+                  <Bar dataKey="count" radius={[4,4,0,0]} barSize={32}>
+                    {analyticsScoreDist.map((_, i) => <Cell key={i} fill={i < 2 ? '#10b981' : i < 4 ? '#f59e0b' : '#ef4444'} />)}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
 
@@ -1137,22 +1144,26 @@ function FacultyDashboardPage({ onOpenModal }: { onOpenModal?: (type: string, da
           <span className="text-xs bg-danger-100 text-danger-700 font-bold px-2.5 py-1 rounded-full">{allStudents.filter(s => s.risk === 'high').length} students</span>
         </div>
         <div className="divide-y divide-slate-100">
-          {allStudents.filter(s => s.risk === 'high').map(s => (
-            <div key={s.id} className="px-6 py-4 flex items-center gap-4 hover:bg-slate-50 transition-colors">
-              <div className="w-9 h-9 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-600 shrink-0">
-                {s.name.split(' ').map(w=>w[0]).join('').slice(0,2)}
+          {allStudents.filter(s => s.risk === 'high').length === 0 ? (
+            <p className="text-sm text-slate-400 py-8 text-center">No students currently flagged as high risk.</p>
+          ) : (
+            allStudents.filter(s => s.risk === 'high').map(s => (
+              <div key={s.id} className="px-6 py-4 flex items-center gap-4 hover:bg-slate-50 transition-colors">
+                <div className="w-9 h-9 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-600 shrink-0">
+                  {s.name.split(' ').map(w=>w[0]).join('').slice(0,2)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-slate-900">{s.name}</p>
+                  <p className="text-xs text-slate-400">{s.roll} · {s.course}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-bold text-danger-600">{s.score}%</p>
+                  <p className="text-xs text-slate-400">Attendance: {s.attendance}%</p>
+                </div>
+                <button onClick={() => onOpenModal?.('create-intervention', s)} className="px-3 py-1.5 bg-brand-600 text-white text-xs font-semibold rounded-lg hover:bg-brand-700 transition-colors ml-4 shadow-sm">Intervene</button>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-slate-900">{s.name}</p>
-                <p className="text-xs text-slate-400">{s.roll} · {s.course}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-sm font-bold text-danger-600">{s.score}%</p>
-                <p className="text-xs text-slate-400">Attendance: {s.attendance}%</p>
-              </div>
-              <button onClick={() => onOpenModal?.('create-intervention', s)} className="px-3 py-1.5 bg-brand-600 text-white text-xs font-semibold rounded-lg hover:bg-brand-700 transition-colors ml-4 shadow-sm">Intervene</button>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </div>
     </div>
@@ -1197,17 +1208,24 @@ function FacultyIntelligencePage({ onOpenModal }: { onOpenModal?: (type: string,
         <div className="bg-white p-6 lg:p-8 rounded-2xl border border-slate-200 shadow-sm">
           <h2 className="text-lg font-semibold text-slate-900 mb-6 flex items-center gap-2"><Target className="w-5 h-5 text-slate-400" />Class Attention Areas</h2>
           <div className="h-32">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={attentionTopics} layout="vertical" margin={{ top:0, right:30, left:0, bottom:0 }}>
-                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
-                <XAxis type="number" hide domain={[0,100]} />
-                <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fill:'#475569', fontSize:13, fontWeight:500 }} width={110} />
-                <Tooltip cursor={{fill:'#f8fafc'}} contentStyle={{borderRadius:'8px',border:'none',boxShadow:'0 4px 6px -1px rgb(0 0 0/0.1)'}} />
-                <Bar dataKey="score" radius={[0,4,4,0]} barSize={24}>
-                  {attentionTopics.map((e,i) => <Cell key={i} fill={e.score < 50 ? '#f59e0b' : '#10b981'} />)}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+            {attentionTopics.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center text-slate-400 text-sm">
+                <Target className="w-8 h-8 text-slate-300 mb-2" />
+                No attention topics identified yet.
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={attentionTopics} layout="vertical" margin={{ top:0, right:30, left:0, bottom:0 }}>
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
+                  <XAxis type="number" hide domain={[0,100]} />
+                  <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fill:'#475569', fontSize:13, fontWeight:500 }} width={110} />
+                  <Tooltip cursor={{fill:'#f8fafc'}} contentStyle={{borderRadius:'8px',border:'none',boxShadow:'0 4px 6px -1px rgb(0 0 0/0.1)'}} />
+                  <Bar dataKey="score" radius={[0,4,4,0]} barSize={24}>
+                    {attentionTopics.map((e,i) => <Cell key={i} fill={e.score < 50 ? '#f59e0b' : '#10b981'} />)}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
       </div>
@@ -1279,36 +1297,44 @@ function FacultyStudentsPage({ onOpenModal }: { onOpenModal?: (type: string, dat
               <th className="px-6 py-3.5"></th>
             </tr></thead>
             <tbody className="divide-y divide-slate-100">
-              {filtered.map(s => (
-                <tr key={s.id} className="hover:bg-slate-50/50 transition-colors group cursor-pointer">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-600">{s.name.split(' ').map(w=>w[0]).join('').slice(0,2)}</div>
-                      <span className="text-sm font-semibold text-slate-900">{s.name}</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-4 text-sm text-slate-500">{s.roll}</td>
-                  <td className="px-4 py-4 text-sm text-slate-600">{s.course}</td>
-                  <td className="px-4 py-4"><span className={`text-sm font-bold ${s.score >= 70 ? 'text-success-600' : s.score >= 55 ? 'text-warning-600' : 'text-danger-600'}`}>{s.score}%</span></td>
-                  <td className="px-4 py-4">
-                    <div className="flex items-center gap-2">
-                      <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden"><div className={`h-full rounded-full ${s.attendance >= 75 ? 'bg-success-500' : 'bg-danger-500'}`} style={{width:`${s.attendance}%`}}></div></div>
-                      <span className="text-sm text-slate-600">{s.attendance}%</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-4">
-                    <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${s.risk==='high' ? 'bg-danger-50 text-danger-700' : s.risk==='medium' ? 'bg-warning-50 text-warning-700' : 'bg-success-50 text-success-700'}`}>
-                      {s.risk.toUpperCase()}
-                    </span>
-                  </td>
-                  <td className="px-4 py-4">
-                    {s.trend === 'up' ? <ArrowUpRight className="w-4 h-4 text-success-500" /> : s.trend === 'down' ? <ArrowDownRight className="w-4 h-4 text-danger-500" /> : <span className="w-4 h-0.5 bg-slate-400 inline-block"></span>}
-                  </td>
-                  <td className="px-6 py-4">
-                    <button onClick={() => onOpenModal?.('create-intervention', s)} className="text-xs text-brand-600 font-semibold opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 hover:underline">Intervene <ChevronRight className="w-3 h-3" /></button>
+              {filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="px-6 py-8 text-center text-sm text-slate-400">
+                    No students found matching your criteria.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filtered.map(s => (
+                  <tr key={s.id} className="hover:bg-slate-50/50 transition-colors group cursor-pointer">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-600">{s.name.split(' ').map(w=>w[0]).join('').slice(0,2)}</div>
+                        <span className="text-sm font-semibold text-slate-900">{s.name}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4 text-sm text-slate-500">{s.roll}</td>
+                    <td className="px-4 py-4 text-sm text-slate-600">{s.course}</td>
+                    <td className="px-4 py-4"><span className={`text-sm font-bold ${s.score >= 70 ? 'text-success-600' : s.score >= 55 ? 'text-warning-600' : 'text-danger-600'}`}>{s.score}%</span></td>
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-2">
+                        <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden"><div className={`h-full rounded-full ${s.attendance >= 75 ? 'bg-success-500' : 'bg-danger-500'}`} style={{width:`${s.attendance}%`}}></div></div>
+                        <span className="text-sm text-slate-600">{s.attendance}%</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${s.risk==='high' ? 'bg-danger-50 text-danger-700' : s.risk==='medium' ? 'bg-warning-50 text-warning-700' : 'bg-success-50 text-success-700'}`}>
+                        {s.risk.toUpperCase()}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4">
+                      {s.trend === 'up' ? <ArrowUpRight className="w-4 h-4 text-success-500" /> : s.trend === 'down' ? <ArrowDownRight className="w-4 h-4 text-danger-500" /> : <span className="w-4 h-0.5 bg-slate-400 inline-block"></span>}
+                    </td>
+                    <td className="px-6 py-4">
+                      <button onClick={() => onOpenModal?.('create-intervention', s)} className="text-xs text-brand-600 font-semibold opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 hover:underline">Intervene <ChevronRight className="w-3 h-3" /></button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -1397,26 +1423,30 @@ function FacultyAttendancePage({ onOpenModal }: { onOpenModal?: (type: string, d
           <button onClick={() => onOpenModal?.('record-attendance')} className="flex items-center gap-2 text-xs text-brand-600 font-medium hover:underline"><Download className="w-3 h-3" />Export</button>
         </div>
         <div className="divide-y divide-slate-100">
-          {sessions.map((s,i) => {
-            const pct = Math.round(s.present / (s.present+s.absent) * 100);
-            return (
-              <div key={i} className="px-6 py-4 flex items-center gap-4 hover:bg-slate-50 transition-colors">
-                <div className="text-center w-14 shrink-0">
-                  <p className="text-xs font-bold text-slate-400">{s.day}</p>
-                  <p className="text-sm font-bold text-slate-900">{s.date}</p>
+          {sessions.length === 0 ? (
+            <p className="text-sm text-slate-400 py-8 text-center">No attendance sessions recorded yet.</p>
+          ) : (
+            sessions.map((s,i) => {
+              const pct = Math.round(s.present / (s.present+s.absent) * 100);
+              return (
+                <div key={i} className="px-6 py-4 flex items-center gap-4 hover:bg-slate-50 transition-colors">
+                  <div className="text-center w-14 shrink-0">
+                    <p className="text-xs font-bold text-slate-400">{s.day}</p>
+                    <p className="text-sm font-bold text-slate-900">{s.date}</p>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-slate-900">{s.topic}</p>
+                    <p className="text-xs text-slate-400 mt-0.5">{s.present} present · {s.absent} absent</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-24 h-2 bg-slate-100 rounded-full overflow-hidden"><div className={`h-full rounded-full ${pct>=80 ? 'bg-success-500' : 'bg-warning-500'}`} style={{width:`${pct}%`}}></div></div>
+                    <span className={`text-sm font-bold w-10 text-right ${pct>=80 ? 'text-success-600':'text-warning-600'}`}>{pct}%</span>
+                  </div>
+                  <button onClick={() => onOpenModal?.('record-attendance', s)} className="text-xs text-brand-600 font-medium hover:underline ml-2">Edit</button>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-slate-900">{s.topic}</p>
-                  <p className="text-xs text-slate-400 mt-0.5">{s.present} present · {s.absent} absent</p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-24 h-2 bg-slate-100 rounded-full overflow-hidden"><div className={`h-full rounded-full ${pct>=80 ? 'bg-success-500' : 'bg-warning-500'}`} style={{width:`${pct}%`}}></div></div>
-                  <span className={`text-sm font-bold w-10 text-right ${pct>=80 ? 'text-success-600':'text-warning-600'}`}>{pct}%</span>
-                </div>
-                <button onClick={() => onOpenModal?.('record-attendance', s)} className="text-xs text-brand-600 font-medium hover:underline ml-2">Edit</button>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </div>
       </div>
     </div>
@@ -1434,34 +1464,48 @@ function FacultyAnalyticsPage() {
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 lg:p-8">
           <h2 className="font-semibold text-slate-900 mb-6">Topic-wise Average Score</h2>
           <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={courseAnalytics} layout="vertical" margin={{top:0,right:30,left:0,bottom:0}}>
-                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
-                <XAxis type="number" domain={[0,100]} tick={{fill:'#94a3b8',fontSize:12}} axisLine={false} tickLine={false} />
-                <YAxis dataKey="topic" type="category" width={120} tick={{fill:'#475569',fontSize:12,fontWeight:500}} axisLine={false} tickLine={false} />
-                <Tooltip contentStyle={{borderRadius:'10px',border:'none',boxShadow:'0 8px 24px -4px rgb(0 0 0/0.12)',fontSize:'13px'}} />
-                <Bar dataKey="avgScore" radius={[0,4,4,0]} barSize={20}>
-                  {courseAnalytics.map((e,i) => <Cell key={i} fill={e.avgScore>=70?'#10b981':e.avgScore>=55?'#f59e0b':'#ef4444'} />)}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+            {courseAnalytics.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center text-slate-400 text-sm">
+                <BarChart2 className="w-8 h-8 text-slate-300 mb-2" />
+                No topic performance data available.
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={courseAnalytics} layout="vertical" margin={{top:0,right:30,left:0,bottom:0}}>
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
+                  <XAxis type="number" domain={[0,100]} tick={{fill:'#94a3b8',fontSize:12}} axisLine={false} tickLine={false} />
+                  <YAxis dataKey="topic" type="category" width={120} tick={{fill:'#475569',fontSize:12,fontWeight:500}} axisLine={false} tickLine={false} />
+                  <Tooltip contentStyle={{borderRadius:'10px',border:'none',boxShadow:'0 8px 24px -4px rgb(0 0 0/0.12)',fontSize:'13px'}} />
+                  <Bar dataKey="avgScore" radius={[0,4,4,0]} barSize={20}>
+                    {courseAnalytics.map((e,i) => <Cell key={i} fill={e.avgScore>=70?'#10b981':e.avgScore>=55?'#f59e0b':'#ef4444'} />)}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
 
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 lg:p-8">
           <h2 className="font-semibold text-slate-900 mb-6">Score Distribution</h2>
           <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={analyticsScoreDist} margin={{top:0,right:0,left:-20,bottom:0}}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="range" tick={{fill:'#94a3b8',fontSize:12}} axisLine={false} tickLine={false} />
-                <YAxis tick={{fill:'#94a3b8',fontSize:12}} axisLine={false} tickLine={false} />
-                <Tooltip contentStyle={{borderRadius:'10px',border:'none',boxShadow:'0 8px 24px -4px rgb(0 0 0/0.12)',fontSize:'13px'}} />
-                <Bar dataKey="count" radius={[4,4,0,0]} barSize={28}>
-                  {analyticsScoreDist.map((_,i) => <Cell key={i} fill={i<2?'#10b981':i<4?'#f59e0b':'#ef4444'} />)}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+            {analyticsScoreDist.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center text-slate-400 text-sm">
+                <BarChart2 className="w-8 h-8 text-slate-300 mb-2" />
+                No score distribution data available.
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={analyticsScoreDist} margin={{top:0,right:0,left:-20,bottom:0}}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis dataKey="range" tick={{fill:'#94a3b8',fontSize:12}} axisLine={false} tickLine={false} />
+                  <YAxis tick={{fill:'#94a3b8',fontSize:12}} axisLine={false} tickLine={false} />
+                  <Tooltip contentStyle={{borderRadius:'10px',border:'none',boxShadow:'0 8px 24px -4px rgb(0 0 0/0.12)',fontSize:'13px'}} />
+                  <Bar dataKey="count" radius={[4,4,0,0]} barSize={28}>
+                    {analyticsScoreDist.map((_,i) => <Cell key={i} fill={i<2?'#10b981':i<4?'#f59e0b':'#ef4444'} />)}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
       </div>
@@ -1469,24 +1513,28 @@ function FacultyAnalyticsPage() {
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="p-6 border-b border-slate-100"><h2 className="font-semibold text-slate-900">Topic-wise Breakdown</h2></div>
         <div className="divide-y divide-slate-100">
-          {courseAnalytics.map(t => (
-            <div key={t.topic} className="px-6 py-4 grid grid-cols-4 gap-4 items-center hover:bg-slate-50 transition-colors">
-              <p className="text-sm font-semibold text-slate-900">{t.topic}</p>
-              <div>
-                <p className={`text-lg font-bold ${t.avgScore>=70?'text-success-600':t.avgScore>=55?'text-warning-600':'text-danger-600'}`}>{t.avgScore}%</p>
-                <p className="text-xs text-slate-400">Avg score</p>
+          {courseAnalytics.length === 0 ? (
+            <p className="text-sm text-slate-400 py-8 text-center">No topic breakdown data available yet.</p>
+          ) : (
+            courseAnalytics.map(t => (
+              <div key={t.topic} className="px-6 py-4 grid grid-cols-4 gap-4 items-center hover:bg-slate-50 transition-colors">
+                <p className="text-sm font-semibold text-slate-900">{t.topic}</p>
+                <div>
+                  <p className={`text-lg font-bold ${t.avgScore>=70?'text-success-600':t.avgScore>=55?'text-warning-600':'text-danger-600'}`}>{t.avgScore}%</p>
+                  <p className="text-xs text-slate-400">Avg score</p>
+                </div>
+                <div>
+                  <div className="flex justify-between text-xs text-slate-400 mb-1"><span>Completion</span><span>{t.completion}%</span></div>
+                  <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-brand-500 rounded-full" style={{width:`${t.completion}%`}}></div></div>
+                </div>
+                <div className="text-right">
+                  <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${t.avgScore>=70?'bg-success-50 text-success-700':t.avgScore>=55?'bg-warning-50 text-warning-700':'bg-danger-50 text-danger-700'}`}>
+                    {t.avgScore>=70?'On Track':t.avgScore>=55?'Attention':'Critical'}
+                  </span>
+                </div>
               </div>
-              <div>
-                <div className="flex justify-between text-xs text-slate-400 mb-1"><span>Completion</span><span>{t.completion}%</span></div>
-                <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-brand-500 rounded-full" style={{width:`${t.completion}%`}}></div></div>
-              </div>
-              <div className="text-right">
-                <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${t.avgScore>=70?'bg-success-50 text-success-700':t.avgScore>=55?'bg-warning-50 text-warning-700':'bg-danger-50 text-danger-700'}`}>
-                  {t.avgScore>=70?'On Track':t.avgScore>=55?'Attention':'Critical'}
-                </span>
-              </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </div>
     </div>
@@ -1526,26 +1574,34 @@ function FacultyInterventionsPage({ onOpenModal }: { onOpenModal?: (type: string
               <th className="px-6 py-3.5"></th>
             </tr></thead>
             <tbody className="divide-y divide-slate-100">
-              {interventionsList.map(item => (
-                <tr key={item.id} className="hover:bg-slate-50/50 transition-colors group">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-600">{item.student.split(' ').map(w=>w[0]).join('').slice(0,2)}</div>
-                      <span className="text-sm font-semibold text-slate-900">{item.student}</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-4 text-sm text-slate-600">{item.course}</td>
-                  <td className="px-4 py-4 text-sm text-slate-600">{item.type}</td>
-                  <td className="px-4 py-4 text-sm text-slate-500">{item.date}</td>
-                  <td className="px-4 py-4"><span className={`text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${statusColors[item.status]}`}>{item.status}</span></td>
-                  <td className="px-4 py-4">
-                    {item.outcome ? <span className="text-xs text-success-600 font-semibold capitalize">{item.outcome}</span> : <span className="text-xs text-slate-400">—</span>}
-                  </td>
-                  <td className="px-6 py-4">
-                    <button onClick={() => onOpenModal?.('create-intervention', item)} className="text-xs text-brand-600 font-semibold opacity-0 group-hover:opacity-100 transition-opacity hover:underline">View</button>
+              {interventionsList.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-6 py-8 text-center text-sm text-slate-400">
+                    No interventions recorded yet.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                interventionsList.map(item => (
+                  <tr key={item.id} className="hover:bg-slate-50/50 transition-colors group">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-600">{item.student.split(' ').map(w=>w[0]).join('').slice(0,2)}</div>
+                        <span className="text-sm font-semibold text-slate-900">{item.student}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4 text-sm text-slate-600">{item.course}</td>
+                    <td className="px-4 py-4 text-sm text-slate-600">{item.type}</td>
+                    <td className="px-4 py-4 text-sm text-slate-500">{item.date}</td>
+                    <td className="px-4 py-4"><span className={`text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${statusColors[item.status]}`}>{item.status}</span></td>
+                    <td className="px-4 py-4">
+                      {item.outcome ? <span className="text-xs text-success-600 font-semibold capitalize">{item.outcome}</span> : <span className="text-xs text-slate-400">—</span>}
+                    </td>
+                    <td className="px-6 py-4">
+                      <button onClick={() => onOpenModal?.('create-intervention', item)} className="text-xs text-brand-600 font-semibold opacity-0 group-hover:opacity-100 transition-opacity hover:underline">View</button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
