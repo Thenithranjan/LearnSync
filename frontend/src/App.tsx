@@ -662,6 +662,7 @@ function StudentCoursesPage() {
   }
 
   const selCourse = studentCourses.find(c => c.code === selected) ?? studentCourses[0];
+  if (!selCourse) return null;
 
   return (
     <div className="max-w-7xl mx-auto space-y-8">
@@ -764,20 +765,28 @@ function StudentAssignmentsPage({ onOpenModal }: { onOpenModal?: (type: string, 
               <th className="px-6 py-3.5"></th>
             </tr></thead>
             <tbody className="divide-y divide-slate-100">
-              {filtered.map(a => (
-                <tr key={a.id} className="hover:bg-slate-50/50 transition-colors group">
-                  <td className="px-6 py-4"><p className="text-sm font-semibold text-slate-900">{a.title}</p></td>
-                  <td className="px-4 py-4"><span className="text-xs font-semibold bg-brand-50 text-brand-700 px-2 py-1 rounded-md">{a.course}</span></td>
-                  <td className="px-4 py-4 text-sm text-slate-600">{a.due}</td>
-                  <td className="px-4 py-4 text-sm text-slate-500">{a.weight}</td>
-                  <td className="px-4 py-4"><span className={`text-sm font-bold ${a.score ? (a.score >= 70 ? 'text-success-600' : 'text-warning-600') : 'text-slate-400'}`}>{a.score ? `${a.score}%` : '—'}</span></td>
-                  <td className="px-4 py-4"><StatusBadge status={a.status} /></td>
-                  <td className="px-6 py-4">
-                    {a.status === 'pending' && <button onClick={() => onOpenModal?.('submit-assignment', a)} className="text-xs bg-brand-600 text-white px-3 py-1.5 rounded-lg font-medium hover:bg-brand-700 transition-colors flex items-center gap-1 shadow-sm"><Upload className="w-3 h-3" />Submit</button>}
-                    {a.status === 'graded'  && <button onClick={() => onOpenModal?.('submit-assignment', a)} className="text-xs text-brand-600 font-semibold hover:underline">View</button>}
+              {filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-6 py-8 text-center text-sm text-slate-400">
+                    No assignments found for this category.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filtered.map(a => (
+                  <tr key={a.id} className="hover:bg-slate-50/50 transition-colors group">
+                    <td className="px-6 py-4"><p className="text-sm font-semibold text-slate-900">{a.title}</p></td>
+                    <td className="px-4 py-4"><span className="text-xs font-semibold bg-brand-50 text-brand-700 px-2 py-1 rounded-md">{a.course}</span></td>
+                    <td className="px-4 py-4 text-sm text-slate-600">{a.due}</td>
+                    <td className="px-4 py-4 text-sm text-slate-500">{a.weight}</td>
+                    <td className="px-4 py-4"><span className={`text-sm font-bold ${a.score ? (a.score >= 70 ? 'text-success-600' : 'text-warning-600') : 'text-slate-400'}`}>{a.score ? `${a.score}%` : '—'}</span></td>
+                    <td className="px-4 py-4"><StatusBadge status={a.status} /></td>
+                    <td className="px-6 py-4">
+                      {a.status === 'pending' && <button onClick={() => onOpenModal?.('submit-assignment', a)} className="text-xs bg-brand-600 text-white px-3 py-1.5 rounded-lg font-medium hover:bg-brand-700 transition-colors flex items-center gap-1 shadow-sm"><Upload className="w-3 h-3" />Submit</button>}
+                      {a.status === 'graded'  && <button onClick={() => onOpenModal?.('submit-assignment', a)} className="text-xs text-brand-600 font-semibold hover:underline">View</button>}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -796,8 +805,8 @@ function StudentQuizzesPage({ onOpenModal }: { onOpenModal?: (type: string, data
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <SummaryCard label="Upcoming" value={quizzes.filter(q=>q.status==='upcoming').length} color="brand" icon={Timer} />
         <SummaryCard label="Completed" value={quizzes.filter(q=>q.status==='graded').length} color="success" icon={CheckCircle2} />
-        <SummaryCard label="Avg Score" value="71%" color="warning" icon={Percent} />
-        <SummaryCard label="Best Score" value="82%" color="success" icon={Trophy} />
+        <SummaryCard label="Avg Score" value="—" color="warning" icon={Percent} />
+        <SummaryCard label="Best Score" value="—" color="success" icon={Trophy} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -806,18 +815,22 @@ function StudentQuizzesPage({ onOpenModal }: { onOpenModal?: (type: string, data
           <div className="p-5 border-b border-slate-100">
             <h2 className="font-semibold text-slate-900 flex items-center gap-2"><Timer className="w-4 h-4 text-brand-500" />Upcoming</h2>
           </div>
-          {quizzes.filter(q => q.status === 'upcoming').map(q => (
-            <div key={q.id} className="p-5 border-b border-slate-100 last:border-0">
-              <p className="text-xs font-semibold text-brand-600 mb-1">{q.course}</p>
-              <p className="font-semibold text-slate-900 text-sm mb-2">{q.title}</p>
-              <div className="flex items-center gap-3 text-xs text-slate-500 mb-4">
-                <span className="flex items-center gap-1"><CalendarCheck className="w-3 h-3" />{q.date}</span>
-                <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{q.duration}</span>
-                <span className="flex items-center gap-1"><Hash className="w-3 h-3" />{q.questions} Qs</span>
+          {quizzes.filter(q => q.status === 'upcoming').length === 0 ? (
+            <p className="text-sm text-slate-400 p-8 text-center">No upcoming quizzes scheduled.</p>
+          ) : (
+            quizzes.filter(q => q.status === 'upcoming').map(q => (
+              <div key={q.id} className="p-5 border-b border-slate-100 last:border-0">
+                <p className="text-xs font-semibold text-brand-600 mb-1">{q.course}</p>
+                <p className="font-semibold text-slate-900 text-sm mb-2">{q.title}</p>
+                <div className="flex items-center gap-3 text-xs text-slate-500 mb-4">
+                  <span className="flex items-center gap-1"><CalendarCheck className="w-3 h-3" />{q.date}</span>
+                  <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{q.duration}</span>
+                  <span className="flex items-center gap-1"><Hash className="w-3 h-3" />{q.questions} Qs</span>
+                </div>
+                <button onClick={() => onOpenModal?.('take-quiz', q)} className="w-full py-2 bg-brand-600 text-white text-xs font-semibold rounded-xl hover:bg-brand-700 transition-colors shadow-sm">Start Quiz</button>
               </div>
-              <button onClick={() => onOpenModal?.('take-quiz', q)} className="w-full py-2 bg-brand-600 text-white text-xs font-semibold rounded-xl hover:bg-brand-700 transition-colors shadow-sm">Start Quiz</button>
-            </div>
-          ))}
+            ))
+          )}
         </div>
 
         {/* History */}
@@ -827,21 +840,25 @@ function StudentQuizzesPage({ onOpenModal }: { onOpenModal?: (type: string, data
             <button onClick={() => onOpenModal?.('take-quiz')} className="text-xs text-brand-600 font-medium hover:underline flex items-center gap-1"><Download className="w-3 h-3" />Export</button>
           </div>
           <div className="divide-y divide-slate-100">
-            {quizzes.filter(q => q.status === 'graded').map(q => (
-              <div key={q.id} className="p-5 flex items-center gap-4 hover:bg-slate-50 transition-colors">
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-sm font-bold shrink-0 ${q.score! >= 70 ? 'bg-success-50 text-success-700' : q.score! >= 55 ? 'bg-warning-50 text-warning-700' : 'bg-danger-50 text-danger-700'}`}>{q.score}%</div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-slate-900 truncate">{q.title}</p>
-                  <p className="text-xs text-slate-400 mt-0.5">{q.course} · {q.date} · {q.questions} questions</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-20 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                    <div className={`h-full rounded-full ${q.score! >= 70 ? 'bg-success-500' : q.score! >= 55 ? 'bg-warning-500' : 'bg-danger-500'}`} style={{ width: `${q.score}%` }}></div>
+            {quizzes.filter(q => q.status === 'graded').length === 0 ? (
+              <p className="text-sm text-slate-400 p-8 text-center">No quizzes completed yet.</p>
+            ) : (
+              quizzes.filter(q => q.status === 'graded').map(q => (
+                <div key={q.id} className="p-5 flex items-center gap-4 hover:bg-slate-50 transition-colors">
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-sm font-bold shrink-0 ${q.score! >= 70 ? 'bg-success-50 text-success-700' : q.score! >= 55 ? 'bg-warning-50 text-warning-700' : 'bg-danger-50 text-danger-700'}`}>{q.score}%</div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-slate-900 truncate">{q.title}</p>
+                    <p className="text-xs text-slate-400 mt-0.5">{q.course} · {q.date} · {q.questions} questions</p>
                   </div>
-                  <button onClick={() => onOpenModal?.('take-quiz', q)} className="text-xs text-brand-600 font-medium hover:underline ml-2">Review</button>
+                  <div className="flex items-center gap-2">
+                    <div className="w-20 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                      <div className={`h-full rounded-full ${q.score! >= 70 ? 'bg-success-500' : q.score! >= 55 ? 'bg-warning-500' : 'bg-danger-500'}`} style={{ width: `${q.score}%` }}></div>
+                    </div>
+                    <button onClick={() => onOpenModal?.('take-quiz', q)} className="text-xs text-brand-600 font-medium hover:underline ml-2">Review</button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       </div>
@@ -861,19 +878,25 @@ function StudentAttendancePage({ onOpenModal }: { onOpenModal?: (type: string, d
         </button>
       </PageHeader>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {attendanceByCourse.map(c => (
-          <div key={c.course} className={`bg-white rounded-2xl border shadow-sm p-5 ${c.pct < 75 ? 'border-danger-200' : 'border-slate-200'}`}>
-            <p className="text-xs font-semibold text-slate-400 mb-1 truncate">{c.course}</p>
-            <p className={`text-3xl font-bold mb-1 ${c.pct < 75 ? 'text-danger-600' : c.pct < 85 ? 'text-warning-600' : 'text-success-600'}`}>{c.pct}%</p>
-            <p className="text-xs text-slate-500">{c.present} present · {c.absent} absent</p>
-            <div className="mt-3 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-              <div className={`h-full rounded-full ${c.pct < 75 ? 'bg-danger-500' : c.pct < 85 ? 'bg-warning-500' : 'bg-success-500'}`} style={{ width: `${c.pct}%` }}></div>
+      {attendanceByCourse.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8 text-center text-slate-400 text-sm">
+          No course attendance records found.
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {attendanceByCourse.map(c => (
+            <div key={c.course} className={`bg-white rounded-2xl border shadow-sm p-5 ${c.pct < 75 ? 'border-danger-200' : 'border-slate-200'}`}>
+              <p className="text-xs font-semibold text-slate-400 mb-1 truncate">{c.course}</p>
+              <p className={`text-3xl font-bold mb-1 ${c.pct < 75 ? 'text-danger-600' : c.pct < 85 ? 'text-warning-600' : 'text-success-600'}`}>{c.pct}%</p>
+              <p className="text-xs text-slate-500">{c.present} present · {c.absent} absent</p>
+              <div className="mt-3 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                <div className={`h-full rounded-full ${c.pct < 75 ? 'bg-danger-500' : c.pct < 85 ? 'bg-warning-500' : 'bg-success-500'}`} style={{ width: `${c.pct}%` }}></div>
+              </div>
+              {c.pct < 75 && <p className="text-xs text-danger-600 font-semibold mt-2 flex items-center gap-1"><AlertCircle className="w-3 h-3" />Below minimum</p>}
             </div>
-            {c.pct < 75 && <p className="text-xs text-danger-600 font-semibold mt-2 flex items-center gap-1"><AlertCircle className="w-3 h-3" />Below minimum</p>}
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 lg:p-8">
         <h2 className="font-semibold text-slate-900 mb-6">August–September Calendar</h2>
@@ -883,16 +906,20 @@ function StudentAttendancePage({ onOpenModal }: { onOpenModal?: (type: string, d
             <div>Week</div>
             {days.map(d => <div key={d} className="text-center">{d}</div>)}
           </div>
-          {attendanceData.map((week, wi) => (
-            <div key={wi} className="grid grid-cols-6 gap-2 items-center">
-              <div className="text-xs text-slate-400 font-medium">{week.month} W{week.week}</div>
-              {week.days.map((d, di) => (
-                <div key={di} className={`h-10 rounded-xl flex items-center justify-center text-xs font-bold ${d==='P' ? 'bg-success-50 text-success-700' : d==='A' ? 'bg-danger-50 text-danger-700' : 'bg-slate-50 text-slate-300'}`}>
-                  {d==='P' ? 'P' : d==='A' ? 'A' : '–'}
-                </div>
-              ))}
-            </div>
-          ))}
+          {attendanceData.length === 0 ? (
+            <p className="text-sm text-slate-400 py-8 text-center">No attendance calendar data available yet.</p>
+          ) : (
+            attendanceData.map((week, wi) => (
+              <div key={wi} className="grid grid-cols-6 gap-2 items-center">
+                <div className="text-xs text-slate-400 font-medium">{week.month} W{week.week}</div>
+                {week.days.map((d, di) => (
+                  <div key={di} className={`h-10 rounded-xl flex items-center justify-center text-xs font-bold ${d==='P' ? 'bg-success-50 text-success-700' : d==='A' ? 'bg-danger-50 text-danger-700' : 'bg-slate-50 text-slate-300'}`}>
+                    {d==='P' ? 'P' : d==='A' ? 'A' : '–'}
+                  </div>
+                ))}
+              </div>
+            ))
+          )}
         </div>
         <div className="flex items-center gap-6 mt-6 pt-5 border-t border-slate-100">
           <span className="flex items-center gap-2 text-xs text-slate-500"><span className="w-3 h-3 rounded-sm bg-success-500"></span>Present</span>
@@ -907,10 +934,12 @@ function StudentAttendancePage({ onOpenModal }: { onOpenModal?: (type: string, d
 // ─────────────────────────────────────────────────────────────────────────────
 
 function StudentDiscussionsPage({ onOpenModal }: { onOpenModal?: (type: string, data?: any) => void }) {
+  const [compose, setCompose] = useState(false);
+
   return (
     <div className="max-w-7xl mx-auto space-y-8">
       <PageHeader icon={MessageSquare} title="Discussions" subtitle="Ask questions, share insights, and collaborate with peers and faculty.">
-        <button onClick={() => onOpenModal?.('new-thread')} className="flex items-center gap-2 px-4 py-2.5 bg-brand-600 text-white text-sm font-semibold rounded-xl hover:bg-brand-700 transition-colors shadow-sm shadow-brand-500/20">
+        <button onClick={() => setCompose(true)} className="flex items-center gap-2 px-4 py-2.5 bg-brand-600 text-white text-sm font-semibold rounded-xl hover:bg-brand-700 transition-colors shadow-sm shadow-brand-500/20">
           <PlusCircle className="w-4 h-4" />New Post
         </button>
       </PageHeader>
@@ -919,40 +948,48 @@ function StudentDiscussionsPage({ onOpenModal }: { onOpenModal?: (type: string, 
         <div className="bg-white rounded-2xl border border-brand-200 shadow-md p-6">
           <h3 className="font-semibold text-slate-900 mb-4">New Discussion Post</h3>
           <select className="w-full mb-3 px-4 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-700 outline-none focus:border-brand-400 bg-white">
-            {studentCourses.map(c => <option key={c.code}>{c.code} — {c.name}</option>)}
+            {studentCourses.length === 0 ? <option disabled>No enrolled courses</option> : studentCourses.map(c => <option key={c.code}>{c.code} — {c.name}</option>)}
           </select>
           <input placeholder="Title your question…" className="w-full mb-3 px-4 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-brand-400" />
           <textarea rows={3} placeholder="Describe your doubt or topic…" className="w-full mb-4 px-4 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-brand-400 resize-none"></textarea>
           <div className="flex justify-end gap-3">
             <button onClick={() => setCompose(false)} className="px-4 py-2 border border-slate-200 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50">Cancel</button>
-            <button className="px-4 py-2 bg-brand-600 text-white rounded-xl text-sm font-semibold hover:bg-brand-700 flex items-center gap-2"><Send className="w-4 h-4" />Post</button>
+            <button onClick={() => setCompose(false)} className="px-4 py-2 bg-brand-600 text-white rounded-xl text-sm font-semibold hover:bg-brand-700 flex items-center gap-2"><Send className="w-4 h-4" />Post</button>
           </div>
         </div>
       )}
 
       <div className="space-y-3">
-        {discussions.map(d => (
-          <div key={d.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 hover:shadow-md hover:border-brand-200 transition-all cursor-pointer group">
-            <div className="flex items-start gap-4">
-              <div className="w-9 h-9 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-600 shrink-0">
-                {d.author.split(' ').map(w => w[0]).join('').slice(0,2)}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-start justify-between gap-3 mb-1">
-                  <p className="font-semibold text-slate-900 group-hover:text-brand-600 transition-colors">{d.title}</p>
-                  {d.solved && <span className="shrink-0 text-xs bg-success-50 text-success-700 font-semibold px-2 py-0.5 rounded-full flex items-center gap-1"><CheckCircle2 className="w-3 h-3" />Solved</span>}
-                </div>
-                <div className="flex items-center gap-3 text-xs text-slate-400">
-                  <span className="font-medium text-brand-600">{d.course}</span>
-                  <span>by {d.you ? 'You' : d.author}</span>
-                  <span className="flex items-center gap-1"><MessageCircle className="w-3 h-3" />{d.replies} replies</span>
-                  <span>{d.time}</span>
-                </div>
-              </div>
-              <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-brand-500 shrink-0 mt-0.5" />
-            </div>
+        {discussions.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-12 text-center">
+            <MessageSquare className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+            <h3 className="font-semibold text-slate-800 mb-1">No Discussions Yet</h3>
+            <p className="text-sm text-slate-400">Be the first to start a conversation or ask a question.</p>
           </div>
-        ))}
+        ) : (
+          discussions.map(d => (
+            <div key={d.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 hover:shadow-md hover:border-brand-200 transition-all cursor-pointer group">
+              <div className="flex items-start gap-4">
+                <div className="w-9 h-9 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-600 shrink-0">
+                  {d.author.split(' ').map(w => w[0]).join('').slice(0,2)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-3 mb-1">
+                    <p className="font-semibold text-slate-900 group-hover:text-brand-600 transition-colors">{d.title}</p>
+                    {d.solved && <span className="shrink-0 text-xs bg-success-50 text-success-700 font-semibold px-2 py-0.5 rounded-full flex items-center gap-1"><CheckCircle2 className="w-3 h-3" />Solved</span>}
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-slate-400">
+                    <span className="font-medium text-brand-600">{d.course}</span>
+                    <span>by {d.you ? 'You' : d.author}</span>
+                    <span className="flex items-center gap-1"><MessageCircle className="w-3 h-3" />{d.replies} replies</span>
+                    <span>{d.time}</span>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-brand-500 shrink-0 mt-0.5" />
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
@@ -970,13 +1007,20 @@ function StudentProgressPage() {
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 lg:p-8">
           <h2 className="font-semibold text-slate-900 mb-6">Subject Skill Map</h2>
           <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <RadarChart data={subjectRadar}>
-                <PolarGrid stroke="#f1f5f9" />
-                <PolarAngleAxis dataKey="subject" tick={{ fill: '#64748b', fontSize: 12 }} />
-                <RechartsRadar dataKey="score" stroke="#6366f1" fill="#6366f1" fillOpacity={0.2} strokeWidth={2} />
-              </RadarChart>
-            </ResponsiveContainer>
+            {subjectRadar.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center text-slate-400 text-sm">
+                <Radar className="w-8 h-8 text-slate-300 mb-2" />
+                No skill map data available yet.
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <RadarChart data={subjectRadar}>
+                  <PolarGrid stroke="#f1f5f9" />
+                  <PolarAngleAxis dataKey="subject" tick={{ fill: '#64748b', fontSize: 12 }} />
+                  <RechartsRadar dataKey="score" stroke="#6366f1" fill="#6366f1" fillOpacity={0.2} strokeWidth={2} />
+                </RadarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
 
@@ -984,21 +1028,28 @@ function StudentProgressPage() {
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 lg:p-8">
           <h2 className="font-semibold text-slate-900 mb-6">8-Week Score Trend</h2>
           <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={performanceTrend} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="pg" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.2} /><stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="week" tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} />
-                <YAxis domain={[50,100]} tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} />
-                <Tooltip contentStyle={{ borderRadius:'10px', border:'none', boxShadow:'0 8px 24px -4px rgb(0 0 0/0.12)', fontSize:'13px' }} />
-                <Area type="monotone" dataKey="score" stroke="#6366f1" strokeWidth={2.5} fill="url(#pg)" name="Score" />
-                <Line type="monotone" dataKey="avg" stroke="#cbd5e1" strokeWidth={1.5} strokeDasharray="4 4" name="Class Avg" dot={false} />
-              </AreaChart>
-            </ResponsiveContainer>
+            {performanceTrend.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center text-slate-400 text-sm">
+                <BarChart2 className="w-8 h-8 text-slate-300 mb-2" />
+                No score trend data available yet.
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={performanceTrend} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="pg" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#6366f1" stopOpacity={0.2} /><stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                  <XAxis dataKey="week" tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} />
+                  <YAxis domain={[50,100]} tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} />
+                  <Tooltip contentStyle={{ borderRadius:'10px', border:'none', boxShadow:'0 8px 24px -4px rgb(0 0 0/0.12)', fontSize:'13px' }} />
+                  <Area type="monotone" dataKey="score" stroke="#6366f1" strokeWidth={2.5} fill="url(#pg)" name="Score" />
+                  <Line type="monotone" dataKey="avg" stroke="#cbd5e1" strokeWidth={1.5} strokeDasharray="4 4" name="Class Avg" dot={false} />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
       </div>
@@ -1007,18 +1058,22 @@ function StudentProgressPage() {
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="p-6 border-b border-slate-100"><h2 className="font-semibold text-slate-900">Subject Breakdown</h2></div>
         <div className="divide-y divide-slate-100">
-          {subjectRadar.map(s => (
-            <div key={s.subject} className="px-6 py-4 flex items-center gap-4">
-              <p className="w-32 text-sm font-medium text-slate-800 shrink-0">{s.subject}</p>
-              <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
-                <div className={`h-full rounded-full ${s.score >= 70 ? 'bg-success-500' : s.score >= 55 ? 'bg-warning-500' : 'bg-danger-500'}`} style={{ width: `${s.score}%` }}></div>
+          {subjectRadar.length === 0 ? (
+            <p className="text-sm text-slate-400 py-8 text-center">No subject breakdown available yet.</p>
+          ) : (
+            subjectRadar.map(s => (
+              <div key={s.subject} className="px-6 py-4 flex items-center gap-4">
+                <p className="w-32 text-sm font-medium text-slate-800 shrink-0">{s.subject}</p>
+                <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <div className={`h-full rounded-full ${s.score >= 70 ? 'bg-success-500' : s.score >= 55 ? 'bg-warning-500' : 'bg-danger-500'}`} style={{ width: `${s.score}%` }}></div>
+                </div>
+                <span className={`text-sm font-bold w-12 text-right ${s.score >= 70 ? 'text-success-600' : s.score >= 55 ? 'text-warning-600' : 'text-danger-600'}`}>{s.score}%</span>
+                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${s.score >= 70 ? 'bg-success-50 text-success-700' : s.score >= 55 ? 'bg-warning-50 text-warning-700' : 'bg-danger-50 text-danger-700'}`}>
+                  {s.score >= 70 ? 'Strong' : s.score >= 55 ? 'Average' : 'Weak'}
+                </span>
               </div>
-              <span className={`text-sm font-bold w-12 text-right ${s.score >= 70 ? 'text-success-600' : s.score >= 55 ? 'text-warning-600' : 'text-danger-600'}`}>{s.score}%</span>
-              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${s.score >= 70 ? 'bg-success-50 text-success-700' : s.score >= 55 ? 'bg-warning-50 text-warning-700' : 'bg-danger-50 text-danger-700'}`}>
-                {s.score >= 70 ? 'Strong' : s.score >= 55 ? 'Average' : 'Weak'}
-              </span>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </div>
     </div>
