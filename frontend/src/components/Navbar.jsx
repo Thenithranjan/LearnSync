@@ -26,15 +26,11 @@ const Navbar = () => {
   const [loggingOut, setLoggingOut] = useState(false);
 
   const handleLogout = async () => {
+    if (loggingOut) return;
     setLoggingOut(true);
-    try {
-      await logout();
-      navigate('/login');
-    } catch (err) {
-      console.error('Logout error:', err);
-    } finally {
-      setLoggingOut(false);
-    }
+    await logout(); // AuthContext clears user → ProtectedRoute auto-redirects
+    navigate('/login', { replace: true }); // explicit fallback redirect
+    setLoggingOut(false);
   };
 
   const getRoleBadge = (role) => {
