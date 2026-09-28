@@ -1007,41 +1007,12 @@ function StudentQuizzesPage({ onOpenModal }: { onOpenModal?: (type: string, data
 // ─────────────────────────────────────────────────────────────────────────────
 
 function StudentAttendancePage({ onOpenModal }: { onOpenModal?: (type: string, data?: any) => void }) {
-  const [currentDate, setCurrentDate] = useState(new Date(2026, 8, 1)); // September 2026
-  const [selectedCourse, setSelectedCourse] = useState('ALL');
+  const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDayRecord, setSelectedDayRecord] = useState<any>(null);
 
-  // Available courses
-  const courseList = [
-    { code: 'CSE301', name: 'Design & Analysis of Algorithms', pct: 92, present: 23, absent: 2 },
-    { code: 'CSE302', name: 'Computer Networks', pct: 88, present: 22, absent: 3 },
-    { code: 'CSE303', name: 'Database Management Systems', pct: 76, present: 19, absent: 6 },
-    { code: 'CSE304', name: 'Operating Systems', pct: 96, present: 24, absent: 1 }
-  ];
-
-  // Calendar Attendance Map (YYYY-MM-DD -> status details)
-  const attendanceRecords: Record<string, { status: 'PRESENT' | 'ABSENT' | 'HOLIDAY' | 'LATE'; sessions: { course: string; time: string; status: string; room: string }[] }> = {
-    '2026-09-01': { status: 'PRESENT', sessions: [{ course: 'CSE301', time: '09:00 AM', status: 'Present', room: 'Hall 301' }, { course: 'CSE302', time: '11:00 AM', status: 'Present', room: 'Lab 2' }] },
-    '2026-09-02': { status: 'PRESENT', sessions: [{ course: 'CSE303', time: '10:00 AM', status: 'Present', room: 'Hall 204' }, { course: 'CSE304', time: '02:00 PM', status: 'Present', room: 'Hall 105' }] },
-    '2026-09-03': { status: 'PRESENT', sessions: [{ course: 'CSE301', time: '09:00 AM', status: 'Present', room: 'Hall 301' }, { course: 'CSE302', time: '01:00 PM', status: 'Present', room: 'Lab 2' }] },
-    '2026-09-04': { status: 'ABSENT',  sessions: [{ course: 'CSE303', time: '10:00 AM', status: 'Absent', room: 'Hall 204' }, { course: 'CSE304', time: '02:00 PM', status: 'Absent', room: 'Hall 105' }] },
-    '2026-09-07': { status: 'PRESENT', sessions: [{ course: 'CSE301', time: '09:00 AM', status: 'Present', room: 'Hall 301' }, { course: 'CSE302', time: '11:00 AM', status: 'Present', room: 'Lab 2' }] },
-    '2026-09-08': { status: 'PRESENT', sessions: [{ course: 'CSE303', time: '10:00 AM', status: 'Present', room: 'Hall 204' }] },
-    '2026-09-09': { status: 'PRESENT', sessions: [{ course: 'CSE304', time: '09:00 AM', status: 'Present', room: 'Hall 105' }, { course: 'CSE301', time: '11:00 AM', status: 'Present', room: 'Hall 301' }] },
-    '2026-09-10': { status: 'PRESENT', sessions: [{ course: 'CSE302', time: '10:00 AM', status: 'Present', room: 'Lab 2' }] },
-    '2026-09-11': { status: 'PRESENT', sessions: [{ course: 'CSE303', time: '09:00 AM', status: 'Present', room: 'Hall 204' }, { course: 'CSE304', time: '02:00 PM', status: 'Present', room: 'Hall 105' }] },
-    '2026-09-14': { status: 'PRESENT', sessions: [{ course: 'CSE301', time: '09:00 AM', status: 'Present', room: 'Hall 301' }, { course: 'CSE302', time: '11:00 AM', status: 'Present', room: 'Lab 2' }] },
-    '2026-09-15': { status: 'ABSENT',  sessions: [{ course: 'CSE303', time: '10:00 AM', status: 'Absent', room: 'Hall 204' }] },
-    '2026-09-16': { status: 'PRESENT', sessions: [{ course: 'CSE304', time: '09:00 AM', status: 'Present', room: 'Hall 105' }, { course: 'CSE301', time: '11:00 AM', status: 'Present', room: 'Hall 301' }] },
-    '2026-09-17': { status: 'PRESENT', sessions: [{ course: 'CSE302', time: '10:00 AM', status: 'Present', room: 'Lab 2' }] },
-    '2026-09-18': { status: 'HOLIDAY', sessions: [{ course: 'College Event', time: 'All Day', status: 'Holiday', room: 'Campus Wide' }] },
-    '2026-09-21': { status: 'PRESENT', sessions: [{ course: 'CSE301', time: '09:00 AM', status: 'Present', room: 'Hall 301' }, { course: 'CSE302', time: '11:00 AM', status: 'Present', room: 'Lab 2' }] },
-    '2026-09-22': { status: 'PRESENT', sessions: [{ course: 'CSE303', time: '10:00 AM', status: 'Present', room: 'Hall 204' }, { course: 'CSE304', time: '02:00 PM', status: 'Present', room: 'Hall 105' }] },
-    '2026-09-23': { status: 'PRESENT', sessions: [{ course: 'CSE301', time: '09:00 AM', status: 'Present', room: 'Hall 301' }] },
-    '2026-09-24': { status: 'PRESENT', sessions: [{ course: 'CSE302', time: '11:00 AM', status: 'Present', room: 'Lab 2' }] },
-    '2026-09-25': { status: 'PRESENT', sessions: [{ course: 'CSE303', time: '09:00 AM', status: 'Present', room: 'Hall 204' }, { course: 'CSE304', time: '02:00 PM', status: 'Present', room: 'Hall 105' }] },
-    '2026-09-28': { status: 'PRESENT', sessions: [{ course: 'CSE301', time: '09:00 AM', status: 'Present', room: 'Hall 301' }, { course: 'CSE302', time: '11:00 AM', status: 'Present', room: 'Lab 2' }] }
-  };
+  // Dynamic course list & records (starts clean/empty until courses & sessions are logged)
+  const courseList: any[] = studentCourses || [];
+  const attendanceRecords: Record<string, { status: 'PRESENT' | 'ABSENT' | 'HOLIDAY' | 'LATE'; sessions: { course: string; time: string; status: string; room: string }[] }> = {};
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -1055,7 +1026,7 @@ function StudentAttendancePage({ onOpenModal }: { onOpenModal?: (type: string, d
 
   const prevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
   const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
-  const todayMonth = () => setCurrentDate(new Date(2026, 8, 1));
+  const todayMonth = () => setCurrentDate(new Date());
 
   // Calendar cells
   const calendarCells = [];
@@ -1095,22 +1066,27 @@ function StudentAttendancePage({ onOpenModal }: { onOpenModal?: (type: string, d
       </PageHeader>
 
       {/* Course Summary Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {courseList.map(c => (
-          <div key={c.code} onClick={() => setSelectedCourse(selectedCourse === c.code ? 'ALL' : c.code)}
-            className={`bg-white rounded-2xl p-5 border cursor-pointer transition-all hover:shadow-md ${selectedCourse === c.code ? 'border-brand-500 ring-2 ring-brand-500/20 shadow-md' : c.pct < 75 ? 'border-danger-200' : 'border-slate-200'}`}>
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700">{c.code}</span>
-              <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${c.pct >= 85 ? 'bg-emerald-50 text-emerald-700' : c.pct >= 75 ? 'bg-amber-50 text-amber-700' : 'bg-rose-50 text-rose-700'}`}>{c.pct}%</span>
+      {courseList.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 text-center text-slate-400 text-sm">
+          No course attendance records recorded yet. Use Self Check-in with a classroom OTP code or attend scheduled sessions to populate your record.
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {courseList.map(c => (
+            <div key={c.code || c.name} className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700">{c.code || 'CRS'}</span>
+                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">{c.pct || 100}%</span>
+              </div>
+              <p className="font-semibold text-slate-900 text-sm truncate mb-1" title={c.name}>{c.name}</p>
+              <p className="text-xs text-slate-500">{c.present || 0} Attended · {c.absent || 0} Missed</p>
+              <div className="mt-3 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                <div className="h-full rounded-full bg-emerald-500" style={{ width: `${c.pct || 100}%` }} />
+              </div>
             </div>
-            <p className="font-semibold text-slate-900 text-sm truncate mb-1" title={c.name}>{c.name}</p>
-            <p className="text-xs text-slate-500">{c.present} Attended · {c.absent} Missed</p>
-            <div className="mt-3 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-              <div className={`h-full rounded-full ${c.pct < 75 ? 'bg-danger-500' : c.pct < 85 ? 'bg-warning-500' : 'bg-emerald-500'}`} style={{ width: `${c.pct}%` }} />
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* Main Calendar View Card */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -1200,7 +1176,7 @@ function StudentAttendancePage({ onOpenModal }: { onOpenModal?: (type: string, d
                     )}
                   </div>
 
-                  {record && record.sessions?.length > 0 && (
+                  {record && record.sessions?.length > 0 ? (
                     <div className="space-y-1">
                       <div className="text-[10px] font-semibold text-slate-700 truncate hidden sm:block">
                         {record.sessions[0].course}
@@ -1210,16 +1186,13 @@ function StudentAttendancePage({ onOpenModal }: { onOpenModal?: (type: string, d
                           +{record.sessions.length - 1} more
                         </div>
                       )}
-                      {/* Mobile dot */}
                       <div className="sm:hidden flex justify-center">
                         <div className={`w-2 h-2 rounded-full ${record.status === 'PRESENT' ? 'bg-emerald-500' : record.status === 'ABSENT' ? 'bg-rose-500' : 'bg-amber-500'}`} />
                       </div>
                     </div>
-                  )}
-
-                  {!record && !isWeekend && (
-                    <span className="text-[10px] text-slate-400 italic hidden sm:block">No records</span>
-                  )}
+                  ) : !isWeekend ? (
+                    <span className="text-[10px] text-slate-300 italic hidden sm:block">No session</span>
+                  ) : null}
                 </div>
               );
             })}
@@ -1275,7 +1248,7 @@ function StudentAttendancePage({ onOpenModal }: { onOpenModal?: (type: string, d
                   </div>
                 ) : (
                   <div className="p-4 bg-slate-50 rounded-2xl text-center text-xs text-slate-400">
-                    {selectedDayRecord.isWeekend ? 'Weekend — No lectures scheduled.' : 'No attendance recorded on this day.'}
+                    {selectedDayRecord.isWeekend ? 'Weekend — No lectures scheduled.' : 'No attendance recorded on this date.'}
                   </div>
                 )}
               </div>
