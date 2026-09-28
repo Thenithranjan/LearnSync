@@ -14,7 +14,7 @@ import {
   BookOpenCheck, Timer, Percent, Hash, Download, Edit3, Trash2,
   ChevronUp, MapPin, ToggleLeft, ToggleRight, Plus, UserX,
   MessageCircle, ThumbsUp, Paperclip, Mic, Video,
-  Shield, EyeOff, ArrowRight
+  Shield, EyeOff, ArrowRight, ChevronLeft
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -1007,62 +1007,304 @@ function StudentQuizzesPage({ onOpenModal }: { onOpenModal?: (type: string, data
 // ─────────────────────────────────────────────────────────────────────────────
 
 function StudentAttendancePage({ onOpenModal }: { onOpenModal?: (type: string, data?: any) => void }) {
-  const days = ['Mon','Tue','Wed','Thu','Fri'];
+  const [currentDate, setCurrentDate] = useState(new Date(2026, 8, 1)); // September 2026
+  const [selectedCourse, setSelectedCourse] = useState('ALL');
+  const [selectedDayRecord, setSelectedDayRecord] = useState<any>(null);
+
+  // Available courses
+  const courseList = [
+    { code: 'CSE301', name: 'Design & Analysis of Algorithms', pct: 92, present: 23, absent: 2 },
+    { code: 'CSE302', name: 'Computer Networks', pct: 88, present: 22, absent: 3 },
+    { code: 'CSE303', name: 'Database Management Systems', pct: 76, present: 19, absent: 6 },
+    { code: 'CSE304', name: 'Operating Systems', pct: 96, present: 24, absent: 1 }
+  ];
+
+  // Calendar Attendance Map (YYYY-MM-DD -> status details)
+  const attendanceRecords: Record<string, { status: 'PRESENT' | 'ABSENT' | 'HOLIDAY' | 'LATE'; sessions: { course: string; time: string; status: string; room: string }[] }> = {
+    '2026-09-01': { status: 'PRESENT', sessions: [{ course: 'CSE301', time: '09:00 AM', status: 'Present', room: 'Hall 301' }, { course: 'CSE302', time: '11:00 AM', status: 'Present', room: 'Lab 2' }] },
+    '2026-09-02': { status: 'PRESENT', sessions: [{ course: 'CSE303', time: '10:00 AM', status: 'Present', room: 'Hall 204' }, { course: 'CSE304', time: '02:00 PM', status: 'Present', room: 'Hall 105' }] },
+    '2026-09-03': { status: 'PRESENT', sessions: [{ course: 'CSE301', time: '09:00 AM', status: 'Present', room: 'Hall 301' }, { course: 'CSE302', time: '01:00 PM', status: 'Present', room: 'Lab 2' }] },
+    '2026-09-04': { status: 'ABSENT',  sessions: [{ course: 'CSE303', time: '10:00 AM', status: 'Absent', room: 'Hall 204' }, { course: 'CSE304', time: '02:00 PM', status: 'Absent', room: 'Hall 105' }] },
+    '2026-09-07': { status: 'PRESENT', sessions: [{ course: 'CSE301', time: '09:00 AM', status: 'Present', room: 'Hall 301' }, { course: 'CSE302', time: '11:00 AM', status: 'Present', room: 'Lab 2' }] },
+    '2026-09-08': { status: 'PRESENT', sessions: [{ course: 'CSE303', time: '10:00 AM', status: 'Present', room: 'Hall 204' }] },
+    '2026-09-09': { status: 'PRESENT', sessions: [{ course: 'CSE304', time: '09:00 AM', status: 'Present', room: 'Hall 105' }, { course: 'CSE301', time: '11:00 AM', status: 'Present', room: 'Hall 301' }] },
+    '2026-09-10': { status: 'PRESENT', sessions: [{ course: 'CSE302', time: '10:00 AM', status: 'Present', room: 'Lab 2' }] },
+    '2026-09-11': { status: 'PRESENT', sessions: [{ course: 'CSE303', time: '09:00 AM', status: 'Present', room: 'Hall 204' }, { course: 'CSE304', time: '02:00 PM', status: 'Present', room: 'Hall 105' }] },
+    '2026-09-14': { status: 'PRESENT', sessions: [{ course: 'CSE301', time: '09:00 AM', status: 'Present', room: 'Hall 301' }, { course: 'CSE302', time: '11:00 AM', status: 'Present', room: 'Lab 2' }] },
+    '2026-09-15': { status: 'ABSENT',  sessions: [{ course: 'CSE303', time: '10:00 AM', status: 'Absent', room: 'Hall 204' }] },
+    '2026-09-16': { status: 'PRESENT', sessions: [{ course: 'CSE304', time: '09:00 AM', status: 'Present', room: 'Hall 105' }, { course: 'CSE301', time: '11:00 AM', status: 'Present', room: 'Hall 301' }] },
+    '2026-09-17': { status: 'PRESENT', sessions: [{ course: 'CSE302', time: '10:00 AM', status: 'Present', room: 'Lab 2' }] },
+    '2026-09-18': { status: 'HOLIDAY', sessions: [{ course: 'College Event', time: 'All Day', status: 'Holiday', room: 'Campus Wide' }] },
+    '2026-09-21': { status: 'PRESENT', sessions: [{ course: 'CSE301', time: '09:00 AM', status: 'Present', room: 'Hall 301' }, { course: 'CSE302', time: '11:00 AM', status: 'Present', room: 'Lab 2' }] },
+    '2026-09-22': { status: 'PRESENT', sessions: [{ course: 'CSE303', time: '10:00 AM', status: 'Present', room: 'Hall 204' }, { course: 'CSE304', time: '02:00 PM', status: 'Present', room: 'Hall 105' }] },
+    '2026-09-23': { status: 'PRESENT', sessions: [{ course: 'CSE301', time: '09:00 AM', status: 'Present', room: 'Hall 301' }] },
+    '2026-09-24': { status: 'PRESENT', sessions: [{ course: 'CSE302', time: '11:00 AM', status: 'Present', room: 'Lab 2' }] },
+    '2026-09-25': { status: 'PRESENT', sessions: [{ course: 'CSE303', time: '09:00 AM', status: 'Present', room: 'Hall 204' }, { course: 'CSE304', time: '02:00 PM', status: 'Present', room: 'Hall 105' }] },
+    '2026-09-28': { status: 'PRESENT', sessions: [{ course: 'CSE301', time: '09:00 AM', status: 'Present', room: 'Hall 301' }, { course: 'CSE302', time: '11:00 AM', status: 'Present', room: 'Lab 2' }] }
+  };
+
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  // Days in month calculation
+  const firstDayIndex = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  const prevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
+  const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
+  const todayMonth = () => setCurrentDate(new Date(2026, 8, 1));
+
+  // Calendar cells
+  const calendarCells = [];
+  for (let i = 0; i < firstDayIndex; i++) {
+    calendarCells.push(null);
+  }
+  for (let d = 1; d <= daysInMonth; d++) {
+    calendarCells.push(d);
+  }
+
+  // Monthly stats
+  let totalClasses = 0;
+  let presentClasses = 0;
+  let absentClasses = 0;
+
+  Object.entries(attendanceRecords).forEach(([dateStr, record]) => {
+    const [y, m] = dateStr.split('-').map(Number);
+    if (y === year && m === month + 1) {
+      if (record.status === 'PRESENT') {
+        presentClasses++;
+        totalClasses++;
+      } else if (record.status === 'ABSENT') {
+        absentClasses++;
+        totalClasses++;
+      }
+    }
+  });
+
+  const monthPct = totalClasses > 0 ? Math.round((presentClasses / totalClasses) * 100) : 0;
+
   return (
     <div className="max-w-7xl mx-auto space-y-8">
-      <PageHeader icon={CalendarCheck} title="Attendance" subtitle="Your attendance record across all enrolled courses.">
-        <button onClick={() => onOpenModal?.('self-checkin')} className="flex items-center gap-2 px-4 py-2.5 bg-brand-600 text-white text-sm font-semibold rounded-xl hover:bg-brand-700 transition-colors shadow-sm shadow-brand-500/20">
+      <PageHeader icon={CalendarCheck} title="Attendance Calendar" subtitle="Interactive calendar schedule and attendance records across all courses.">
+        <button onClick={() => onOpenModal?.('self-checkin')} className="flex items-center gap-2 px-5 py-2.5 bg-brand-600 text-white text-sm font-semibold rounded-xl hover:bg-brand-700 transition-all shadow-lg shadow-brand-500/25">
           <Zap className="w-4 h-4" />Self Check-in (OTP)
         </button>
       </PageHeader>
 
-      {attendanceByCourse.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8 text-center text-slate-400 text-sm">
-          No course attendance records found.
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {attendanceByCourse.map(c => (
-            <div key={c.course} className={`bg-white rounded-2xl border shadow-sm p-5 ${c.pct < 75 ? 'border-danger-200' : 'border-slate-200'}`}>
-              <p className="text-xs font-semibold text-slate-400 mb-1 truncate">{c.course}</p>
-              <p className={`text-3xl font-bold mb-1 ${c.pct < 75 ? 'text-danger-600' : c.pct < 85 ? 'text-warning-600' : 'text-success-600'}`}>{c.pct}%</p>
-              <p className="text-xs text-slate-500">{c.present} present · {c.absent} absent</p>
-              <div className="mt-3 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                <div className={`h-full rounded-full ${c.pct < 75 ? 'bg-danger-500' : c.pct < 85 ? 'bg-warning-500' : 'bg-success-500'}`} style={{ width: `${c.pct}%` }}></div>
-              </div>
-              {c.pct < 75 && <p className="text-xs text-danger-600 font-semibold mt-2 flex items-center gap-1"><AlertCircle className="w-3 h-3" />Below minimum</p>}
+      {/* Course Summary Stat Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {courseList.map(c => (
+          <div key={c.code} onClick={() => setSelectedCourse(selectedCourse === c.code ? 'ALL' : c.code)}
+            className={`bg-white rounded-2xl p-5 border cursor-pointer transition-all hover:shadow-md ${selectedCourse === c.code ? 'border-brand-500 ring-2 ring-brand-500/20 shadow-md' : c.pct < 75 ? 'border-danger-200' : 'border-slate-200'}`}>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700">{c.code}</span>
+              <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${c.pct >= 85 ? 'bg-emerald-50 text-emerald-700' : c.pct >= 75 ? 'bg-amber-50 text-amber-700' : 'bg-rose-50 text-rose-700'}`}>{c.pct}%</span>
             </div>
-          ))}
-        </div>
-      )}
-
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 lg:p-8">
-        <h2 className="font-semibold text-slate-900 mb-6">August–September Calendar</h2>
-        <div className="space-y-4">
-          {/* Header */}
-          <div className="grid grid-cols-6 gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
-            <div>Week</div>
-            {days.map(d => <div key={d} className="text-center">{d}</div>)}
+            <p className="font-semibold text-slate-900 text-sm truncate mb-1" title={c.name}>{c.name}</p>
+            <p className="text-xs text-slate-500">{c.present} Attended · {c.absent} Missed</p>
+            <div className="mt-3 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+              <div className={`h-full rounded-full ${c.pct < 75 ? 'bg-danger-500' : c.pct < 85 ? 'bg-warning-500' : 'bg-emerald-500'}`} style={{ width: `${c.pct}%` }} />
+            </div>
           </div>
-          {attendanceData.length === 0 ? (
-            <p className="text-sm text-slate-400 py-8 text-center">No attendance calendar data available yet.</p>
-          ) : (
-            attendanceData.map((week, wi) => (
-              <div key={wi} className="grid grid-cols-6 gap-2 items-center">
-                <div className="text-xs text-slate-400 font-medium">{week.month} W{week.week}</div>
-                {week.days.map((d, di) => (
-                  <div key={di} className={`h-10 rounded-xl flex items-center justify-center text-xs font-bold ${d==='P' ? 'bg-success-50 text-success-700' : d==='A' ? 'bg-danger-50 text-danger-700' : 'bg-slate-50 text-slate-300'}`}>
-                    {d==='P' ? 'P' : d==='A' ? 'A' : '–'}
-                  </div>
-                ))}
+        ))}
+      </div>
+
+      {/* Main Calendar View Card */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-200 shadow-sm p-6 lg:p-8">
+          {/* Calendar Header Controls */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-100">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-brand-50 text-brand-600 rounded-2xl">
+                <CalendarCheck className="w-6 h-6" />
               </div>
-            ))
-          )}
+              <div>
+                <h2 className="text-xl font-bold text-slate-900">{monthNames[month]} {year}</h2>
+                <p className="text-xs text-slate-500">Monthly attendance overview</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button onClick={todayMonth} className="px-3 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">
+                Current
+              </button>
+              <div className="flex items-center border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                <button onClick={prevMonth} className="p-2 hover:bg-slate-50 text-slate-600 transition-colors">
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <div className="w-px h-4 bg-slate-200" />
+                <button onClick={nextMonth} className="p-2 hover:bg-slate-50 text-slate-600 transition-colors">
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Weekday Labels */}
+          <div className="grid grid-cols-7 gap-2 my-4 text-center">
+            {weekDays.map(day => (
+              <div key={day} className={`text-xs font-bold uppercase tracking-wider py-1 ${day === 'Sun' || day === 'Sat' ? 'text-slate-300' : 'text-slate-500'}`}>
+                {day}
+              </div>
+            ))}
+          </div>
+
+          {/* Monthly Calendar Grid */}
+          <div className="grid grid-cols-7 gap-2">
+            {calendarCells.map((dayNum, idx) => {
+              if (!dayNum) {
+                return <div key={`empty-${idx}`} className="h-20 sm:h-24 rounded-2xl bg-slate-50/50 border border-dashed border-slate-100" />;
+              }
+
+              const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
+              const dayOfWeek = (firstDayIndex + dayNum - 1) % 7;
+              const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+              const record = attendanceRecords[dateKey];
+              const isSelected = selectedDayRecord?.date === dateKey;
+
+              let statusBg = 'bg-white hover:bg-slate-50 border-slate-200';
+              let badgeText = '';
+              let badgeColor = '';
+
+              if (record) {
+                if (record.status === 'PRESENT') {
+                  statusBg = 'bg-emerald-50/60 border-emerald-200 text-emerald-950 hover:bg-emerald-100/60';
+                  badgeText = 'Present';
+                  badgeColor = 'bg-emerald-500 text-white';
+                } else if (record.status === 'ABSENT') {
+                  statusBg = 'bg-rose-50/80 border-rose-200 text-rose-950 hover:bg-rose-100/80';
+                  badgeText = 'Absent';
+                  badgeColor = 'bg-rose-500 text-white';
+                } else if (record.status === 'HOLIDAY') {
+                  statusBg = 'bg-amber-50/70 border-amber-200 text-amber-950';
+                  badgeText = 'Holiday';
+                  badgeColor = 'bg-amber-500 text-white';
+                }
+              } else if (isWeekend) {
+                statusBg = 'bg-slate-50/80 border-slate-100 text-slate-400';
+              }
+
+              return (
+                <div key={dayNum}
+                  onClick={() => setSelectedDayRecord({ date: dateKey, dayNum, record, isWeekend })}
+                  className={`h-20 sm:h-24 p-2 rounded-2xl border flex flex-col justify-between cursor-pointer transition-all ${statusBg} ${isSelected ? 'ring-2 ring-brand-600 shadow-md scale-[1.02]' : ''}`}>
+                  <div className="flex items-center justify-between">
+                    <span className={`text-xs font-bold ${isWeekend ? 'text-slate-400' : 'text-slate-800'}`}>{dayNum}</span>
+                    {badgeText && (
+                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md ${badgeColor} shadow-sm hidden sm:inline-block`}>
+                        {badgeText}
+                      </span>
+                    )}
+                  </div>
+
+                  {record && record.sessions?.length > 0 && (
+                    <div className="space-y-1">
+                      <div className="text-[10px] font-semibold text-slate-700 truncate hidden sm:block">
+                        {record.sessions[0].course}
+                      </div>
+                      {record.sessions.length > 1 && (
+                        <div className="text-[9px] text-slate-500 font-medium hidden sm:block">
+                          +{record.sessions.length - 1} more
+                        </div>
+                      )}
+                      {/* Mobile dot */}
+                      <div className="sm:hidden flex justify-center">
+                        <div className={`w-2 h-2 rounded-full ${record.status === 'PRESENT' ? 'bg-emerald-500' : record.status === 'ABSENT' ? 'bg-rose-500' : 'bg-amber-500'}`} />
+                      </div>
+                    </div>
+                  )}
+
+                  {!record && !isWeekend && (
+                    <span className="text-[10px] text-slate-400 italic hidden sm:block">No records</span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Legend */}
+          <div className="flex flex-wrap items-center gap-6 mt-6 pt-5 border-t border-slate-100">
+            <span className="flex items-center gap-2 text-xs font-medium text-slate-600">
+              <span className="w-3 h-3 rounded-md bg-emerald-500" />Present
+            </span>
+            <span className="flex items-center gap-2 text-xs font-medium text-slate-600">
+              <span className="w-3 h-3 rounded-md bg-rose-500" />Absent
+            </span>
+            <span className="flex items-center gap-2 text-xs font-medium text-slate-600">
+              <span className="w-3 h-3 rounded-md bg-amber-500" />Holiday / Break
+            </span>
+            <span className="flex items-center gap-2 text-xs font-medium text-slate-400">
+              <span className="w-3 h-3 rounded-md bg-slate-100 border border-slate-200" />Weekend
+            </span>
+          </div>
         </div>
-        <div className="flex items-center gap-6 mt-6 pt-5 border-t border-slate-100">
-          <span className="flex items-center gap-2 text-xs text-slate-500"><span className="w-3 h-3 rounded-sm bg-success-500"></span>Present</span>
-          <span className="flex items-center gap-2 text-xs text-slate-500"><span className="w-3 h-3 rounded-sm bg-danger-500"></span>Absent</span>
-          <span className="flex items-center gap-2 text-xs text-slate-500"><span className="w-3 h-3 rounded-sm bg-slate-200"></span>Holiday / No class</span>
+
+        {/* Right Side: Day Details & Attendance Stats Panel */}
+        <div className="space-y-6">
+          {/* Selected Date Inspector Card */}
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
+            <h3 className="text-base font-bold text-slate-900 mb-3 flex items-center gap-2">
+              <Clock className="w-4 h-4 text-brand-600" />
+              Day Details
+            </h3>
+
+            {selectedDayRecord ? (
+              <div className="space-y-4">
+                <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                  <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Selected Date</p>
+                  <p className="text-sm font-bold text-slate-900 mt-0.5">{selectedDayRecord.date}</p>
+                </div>
+
+                {selectedDayRecord.record?.sessions ? (
+                  <div className="space-y-2.5">
+                    <p className="text-xs font-bold text-slate-700">Scheduled Sessions</p>
+                    {selectedDayRecord.record.sessions.map((ses: any, i: number) => (
+                      <div key={i} className="p-3 rounded-2xl bg-white border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div>
+                          <p className="text-xs font-bold text-slate-900">{ses.course}</p>
+                          <p className="text-[11px] text-slate-500">{ses.time} · {ses.room}</p>
+                        </div>
+                        <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${ses.status === 'Present' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : ses.status === 'Absent' ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-amber-50 text-amber-700 border border-amber-200'}`}>
+                          {ses.status}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-4 bg-slate-50 rounded-2xl text-center text-xs text-slate-400">
+                    {selectedDayRecord.isWeekend ? 'Weekend — No lectures scheduled.' : 'No attendance recorded on this day.'}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="py-8 text-center text-slate-400 text-xs">
+                <CalendarCheck className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                Click on any calendar date to view session schedule and lecture check-in status.
+              </div>
+            )}
+          </div>
+
+          {/* Monthly Performance Ratio Card */}
+          <div className="bg-gradient-to-br from-slate-900 to-indigo-950 text-white rounded-3xl p-6 shadow-xl">
+            <h4 className="text-xs font-bold uppercase tracking-widest text-indigo-300 mb-1">Monthly Average</h4>
+            <div className="flex items-baseline gap-2 mb-3">
+              <span className="text-4xl font-black">{monthPct}%</span>
+              <span className="text-xs text-slate-300 font-medium">overall attendance</span>
+            </div>
+            <div className="grid grid-cols-2 gap-3 pt-4 border-t border-white/10 text-xs">
+              <div className="p-3 bg-white/5 rounded-2xl border border-white/5">
+                <span className="text-slate-400 block text-[11px]">Attended</span>
+                <span className="text-lg font-bold text-emerald-400">{presentClasses} classes</span>
+              </div>
+              <div className="p-3 bg-white/5 rounded-2xl border border-white/5">
+                <span className="text-slate-400 block text-[11px]">Missed</span>
+                <span className="text-lg font-bold text-rose-400">{absentClasses} classes</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
