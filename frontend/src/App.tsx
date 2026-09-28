@@ -13,7 +13,8 @@ import {
   CheckSquare, Circle, MoreHorizontal, Sliders, UserCheck,
   BookOpenCheck, Timer, Percent, Hash, Download, Edit3, Trash2,
   ChevronUp, MapPin, ToggleLeft, ToggleRight, Plus, UserX,
-  MessageCircle, ThumbsUp, Paperclip, Mic, Video
+  MessageCircle, ThumbsUp, Paperclip, Mic, Video,
+  Shield, EyeOff, ArrowRight
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -102,6 +103,134 @@ const adminInterventions: any[] = [];
 const analyticsScoreDist: any[] = [];
 const deptTrendData: any[] = [];
 
+// ─── Inline Login Screen ──────────────────────────────────────────────────────
+
+const DEMO_CREDS = [
+  { label: 'Student',  email: 'student@example.com', password: 'Password123!', color: '#6366f1' },
+  { label: 'Teacher',  email: 'faculty@example.com', password: 'Password123!', color: '#f59e0b' },
+  { label: 'Admin',    email: 'admin@example.com',   password: 'Password123!', color: '#f43f5e' },
+];
+
+function AppLoginScreen({ onLogin }: { onLogin: (email: string, password: string) => Promise<void> }) {
+  const [email, setEmail]       = useState('');
+  const [password, setPassword] = useState('');
+  const [showPw, setShowPw]     = useState(false);
+  const [loading, setLoading]   = useState(false);
+  const [error, setError]       = useState('');
+  const [activeRole, setActiveRole] = useState<string | null>(null);
+
+  const doLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) { setError('Please fill in both fields.'); return; }
+    setLoading(true); setError('');
+    try { await onLogin(email, password); }
+    catch (err: any) { setError(err.message || 'Invalid credentials.'); }
+    finally { setLoading(false); setActiveRole(null); }
+  };
+
+  const quickLogin = async (cred: typeof DEMO_CREDS[0]) => {
+    if (loading) return;
+    setActiveRole(cred.label);
+    setEmail(cred.email);
+    setPassword(cred.password);
+    setError('');
+    await new Promise(r => setTimeout(r, 500)); // let user see fill
+    setLoading(true);
+    try { await onLogin(cred.email, cred.password); }
+    catch (err: any) { setError(err.message || 'Login failed.'); }
+    finally { setLoading(false); setActiveRole(null); }
+  };
+
+  return (
+    <div style={{ minHeight:'100vh', background:'#020617', display:'flex', alignItems:'center', justifyContent:'center', padding:'2rem', position:'relative', overflow:'hidden' }}>
+      {/* bg blobs */}
+      <div style={{ position:'absolute', top:'-10%', left:'50%', transform:'translateX(-50%)', width:'600px', height:'600px', borderRadius:'50%', background:'radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%)', pointerEvents:'none' }} />
+      <div style={{ position:'absolute', bottom:'0', right:'-10%', width:'400px', height:'400px', borderRadius:'50%', background:'radial-gradient(circle, rgba(139,92,246,0.10) 0%, transparent 70%)', pointerEvents:'none' }} />
+
+      <div style={{ width:'100%', maxWidth:'420px', position:'relative', zIndex:1 }}>
+        {/* Logo */}
+        <div style={{ textAlign:'center', marginBottom:'2rem' }}>
+          <div style={{ display:'inline-flex', alignItems:'center', justifyContent:'center', width:'72px', height:'72px', borderRadius:'18px', background:'linear-gradient(135deg,#6366f1,#8b5cf6)', boxShadow:'0 0 40px rgba(99,102,241,0.4)', marginBottom:'1rem' }}>
+            <GraduationCap style={{ width:36, height:36, color:'#fff' }} />
+          </div>
+          <h1 style={{ fontSize:'2rem', fontWeight:900, letterSpacing:'-0.02em', background:'linear-gradient(135deg,#fff 30%,#a5b4fc)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', margin:0 }}>EduPlus</h1>
+          <p style={{ color:'#64748b', fontSize:'0.8rem', marginTop:'0.4rem' }}>Intelligent Learning & Analytics Platform</p>
+        </div>
+
+        {/* Card */}
+        <div style={{ background:'rgba(15,23,42,0.9)', backdropFilter:'blur(24px)', border:'1px solid rgba(99,102,241,0.15)', borderRadius:'24px', padding:'2rem', boxShadow:'0 25px 60px rgba(0,0,0,0.6)' }}>
+
+          {/* Quick role buttons */}
+          <p style={{ fontSize:'0.65rem', fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.12em', marginBottom:'0.75rem', display:'flex', alignItems:'center', gap:'0.4rem' }}>
+            <Zap style={{ width:12, height:12, color:'#6366f1' }} /> Quick Login — One Click
+          </p>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'0.6rem', marginBottom:'1.5rem' }}>
+            {DEMO_CREDS.map(cred => (
+              <button key={cred.label} disabled={loading} onClick={() => quickLogin(cred)}
+                style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'0.5rem', padding:'0.9rem 0.5rem', borderRadius:'14px', border:`1px solid ${activeRole === cred.label ? cred.color+'66' : 'rgba(255,255,255,0.06)'}`, background: activeRole === cred.label ? cred.color+'18' : 'rgba(255,255,255,0.03)', cursor: loading ? 'not-allowed' : 'pointer', transition:'all 0.2s', transform: activeRole === cred.label ? 'scale(1.04)' : 'scale(1)', opacity: loading && activeRole !== cred.label ? 0.5 : 1 }}>
+                <div style={{ width:38, height:38, borderRadius:'10px', background:`linear-gradient(135deg,${cred.color},${cred.color}cc)`, display:'flex', alignItems:'center', justifyContent:'center', boxShadow: activeRole === cred.label ? `0 4px 14px ${cred.color}55` : 'none' }}>
+                  {cred.label === 'Student' ? <BookOpen style={{ width:18, height:18, color:'#fff' }} /> : cred.label === 'Teacher' ? <Users style={{ width:18, height:18, color:'#fff' }} /> : <Shield style={{ width:18, height:18, color:'#fff' }} />}
+                </div>
+                <span style={{ fontSize:'0.7rem', fontWeight:700, color:'#e2e8f0' }}>{cred.label}</span>
+                {activeRole === cred.label && loading && (
+                  <div style={{ display:'flex', gap:'3px' }}>
+                    {[0,1,2].map(i => <div key={i} style={{ width:4, height:4, borderRadius:'50%', background:cred.color, animation:'bounce 0.8s ease-in-out infinite', animationDelay:`${i*0.15}s` }} />)}
+                  </div>
+                )}
+              </button>
+            ))}
+          </div>
+
+          {/* Divider */}
+          <div style={{ display:'flex', alignItems:'center', gap:'0.75rem', marginBottom:'1.25rem' }}>
+            <div style={{ flex:1, height:'1px', background:'linear-gradient(to right, transparent, rgba(99,102,241,0.2))' }} />
+            <span style={{ fontSize:'0.65rem', fontWeight:600, color:'#334155', textTransform:'uppercase', letterSpacing:'0.1em' }}>or manual</span>
+            <div style={{ flex:1, height:'1px', background:'linear-gradient(to left, transparent, rgba(99,102,241,0.2))' }} />
+          </div>
+
+          {/* Error */}
+          {error && (
+            <div style={{ marginBottom:'1rem', padding:'0.75rem 1rem', borderRadius:'12px', background:'rgba(244,63,94,0.08)', border:'1px solid rgba(244,63,94,0.2)', color:'#fda4af', fontSize:'0.8rem', display:'flex', alignItems:'center', gap:'0.5rem' }}>
+              <AlertCircle style={{ width:14, height:14, flexShrink:0 }} /> {error}
+            </div>
+          )}
+
+          {/* Form */}
+          <form onSubmit={doLogin} style={{ display:'flex', flexDirection:'column', gap:'0.9rem' }}>
+            <div>
+              <label style={{ display:'block', fontSize:'0.65rem', fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:'0.4rem' }}>Email</label>
+              <input id="app-login-email" type="email" required value={email} onChange={e => { setEmail(e.target.value); setError(''); }} placeholder="your@email.com"
+                style={{ width:'100%', padding:'0.75rem 1rem', borderRadius:'12px', border:`1px solid ${email ? 'rgba(99,102,241,0.35)' : 'rgba(255,255,255,0.08)'}`, background:'rgba(255,255,255,0.04)', color:'#f1f5f9', fontSize:'0.875rem', outline:'none', boxSizing:'border-box' }} />
+            </div>
+            <div>
+              <label style={{ display:'block', fontSize:'0.65rem', fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:'0.4rem' }}>Password</label>
+              <div style={{ position:'relative' }}>
+                <input id="app-login-password" type={showPw ? 'text' : 'password'} required value={password} onChange={e => { setPassword(e.target.value); setError(''); }} placeholder="••••••••"
+                  style={{ width:'100%', padding:'0.75rem 2.5rem 0.75rem 1rem', borderRadius:'12px', border:`1px solid ${password ? 'rgba(99,102,241,0.35)' : 'rgba(255,255,255,0.08)'}`, background:'rgba(255,255,255,0.04)', color:'#f1f5f9', fontSize:'0.875rem', outline:'none', boxSizing:'border-box' }} />
+                <button type="button" onClick={() => setShowPw(!showPw)} style={{ position:'absolute', right:'0.75rem', top:'50%', transform:'translateY(-50%)', background:'none', border:'none', color:'#475569', cursor:'pointer', padding:0, display:'flex' }}>
+                  {showPw ? <EyeOff style={{ width:16, height:16 }} /> : <Eye style={{ width:16, height:16 }} />}
+                </button>
+              </div>
+            </div>
+            <button type="submit" id="app-login-submit" disabled={loading}
+              style={{ width:'100%', padding:'0.875rem', borderRadius:'12px', border:'none', background: loading ? 'linear-gradient(135deg,#4338ca,#6d28d9)' : 'linear-gradient(135deg,#6366f1,#8b5cf6)', color:'#fff', fontWeight:700, fontSize:'0.875rem', cursor: loading ? 'not-allowed' : 'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:'0.5rem', boxShadow: loading ? 'none' : '0 8px 24px rgba(99,102,241,0.35)', transition:'all 0.2s', marginTop:'0.25rem' }}>
+              {loading ? <><div style={{ width:16, height:16, border:'2px solid rgba(255,255,255,0.2)', borderTopColor:'#fff', borderRadius:'50%', animation:'spin 0.7s linear infinite' }} /> Signing in...</> : <>Sign In <ArrowRight style={{ width:16, height:16 }} /></>}
+            </button>
+          </form>
+        </div>
+
+        <p style={{ textAlign:'center', fontSize:'0.65rem', color:'#1e293b', marginTop:'1.25rem' }}>🔒 Secure encrypted connection · EduPlus v2.0</p>
+      </div>
+
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-4px)} }
+        #app-login-email:focus, #app-login-password:focus { border-color: rgba(99,102,241,0.5) !important; box-shadow: 0 0 0 3px rgba(99,102,241,0.12) !important; background: rgba(99,102,241,0.06) !important; }
+      `}</style>
+    </div>
+  );
+}
+
 // ─── App Shell ────────────────────────────────────────────────────────────────
 
 export default function App() {
@@ -109,6 +238,8 @@ export default function App() {
   const [activePage, setActivePage] = useState<Page>('student-dashboard');
   const [apiConnected, setApiConnected] = useState<boolean | null>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [sessionLoading, setSessionLoading] = useState(true);
 
   // Interactive Toast & Modal State
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'warning' | 'info' | 'danger' } | null>(null);
@@ -140,9 +271,12 @@ export default function App() {
         const me = await getMeApi();
         if (isMounted && me?.user) {
           setCurrentUser(me.user);
+          setIsLoggedIn(true);
         }
       } catch (err) {
-        // Unauthenticated or default fallback
+        // Unauthenticated — show login screen
+      } finally {
+        if (isMounted) setSessionLoading(false);
       }
     };
 
@@ -175,15 +309,26 @@ export default function App() {
   };
 
   const handleSignOut = async () => {
+    setProfileDropdownOpen(false);
+    setIsLoggedIn(false);   // ← show login screen immediately
+    setCurrentUser(null);
     try {
-      await logoutApi();
-      setCurrentUser(null);
-      setProfileDropdownOpen(false);
-      showToast('Signed out successfully', 'info');
+      await logoutApi();    // clear the server-side cookie in the background
     } catch (err) {
-      setCurrentUser(null);
-      setProfileDropdownOpen(false);
-      showToast('Signed out', 'info');
+      // session already cleared on client — no action needed
+    }
+  };
+
+  const handleAppLogin = async (email: string, password: string) => {
+    const data = await loginApi(email, password);
+    if (data?.user) {
+      setCurrentUser(data.user);
+      // Set default page based on role
+      const r = data.user.role?.toLowerCase();
+      if (r === 'admin') setActivePage('admin-dashboard');
+      else if (r === 'faculty') setActivePage('faculty-dashboard');
+      else setActivePage('student-dashboard');
+      setIsLoggedIn(true);
     }
   };
 
@@ -193,6 +338,23 @@ export default function App() {
   const userRole = role === 'admin' ? 'Administrator' : role === 'faculty' ? 'Faculty' : 'Student · CSE Yr 2';
   const userInitials = userName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase();
   const searchPlaceholder = role === 'admin' ? 'Search departments, faculty...' : role === 'faculty' ? 'Search students, courses...' : 'Search courses, topics...';
+
+  // ── Session loading splash ──────────────────────────────────────────────
+  if (sessionLoading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
+          <p className="text-slate-400 text-sm font-medium animate-pulse">Restoring session...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Login screen (when not authenticated) ───────────────────────────────
+  if (!isLoggedIn) {
+    return <AppLoginScreen onLogin={handleAppLogin} />;
+  }
 
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden font-sans relative">
