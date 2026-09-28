@@ -289,24 +289,7 @@ export default function App() {
     };
   }, []);
 
-  const role = activePage.startsWith('admin') ? 'admin'
-    : activePage.startsWith('faculty') ? 'faculty' : 'student';
-
-  const handleRoleSwitch = async (r: 'student' | 'faculty' | 'admin') => {
-    const targetPage = r === 'student' ? 'student-dashboard' : r === 'faculty' ? 'faculty-dashboard' : 'admin-dashboard';
-    setActivePage(targetPage);
-    // Auto sync session with demo account for selected portal
-    const demoEmail = r === 'admin' ? 'admin@example.com' : r === 'faculty' ? 'faculty@example.com' : 'student@example.com';
-    try {
-      const authRes = await loginApi(demoEmail, 'Password123!');
-      if (authRes?.user) {
-        setCurrentUser(authRes.user);
-        showToast(`Switched to ${r.toUpperCase()} Portal (${authRes.user.name})`, 'info');
-      }
-    } catch (e) {
-      showToast(`Switched to ${r.toUpperCase()} Portal`, 'info');
-    }
-  };
+  const role = (currentUser?.role?.toLowerCase() || (activePage.startsWith('admin') ? 'admin' : activePage.startsWith('faculty') ? 'faculty' : 'student')) as 'admin' | 'faculty' | 'student';
 
   const handleSignOut = async () => {
     setProfileDropdownOpen(false);
@@ -383,17 +366,6 @@ export default function App() {
           <button className="lg:hidden p-2 text-slate-400 hover:bg-slate-100 rounded-lg" onClick={() => setSidebarOpen(false)}><X className="w-5 h-5" /></button>
         </div>
 
-        {/* Role switcher */}
-        <div className="px-4 pt-4 pb-2">
-          <div className="flex rounded-lg bg-slate-100 p-1 gap-1">
-            {(['student', 'faculty', 'admin'] as const).map(r => (
-              <button key={r} onClick={() => handleRoleSwitch(r)}
-                className={`flex-1 py-1.5 rounded-md text-xs font-semibold transition-all capitalize ${role === r ? 'bg-white shadow-sm text-brand-700' : 'text-slate-500 hover:text-slate-700'}`}>
-                {r}
-              </button>
-            ))}
-          </div>
-        </div>
 
         <div className="flex-1 overflow-y-auto py-4 px-4 space-y-1" style={{ scrollbarWidth: 'none' }}>
           <div className="mb-3 px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">
