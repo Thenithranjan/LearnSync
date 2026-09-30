@@ -1709,7 +1709,8 @@ function FacultyAssignmentsPage({ onOpenModal }: { onOpenModal?: (type: string, 
       try {
         setLoadingA(true);
         // 1. fetch all courses the faculty teaches
-        const courseRes = await (await import('./services/courseService')).default.getCourses();
+        const courseService = (await import('./services/courseService')).default;
+        const courseRes = await courseService.getFacultyCourses();
         const myCourses: any[] = courseRes?.success ? courseRes.data : [];
         setCourses(myCourses);
 
