@@ -1699,54 +1699,137 @@ function FacultyStudentsPage({ onOpenModal }: { onOpenModal?: (type: string, dat
 // ─────────────────────────────────────────────────────────────────────────────
 
 function FacultyAssignmentsPage({ onOpenModal }: { onOpenModal?: (type: string, data?: any) => void }) {
-  const facultyAssignments: any[] = [];
+  const [courses, setCourses]       = React.useState<any[]>([]);
+  const [assignments, setAssignments] = React.useState<any[]>([]);
+  const [loadingA, setLoadingA]     = React.useState(true);
+  const [errorA, setErrorA]         = React.useState('');
+
+  React.useEffect(() => {
+    const load = async () => {
+      try {
+        setLoadingA(true);
+        // 1. fetch all courses the faculty teaches
+        const courseRes = await (await import('./services/courseService')).default.getCourses();
+        const myCourses: any[] = courseRes?.success ? courseRes.data : [];
+        setCourses(myCourses);
+
+        // 2. for each course, fetch its assessments and keep only ASSIGNMENTs
+        const allAssignments: any[] = [];
+        await Promise.all(
+          myCourses.map(async (c: any) => {
+            try {
+              const aRes = await (await import('./services/assessmentService')).default.getCourseAssessments(c._id);
+              if (aRes?.success) {
+                const filtered = (aRes.data as any[]).filter((a: any) => a.type === 'ASSIGNMENT');
+                filtered.forEach((a: any) => allAssignments.push({ ...a, courseName: c.title, courseId: c._id }));
+              }
+            } catch { /* skip courses that fail */ }
+          })
+        );
+        setAssignments(allAssignments);
+      } catch (err: any) {
+        setErrorA(err.message || 'Failed to load assignments');
+      } finally {
+        setLoadingA(false);
+      }
+    };
+    load();
+  }, []);
+
   return (
     <div className="max-w-7xl mx-auto space-y-8">
       <PageHeader icon={ClipboardList} title="Assignments" subtitle="Manage, review, and grade assignments across your courses.">
-        <button onClick={() => onOpenModal?.('create-course')} className="flex items-center gap-2 px-4 py-2.5 bg-brand-600 text-white text-sm font-semibold rounded-xl hover:bg-brand-700 transition-colors shadow-sm shadow-brand-500/20"><PlusCircle className="w-4 h-4" />New Assignment</button>
+        {courses.length > 0 && (
+          <a
+            href={`/faculty/courses/${courses[0]._id}/assessments/create`}
+            className="flex items-center gap-2 px-4 py-2.5 bg-brand-600 text-white text-sm font-semibold rounded-xl hover:bg-brand-700 transition-colors shadow-sm shadow-brand-500/20"
+          >
+            <PlusCircle className="w-4 h-4" />New Assignment
+          </a>
+        )}
       </PageHeader>
 
-      {facultyAssignments.length === 0 ? (
+      {loadingA ? (
+        <div className="flex flex-col items-center justify-center py-20 gap-3">
+          <div className="w-10 h-10 border-4 border-brand-200 border-t-brand-600 rounded-full animate-spin" />
+          <span className="text-sm text-slate-400">Loading assignments…</span>
+        </div>
+      ) : errorA ? (
+        <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-center gap-3 text-rose-600 text-sm">
+          <AlertCircle className="w-5 h-5 flex-shrink-0" />{errorA}
+        </div>
+      ) : assignments.length === 0 ? (
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-12 text-center">
-          <div className="w-14 h-14 rounded-2xl bg-brand-50 flex items-center justify-center mx-auto mb-3"><ClipboardList className="w-7 h-7 text-brand-400" /></div>
+          <div className="w-14 h-14 rounded-2xl bg-brand-50 flex items-center justify-center mx-auto mb-3">
+            <ClipboardList className="w-7 h-7 text-brand-400" />
+          </div>
           <h3 className="font-bold text-slate-900 mb-1">No Assignments Yet</h3>
-          <p className="text-sm text-slate-400">Create your first assignment using the button above.</p>
+          <p className="text-sm text-slate-400">Create your first assignment from any course page.</p>
+          {courses.length > 0 && (
+            <a
+              href={`/faculty/courses/${courses[0]._id}/assessments/create`}
+              className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-brand-600 text-white text-sm font-semibold rounded-xl hover:bg-brand-700 transition-colors"
+            >
+              <PlusCircle className="w-4 h-4" /> Create First Assignment
+            </a>
+          )}
         </div>
       ) : (
         <div className="space-y-4">
-          {facultyAssignments.map(a => {
-            const submittedPct = Math.round(a.submitted / a.total * 100);
-            const gradedPct = Math.round(a.graded / a.total * 100);
-            return (
-              <div key={a.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 hover:shadow-md transition-shadow">
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <span className="text-xs font-semibold bg-brand-50 text-brand-700 px-2 py-0.5 rounded-md">{a.course}</span>
-                    <h3 className="font-bold text-slate-900 mt-2">{a.title}</h3>
-                    <p className="text-xs text-slate-400 mt-1 flex items-center gap-1"><CalendarCheck className="w-3 h-3" />Due {a.due}</p>
-                  </div>
-                  <div className="flex gap-2">
-                    <button onClick={() => onOpenModal?.('submit-assignment', a)} className="p-2 border border-slate-200 rounded-lg text-slate-500 hover:bg-slate-50 transition-colors"><Edit3 className="w-4 h-4" /></button>
-                    {a.graded < a.total && <button onClick={() => onOpenModal?.('submit-assignment', a)} className="px-3 py-2 bg-brand-600 text-white text-xs font-semibold rounded-lg hover:bg-brand-700 transition-colors">Grade ({a.submitted - a.graded} left)</button>}
+          {assignments.map((a: any) => (
+            <div key={a._id} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 hover:shadow-md transition-shadow">
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-4">
+                <div className="flex-1 min-w-0">
+                  <span className="text-xs font-semibold bg-brand-50 text-brand-700 px-2 py-0.5 rounded-md">
+                    {a.courseName}
+                  </span>
+                  <h3 className="font-bold text-slate-900 mt-2 truncate">{a.title}</h3>
+                  <p className="text-xs text-slate-400 mt-1 line-clamp-2">{a.description || 'No description.'}</p>
+                  <div className="flex flex-wrap items-center gap-3 mt-2">
+                    {a.dueDate && (
+                      <span className="text-xs text-slate-500 flex items-center gap-1">
+                        <CalendarCheck className="w-3.5 h-3.5 text-brand-400" />
+                        Due {new Date(a.dueDate).toLocaleDateString()}
+                      </span>
+                    )}
+                    <span className="text-xs text-slate-500 flex items-center gap-1">
+                      <Award className="w-3.5 h-3.5 text-amber-400" />
+                      {a.totalPoints} pts · Passing {a.passingScore}%
+                    </span>
                   </div>
                 </div>
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <div className="flex justify-between text-xs text-slate-400 mb-1.5"><span>Submitted</span><span className="font-semibold text-slate-700">{a.submitted}/{a.total}</span></div>
-                    <div className="h-2 bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-brand-500 rounded-full" style={{width:`${submittedPct}%`}}></div></div>
-                  </div>
-                  <div>
-                    <div className="flex justify-between text-xs text-slate-400 mb-1.5"><span>Graded</span><span className="font-semibold text-slate-700">{a.graded}/{a.total}</span></div>
-                    <div className="h-2 bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-success-500 rounded-full" style={{width:`${gradedPct}%`}}></div></div>
-                  </div>
-                  <div>
-                    <div className="flex justify-between text-xs text-slate-400 mb-1.5"><span>Not submitted</span><span className="font-semibold text-slate-700">{a.total-a.submitted}</span></div>
-                    <div className="h-2 bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-danger-400 rounded-full" style={{width:`${100-submittedPct}%`}}></div></div>
-                  </div>
+
+                {/* Action buttons */}
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {/* ✅ Direct link to assignment submission page */}
+                  <a
+                    href={`/assessments/${a._id}/submit`}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg transition-colors border border-slate-200"
+                    title="View Assignment"
+                  >
+                    <Eye className="w-4 h-4" />
+                    View Assignment
+                  </a>
+
+                  {/* ✅ Direct link to submission review page */}
+                  <a
+                    href={`/assessments/${a._id}/submissions`}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold rounded-lg transition-colors shadow-sm shadow-brand-500/20"
+                    title="Review Submissions"
+                  >
+                    <Users className="w-4 h-4" />
+                    Submissions
+                  </a>
                 </div>
               </div>
-            );
-          })}
+
+              {/* Submission progress placeholder */}
+              <div className="mt-3 pt-3 border-t border-slate-100 flex items-center gap-2 text-xs text-slate-400">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                <span>Click <strong className="text-slate-600">Submissions</strong> to review and grade student work for this assignment.</span>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
