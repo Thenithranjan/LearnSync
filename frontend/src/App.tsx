@@ -2251,16 +2251,15 @@ function FacultyAssignmentsPage({ onOpenModal }: { onOpenModal?: (type: string, 
       const courseService = (await import('./services/courseService')).default;
       const assessmentSvc = (await import('./services/assessmentService')).default;
       const courseRes     = await courseService.getFacultyCourses();
-      const myCourses: any[] = courseRes?.success ? courseRes.data : [];
+      const myCourses: any[] = courseRes?.courses || courseRes?.data || [];
       setCourses(myCourses);
       const allAssignments: any[] = [];
       await Promise.all(myCourses.map(async (c: any) => {
         try {
           const aRes = await assessmentSvc.getCourseAssessments(c._id);
-          if (aRes?.success) {
-            (aRes.data as any[]).filter((a: any) => a.type === 'ASSIGNMENT')
-              .forEach((a: any) => allAssignments.push({ ...a, courseName: c.title, courseId: c._id }));
-          }
+          const aList: any[] = aRes?.data || aRes?.assessments || (Array.isArray(aRes) ? aRes : []);
+          aList.filter((a: any) => a.type === 'ASSIGNMENT')
+            .forEach((a: any) => allAssignments.push({ ...a, courseName: c.title, courseId: c._id }));
         } catch { /* skip */ }
       }));
       setAssignments(allAssignments);
