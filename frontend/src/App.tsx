@@ -1286,64 +1286,587 @@ function StudentAttendancePage({ onOpenModal }: { onOpenModal?: (type: string, d
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-function StudentDiscussionsPage({ onOpenModal }: { onOpenModal?: (type: string, data?: any) => void }) {
+function StudentDiscussionsPage({ onOpenModal, onToast, currentUser }: { onOpenModal?: (type: string, data?: any) => void; onToast?: (msg: string, type?: 'success'|'warning'|'info'|'danger') => void; currentUser?: any }) {
+  const [courses, setCourses] = useState<any[]>([]);
+  const [selectedCourseId, setSelectedCourseId] = useState<string>('');
+  const [threads, setThreads] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  
+  // Filtering & search
+  const [search, setSearch] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('ALL');
+  
+  // Compose state
   const [compose, setCompose] = useState(false);
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
+  const [category, setCategory] = useState('QUESTION');
+  const [tags, setTags] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  // Thread detail / reply modal state
+  const [activeThread, setActiveThread] = useState<any>(null);
+  const [replies, setReplies] = useState<any[]>([]);
+  const [loadingReplies, setLoadingReplies] = useState(false);
+  const [replyText, setReplyText] = useState('');
+  const [sendingReply, setSendingReply] = useState(false);
+
+  // Load enrolled courses for student
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        setLoading(true);
+        const { getMyEnrolledCoursesApi } = await import('./services/enrollmentService');
+        const res = await getMyEnrolledCoursesApi();
+        const list = (res?.data || []).map((e: any) => e.course || e).filter((c: any) => c && c._id);
+        setCourses(list);
+        if (list.length > 0) {
+          setSelectedCourseId(list[0]._id);
+        } else {
+          setLoading(false);
+        }
+      } catch (err: any) {
+        console.error('Failed to load enrolled courses:', err);
+        setError('Could not load enrolled courses');
+        setLoading(false);
+      }
+    };
+    fetchCourses();
+  }, []);
+
+  // Fetch threads when course or filters change
+  const fetchThreads = React.useCallback(async (courseId: string) => {
+    if (!courseId) {
+      setThreads([]);
+      setLoading(false);
+      return;
+    }
+    try {
+      setLoading(true);
+      setError('');
+      const forumSvc = (await import('./services/forumService')).default;
+      const res = await forumSvc.getCourseThreads(courseId, {
+        category: categoryFilter,
+        search: search.trim()
+      });
+      if (res?.success) {
+        setThreads(res.data || []);
+      } else {
+        setThreads([]);
+      }
+    } catch (err: any) {
+      console.error('Failed to load threads:', err);
+      setError(err.response?.data?.message || 'Failed to load discussion threads.');
+    } finally {
+      setLoading(false);
+    }
+  }, [categoryFilter, search]);
+
+  useEffect(() => {
+    if (selectedCourseId) {
+      fetchThreads(selectedCourseId);
+    }
+  }, [selectedCourseId, categoryFilter, fetchThreads]);
+
+  // Handle Search submit
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (selectedCourseId) {
+      fetchThreads(selectedCourseId);
+    }
+  };
+
+  // Create new thread
+  const handleCreatePost = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title.trim() || !content.trim() || !selectedCourseId) {
+      onToast?.('Please fill out the title and content.', 'warning');
+      return;
+    }
+    try {
+      setSubmitting(true);
+      const forumSvc = (await import('./services/forumService')).default;
+      const tagsArray = tags.split(',').map(t => t.trim()).filter(Boolean);
+      const res = await forumSvc.createThread(selectedCourseId, {
+        title: title.trim(),
+        content: content.trim(),
+        category,
+        tags: tagsArray
+      });
+      if (res?.success) {
+        onToast?.('Discussion thread published successfully!', 'success');
+        setTitle('');
+        setContent('');
+        setTags('');
+        setCompose(false);
+        fetchThreads(selectedCourseId);
+      }
+    } catch (err: any) {
+      onToast?.(err.response?.data?.message || 'Failed to create discussion thread.', 'danger');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Open thread detail & load replies
+  const handleOpenThread = async (thread: any) => {
+    setActiveThread(thread);
+    setLoadingReplies(true);
+    setReplies([]);
+    setReplyText('');
+    try {
+      const forumSvc = (await import('./services/forumService')).default;
+      const res = await forumSvc.getThreadDetails(thread._id);
+      if (res?.success) {
+        setActiveThread(res.data.thread);
+        setReplies(res.data.replies || []);
+      }
+    } catch (err: any) {
+      console.error('Failed to load thread details:', err);
+    } finally {
+      setLoadingReplies(false);
+    }
+  };
+
+  // Upvote thread
+  const handleUpvote = async (threadId: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    try {
+      const forumSvc = (await import('./services/forumService')).default;
+      const res = await forumSvc.toggleThreadUpvote(threadId);
+      if (res?.success) {
+        setThreads(prev => prev.map(t => t._id === threadId ? { ...t, upvoteCount: res.data.upvoteCount } : t));
+        if (activeThread && activeThread._id === threadId) {
+          setActiveThread((prev: any) => ({ ...prev, upvoteCount: res.data.upvoteCount }));
+        }
+      }
+    } catch (err) {
+      console.error('Failed to upvote thread:', err);
+    }
+  };
+
+  // Post reply
+  const handleSendReply = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!replyText.trim() || !activeThread) return;
+    try {
+      setSendingReply(true);
+      const forumSvc = (await import('./services/forumService')).default;
+      const res = await forumSvc.createReply(activeThread._id, { content: replyText.trim() });
+      if (res?.success) {
+        setReplies(prev => [...prev, res.data]);
+        setReplyText('');
+        setActiveThread((prev: any) => ({ ...prev, replyCount: (prev.replyCount || 0) + 1 }));
+        setThreads(prev => prev.map(t => t._id === activeThread._id ? { ...t, replyCount: (t.replyCount || 0) + 1 } : t));
+        onToast?.('Reply posted!', 'success');
+      }
+    } catch (err: any) {
+      onToast?.(err.response?.data?.message || 'Failed to post reply', 'danger');
+    } finally {
+      setSendingReply(false);
+    }
+  };
+
+  // Reply upvote
+  const handleReplyUpvote = async (replyId: string) => {
+    try {
+      const forumSvc = (await import('./services/forumService')).default;
+      const res = await forumSvc.toggleReplyUpvote(replyId);
+      if (res?.success) {
+        setReplies(prev => prev.map(r => r._id === replyId ? { ...r, upvoteCount: res.data.upvoteCount } : r));
+      }
+    } catch (err) {
+      console.error('Failed to upvote reply:', err);
+    }
+  };
+
+  const getCategoryBadge = (cat: string) => {
+    switch (cat) {
+      case 'QUESTION':
+        return <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200"><HelpCircle className="w-3 h-3" />Question</span>;
+      case 'RESOURCE':
+        return <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200"><BookOpen className="w-3 h-3" />Resource</span>;
+      case 'ANNOUNCEMENT':
+        return <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200"><Megaphone className="w-3 h-3" />Announcement</span>;
+      default:
+        return <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200"><MessageSquare className="w-3 h-3" />Discussion</span>;
+    }
+  };
 
   return (
     <div className="max-w-7xl mx-auto space-y-8">
-      <PageHeader icon={MessageSquare} title="Discussions" subtitle="Ask questions, share insights, and collaborate with peers and faculty.">
-        <button onClick={() => setCompose(true)} className="flex items-center gap-2 px-4 py-2.5 bg-brand-600 text-white text-sm font-semibold rounded-xl hover:bg-brand-700 transition-colors shadow-sm shadow-brand-500/20">
+      <PageHeader icon={MessageSquare} title="Discussions & Q&A" subtitle="Ask questions, share insights, and collaborate with peers and faculty across courses.">
+        <button
+          onClick={() => setCompose(true)}
+          disabled={courses.length === 0}
+          className="flex items-center gap-2 px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-xl shadow-lg shadow-brand-500/20 transition-all hover:scale-105 disabled:opacity-50"
+        >
           <PlusCircle className="w-4 h-4" />New Post
         </button>
       </PageHeader>
 
-      {compose && (
-        <div className="bg-white rounded-2xl border border-brand-200 shadow-md p-6">
-          <h3 className="font-semibold text-slate-900 mb-4">New Discussion Post</h3>
-          <select className="w-full mb-3 px-4 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-700 outline-none focus:border-brand-400 bg-white">
-            {studentCourses.length === 0 ? <option disabled>No enrolled courses</option> : studentCourses.map(c => <option key={c.code}>{c.code} — {c.name}</option>)}
-          </select>
-          <input placeholder="Title your question…" className="w-full mb-3 px-4 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-brand-400" />
-          <textarea rows={3} placeholder="Describe your doubt or topic…" className="w-full mb-4 px-4 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-brand-400 resize-none"></textarea>
-          <div className="flex justify-end gap-3">
-            <button onClick={() => setCompose(false)} className="px-4 py-2 border border-slate-200 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50">Cancel</button>
-            <button onClick={() => setCompose(false)} className="px-4 py-2 bg-brand-600 text-white rounded-xl text-sm font-semibold hover:bg-brand-700 flex items-center gap-2"><Send className="w-4 h-4" />Post</button>
+      {/* Filter and Course selector bar */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 flex-1">
+          <div className="w-full sm:w-64">
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Select Course</label>
+            <select
+              value={selectedCourseId}
+              onChange={(e) => setSelectedCourseId(e.target.value)}
+              disabled={courses.length === 0}
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 outline-none focus:border-brand-500 bg-white"
+            >
+              {courses.length === 0 ? (
+                <option value="">No enrolled courses available</option>
+              ) : (
+                courses.map(c => (
+                  <option key={c._id} value={c._id}>
+                    {c.title} ({c.code})
+                  </option>
+                ))
+              )}
+            </select>
           </div>
+
+          <form onSubmit={handleSearchSubmit} className="relative w-full sm:w-72 mt-auto">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search topics, questions..."
+              className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-brand-500 focus:bg-white transition-all"
+            />
+          </form>
+        </div>
+
+        {/* Categories */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 self-start sm:self-end">
+          {['ALL', 'QUESTION', 'DISCUSSION', 'RESOURCE'].map(cat => (
+            <button
+              key={cat}
+              onClick={() => setCategoryFilter(cat)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors ${
+                categoryFilter === cat
+                  ? 'bg-brand-600 text-white shadow-sm'
+                  : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
+              }`}
+            >
+              {cat === 'ALL' ? 'All' : cat.charAt(0) + cat.slice(1).toLowerCase()}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* New Post Form */}
+      {compose && (
+        <div className="bg-white rounded-3xl border border-brand-200 shadow-xl p-6 sm:p-8 animate-fadeIn">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-bold text-lg text-slate-900 flex items-center gap-2">
+              <PlusCircle className="w-5 h-5 text-brand-600" />
+              Create Discussion Thread
+            </h3>
+            <button onClick={() => setCompose(false)} className="text-slate-400 hover:text-slate-600 p-1">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          <form onSubmit={handleCreatePost} className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">Title</label>
+                <input
+                  type="text"
+                  required
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="e.g. How does Dijkstra's algorithm handle negative weights?"
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-brand-500 bg-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">Category</label>
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-brand-500 bg-white text-slate-800"
+                >
+                  <option value="QUESTION">Question</option>
+                  <option value="DISCUSSION">General Discussion</option>
+                  <option value="RESOURCE">Resource Sharing</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">Content / Description</label>
+              <textarea
+                rows={4}
+                required
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                placeholder="Explain your doubt, share context, code snippets, or thoughts..."
+                className="w-full p-4 border border-slate-200 rounded-xl text-sm outline-none focus:border-brand-500 resize-none bg-white"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">Tags (comma-separated)</label>
+              <input
+                type="text"
+                value={tags}
+                onChange={(e) => setTags(e.target.value)}
+                placeholder="e.g. graphs, algorithms, homework-3"
+                className="w-full px-4 py-2 border border-slate-200 rounded-xl text-sm outline-none focus:border-brand-500 bg-white"
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setCompose(false)}
+                className="px-5 py-2.5 border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={submitting}
+                className="px-6 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-sm font-semibold transition-all flex items-center gap-2 shadow-md shadow-brand-500/20 disabled:opacity-50"
+              >
+                <Send className="w-4 h-4" />
+                {submitting ? 'Publishing...' : 'Publish Thread'}
+              </button>
+            </div>
+          </form>
         </div>
       )}
 
-      <div className="space-y-3">
-        {discussions.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-12 text-center">
-            <MessageSquare className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-            <h3 className="font-semibold text-slate-800 mb-1">No Discussions Yet</h3>
-            <p className="text-sm text-slate-400">Be the first to start a conversation or ask a question.</p>
+      {/* Discussion List */}
+      <div className="space-y-4">
+        {loading ? (
+          <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
+            <div className="w-8 h-8 border-3 border-brand-500/20 border-t-brand-600 rounded-full animate-spin mx-auto mb-3" />
+            <p className="text-sm text-slate-500 font-medium">Loading discussions...</p>
+          </div>
+        ) : error ? (
+          <div className="bg-rose-50 border border-rose-200 text-rose-700 rounded-2xl p-6 text-center text-sm font-medium">
+            {error}
+          </div>
+        ) : threads.length === 0 ? (
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-14 text-center">
+            <div className="w-14 h-14 rounded-2xl bg-brand-50 flex items-center justify-center mx-auto mb-4 text-brand-500">
+              <MessageSquare className="w-7 h-7" />
+            </div>
+            <h3 className="font-bold text-slate-900 text-lg mb-1">No Discussions Yet</h3>
+            <p className="text-sm text-slate-500 max-w-sm mx-auto mb-6">
+              Be the first to start a conversation, ask a lecture question, or share study materials with your peers!
+            </p>
+            <button
+              onClick={() => setCompose(true)}
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-brand-600 text-white text-sm font-semibold rounded-xl hover:bg-brand-700 shadow-md shadow-brand-500/20"
+            >
+              <PlusCircle className="w-4 h-4" /> Start First Thread
+            </button>
           </div>
         ) : (
-          discussions.map(d => (
-            <div key={d.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 hover:shadow-md hover:border-brand-200 transition-all cursor-pointer group">
-              <div className="flex items-start gap-4">
-                <div className="w-9 h-9 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-600 shrink-0">
-                  {d.author.split(' ').map(w => w[0]).join('').slice(0,2)}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-3 mb-1">
-                    <p className="font-semibold text-slate-900 group-hover:text-brand-600 transition-colors">{d.title}</p>
-                    {d.solved && <span className="shrink-0 text-xs bg-success-50 text-success-700 font-semibold px-2 py-0.5 rounded-full flex items-center gap-1"><CheckCircle2 className="w-3 h-3" />Solved</span>}
+          threads.map(thread => (
+            <div
+              key={thread._id}
+              onClick={() => handleOpenThread(thread)}
+              className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-brand-300 transition-all p-5 sm:p-6 cursor-pointer group"
+            >
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                <div className="flex items-start gap-3.5 flex-1 min-w-0">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-brand-500 to-indigo-600 flex items-center justify-center text-xs font-bold text-white shrink-0 shadow-sm">
+                    {thread.authorId?.name ? thread.authorId.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() : 'U'}
                   </div>
-                  <div className="flex items-center gap-3 text-xs text-slate-400">
-                    <span className="font-medium text-brand-600">{d.course}</span>
-                    <span>by {d.you ? 'You' : d.author}</span>
-                    <span className="flex items-center gap-1"><MessageCircle className="w-3 h-3" />{d.replies} replies</span>
-                    <span>{d.time}</span>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      {getCategoryBadge(thread.category)}
+                      {thread.isResolved && (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          <CheckCircle2 className="w-3 h-3" /> Solved
+                        </span>
+                      )}
+                    </div>
+
+                    <h3 className="font-bold text-base text-slate-900 group-hover:text-brand-600 transition-colors leading-snug line-clamp-2">
+                      {thread.title}
+                    </h3>
+
+                    <p className="text-xs text-slate-500 line-clamp-2 mt-1 leading-relaxed">
+                      {thread.content}
+                    </p>
+
+                    {thread.tags && thread.tags.length > 0 && (
+                      <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                        {thread.tags.map((tag: string, i: number) => (
+                          <span key={i} className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md font-medium">
+                            #{tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="flex items-center gap-4 text-xs text-slate-400 mt-3 flex-wrap">
+                      <span className="font-medium text-slate-700">by {thread.authorId?.name || 'Anonymous'}</span>
+                      <span className="flex items-center gap-1"><MessageCircle className="w-3.5 h-3.5 text-slate-400" />{thread.replyCount || 0} replies</span>
+                      <span>{new Date(thread.createdAt).toLocaleDateString()}</span>
+                    </div>
                   </div>
                 </div>
-                <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-brand-500 shrink-0 mt-0.5" />
+
+                <div className="flex sm:flex-col items-center sm:items-end justify-between gap-3 shrink-0 pt-2 sm:pt-0 border-t sm:border-0 border-slate-100">
+                  <button
+                    onClick={(e) => handleUpvote(thread._id, e)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 hover:border-brand-300 hover:bg-brand-50 text-slate-600 hover:text-brand-600 text-xs font-bold transition-colors"
+                  >
+                    <ThumbsUp className="w-3.5 h-3.5" />
+                    <span>{thread.upvoteCount || 0}</span>
+                  </button>
+                  <span className="text-xs font-semibold text-brand-600 group-hover:translate-x-1 transition-transform flex items-center gap-1">
+                    View Thread <ChevronRight className="w-3.5 h-3.5" />
+                  </span>
+                </div>
               </div>
             </div>
           ))
         )}
       </div>
+
+      {/* Thread Details & Replies Modal */}
+      {activeThread && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-3xl rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh] animate-fadeIn">
+            {/* Modal Header */}
+            <div className="px-6 py-5 border-b border-slate-100 flex items-start justify-between gap-4 bg-slate-50/50">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  {getCategoryBadge(activeThread.category)}
+                  {activeThread.isResolved && (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      <CheckCircle2 className="w-3 h-3" /> Solved
+                    </span>
+                  )}
+                </div>
+                <h3 className="font-bold text-lg text-slate-900 leading-snug">{activeThread.title}</h3>
+                <p className="text-xs text-slate-400">
+                  Posted by <span className="font-semibold text-slate-700">{activeThread.authorId?.name || 'Anonymous'}</span> · {new Date(activeThread.createdAt).toLocaleDateString()}
+                </p>
+              </div>
+              <button
+                onClick={() => setActiveThread(null)}
+                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-200/50 rounded-xl transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              {/* Question / Post Details */}
+              <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100">
+                <p className="text-sm text-slate-800 leading-relaxed whitespace-pre-wrap">{activeThread.content}</p>
+                <div className="mt-4 pt-3 border-t border-slate-200/60 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {activeThread.tags?.map((t: string, i: number) => (
+                      <span key={i} className="text-[10px] bg-white border border-slate-200 px-2 py-0.5 rounded-md text-slate-600 font-medium">#{t}</span>
+                    ))}
+                  </div>
+                  <button
+                    onClick={() => handleUpvote(activeThread._id)}
+                    className="flex items-center gap-1.5 px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 hover:text-brand-600 transition-colors shadow-sm"
+                  >
+                    <ThumbsUp className="w-3.5 h-3.5 text-brand-600" />
+                    <span>{activeThread.upvoteCount || 0}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Replies Section */}
+              <div className="space-y-4">
+                <h4 className="font-bold text-sm text-slate-900 flex items-center gap-2">
+                  <MessageCircle className="w-4 h-4 text-brand-600" />
+                  Replies & Answers ({replies.length})
+                </h4>
+
+                {loadingReplies ? (
+                  <div className="py-8 text-center text-slate-400 text-xs">
+                    <div className="w-6 h-6 border-2 border-brand-500/20 border-t-brand-600 rounded-full animate-spin mx-auto mb-2" />
+                    Loading answers...
+                  </div>
+                ) : replies.length === 0 ? (
+                  <div className="p-6 bg-slate-50 rounded-2xl text-center text-slate-400 text-xs border border-dashed border-slate-200">
+                    No replies yet. Be the first to share your knowledge!
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {replies.map((reply: any) => (
+                      <div key={reply._id} className={`p-4 rounded-2xl border text-sm transition-all ${
+                        reply.isFacultyEndorsed
+                          ? 'bg-emerald-50/40 border-emerald-200'
+                          : 'bg-white border-slate-200'
+                      }`}>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-700">
+                              {reply.authorId?.name ? reply.authorId.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() : 'U'}
+                            </div>
+                            <div>
+                              <span className="font-semibold text-slate-800 text-xs">{reply.authorId?.name || 'Anonymous'}</span>
+                              <span className="text-[10px] text-slate-400 ml-2">{new Date(reply.createdAt).toLocaleDateString()}</span>
+                            </div>
+                          </div>
+                          {reply.isFacultyEndorsed && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-full flex items-center gap-1">
+                              <CheckCircle2 className="w-3 h-3" /> Faculty Verified
+                            </span>
+                          )}
+                        </div>
+
+                        <p className="text-slate-700 text-xs leading-relaxed whitespace-pre-wrap pl-9">{reply.content}</p>
+
+                        <div className="flex justify-end pt-2">
+                          <button
+                            onClick={() => handleReplyUpvote(reply._id)}
+                            className="flex items-center gap-1 text-[11px] font-semibold text-slate-500 hover:text-brand-600 px-2 py-0.5 rounded hover:bg-slate-50 transition-colors"
+                          >
+                            <ThumbsUp className="w-3 h-3" />
+                            <span>{reply.upvoteCount || 0}</span>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Modal Footer / Reply Input */}
+            <form onSubmit={handleSendReply} className="p-4 border-t border-slate-200 bg-white flex items-center gap-3">
+              <input
+                type="text"
+                value={replyText}
+                onChange={(e) => setReplyText(e.target.value)}
+                placeholder="Write your answer or thoughts..."
+                className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-brand-500 focus:bg-white transition-all"
+              />
+              <button
+                type="submit"
+                disabled={sendingReply || !replyText.trim()}
+                className="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-sm font-semibold flex items-center gap-1.5 shadow-md shadow-brand-500/20 transition-all disabled:opacity-50"
+              >
+                <Send className="w-4 h-4" />
+                {sendingReply ? 'Posting...' : 'Reply'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
