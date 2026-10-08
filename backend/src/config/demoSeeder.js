@@ -50,6 +50,7 @@ async function seedDemoData() {
         description: 'Core fundamental algorithms, binary trees, dynamic programming, and complexity analysis.',
         department: 'Computer Science',
         faculty: users['FACULTY']?._id,
+        createdBy: users['FACULTY']?._id || users['ADMIN']?._id,
         status: 'PUBLISHED'
       },
       {
@@ -58,6 +59,7 @@ async function seedDemoData() {
         description: 'Relational data models, normalization, SQL, indexing, and NoSQL architecture.',
         department: 'Computer Science',
         faculty: users['FACULTY']?._id,
+        createdBy: users['FACULTY']?._id || users['ADMIN']?._id,
         status: 'PUBLISHED'
       },
       {
@@ -66,6 +68,7 @@ async function seedDemoData() {
         description: 'TCP/IP protocol suite, routing protocols, flow control, and network security.',
         department: 'Computer Science',
         faculty: users['FACULTY']?._id,
+        createdBy: users['FACULTY']?._id || users['ADMIN']?._id,
         status: 'PUBLISHED'
       }
     ];
