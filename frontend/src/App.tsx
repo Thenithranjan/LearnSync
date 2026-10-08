@@ -443,7 +443,7 @@ export default function App() {
           {activePage === 'student-assignments' && <StudentAssignmentsPage onOpenModal={(type, data) => { setModalType(type); setModalData(data); }} />}
           {activePage === 'student-quizzes'     && <StudentQuizzesPage onOpenModal={(type, data) => { setModalType(type); setModalData(data); }} />}
           {activePage === 'student-attendance'  && <StudentAttendancePage onOpenModal={(type, data) => { setModalType(type); setModalData(data); }} />}
-          {activePage === 'student-discussions' && <StudentDiscussionsPage onOpenModal={(type, data) => { setModalType(type); setModalData(data); }} />}
+          {activePage === 'student-discussions' && <StudentDiscussionsPage currentUser={currentUser} onToast={showToast} onOpenModal={(type, data) => { setModalType(type); setModalData(data); }} />}
           {activePage === 'student-progress'    && <StudentProgressPage />}
           {activePage === 'faculty-dashboard'   && <FacultyDashboardPage onOpenModal={(type, data) => { setModalType(type); setModalData(data); }} />}
           {activePage === 'faculty-intelligence'&& <FacultyIntelligencePage onOpenModal={(type, data) => { setModalType(type); setModalData(data); }} />}
