@@ -1657,11 +1657,11 @@ function FacultyStudentsPage({ onOpenModal }: { onOpenModal?: (type: string, dat
                   </td>
                 </tr>
               ) : (
-                filtered.map(s => (
+                filtered.map((s: any) => (
                   <tr key={s.id} className="hover:bg-slate-50/50 transition-colors group cursor-pointer">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-600">{s.name.split(' ').map(w=>w[0]).join('').slice(0,2)}</div>
+                        <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-600">{s.name.split(' ').map((w: string)=>w[0]).join('').slice(0,2)}</div>
                         <span className="text-sm font-semibold text-slate-900">{s.name}</span>
                       </div>
                     </td>
@@ -1699,138 +1699,227 @@ function FacultyStudentsPage({ onOpenModal }: { onOpenModal?: (type: string, dat
 // ─────────────────────────────────────────────────────────────────────────────
 
 function FacultyAssignmentsPage({ onOpenModal }: { onOpenModal?: (type: string, data?: any) => void }) {
-  const [courses, setCourses]       = React.useState<any[]>([]);
+  const [courses, setCourses]         = React.useState<any[]>([]);
   const [assignments, setAssignments] = React.useState<any[]>([]);
-  const [loadingA, setLoadingA]     = React.useState(true);
-  const [errorA, setErrorA]         = React.useState('');
+  const [loadingA, setLoadingA]       = React.useState(true);
+  const [errorA, setErrorA]           = React.useState('');
+  const [detailAssignment, setDetailAssignment] = React.useState<any>(null);
+  const [subsAssignment, setSubsAssignment]     = React.useState<any>(null);
+  const [submissions, setSubmissions]           = React.useState<any[]>([]);
+  const [loadingSubs, setLoadingSubs]           = React.useState(false);
+  const [gradingSub, setGradingSub]       = React.useState<any>(null);
+  const [gradeScore, setGradeScore]       = React.useState('');
+  const [gradeFeedback, setGradeFeedback] = React.useState('');
+  const [savingGrade, setSavingGrade]     = React.useState(false);
+  const [deleteTarget, setDeleteTarget]   = React.useState<any>(null);
+  const [deleting, setDeleting]           = React.useState(false);
 
-  React.useEffect(() => {
-    const load = async () => {
-      try {
-        setLoadingA(true);
-        // 1. fetch all courses the faculty teaches
-        const courseService = (await import('./services/courseService')).default;
-        const courseRes = await courseService.getFacultyCourses();
-        const myCourses: any[] = courseRes?.success ? courseRes.data : [];
-        setCourses(myCourses);
-
-        // 2. for each course, fetch its assessments and keep only ASSIGNMENTs
-        const allAssignments: any[] = [];
-        await Promise.all(
-          myCourses.map(async (c: any) => {
-            try {
-              const aRes = await (await import('./services/assessmentService')).default.getCourseAssessments(c._id);
-              if (aRes?.success) {
-                const filtered = (aRes.data as any[]).filter((a: any) => a.type === 'ASSIGNMENT');
-                filtered.forEach((a: any) => allAssignments.push({ ...a, courseName: c.title, courseId: c._id }));
-              }
-            } catch { /* skip courses that fail */ }
-          })
-        );
-        setAssignments(allAssignments);
-      } catch (err: any) {
-        setErrorA(err.message || 'Failed to load assignments');
-      } finally {
-        setLoadingA(false);
-      }
-    };
-    load();
+  const loadData = React.useCallback(async () => {
+    try {
+      setLoadingA(true); setErrorA('');
+      const courseService = (await import('./services/courseService')).default;
+      const assessmentSvc = (await import('./services/assessmentService')).default;
+      const courseRes     = await courseService.getFacultyCourses();
+      const myCourses: any[] = courseRes?.success ? courseRes.data : [];
+      setCourses(myCourses);
+      const allAssignments: any[] = [];
+      await Promise.all(myCourses.map(async (c: any) => {
+        try {
+          const aRes = await assessmentSvc.getCourseAssessments(c._id);
+          if (aRes?.success) {
+            (aRes.data as any[]).filter((a: any) => a.type === 'ASSIGNMENT')
+              .forEach((a: any) => allAssignments.push({ ...a, courseName: c.title, courseId: c._id }));
+          }
+        } catch { /* skip */ }
+      }));
+      setAssignments(allAssignments);
+    } catch (err: any) { setErrorA(err.message || 'Failed to load assignments'); }
+    finally { setLoadingA(false); }
   }, []);
+
+  React.useEffect(() => { loadData(); }, [loadData]);
+
+  const openSubmissions = async (a: any) => {
+    setSubsAssignment(a); setDetailAssignment(null); setSubmissions([]); setLoadingSubs(true);
+    try {
+      const svc = (await import('./services/assessmentService')).default;
+      const res = await svc.getAssessmentSubmissions(a._id);
+      if (res?.success) setSubmissions(res.data);
+    } catch { /* ignore */ } finally { setLoadingSubs(false); }
+  };
+
+  const handleSaveGrade = async (e: React.FormEvent) => {
+    e.preventDefault(); if (!gradingSub) return;
+    try {
+      setSavingGrade(true);
+      const svc = (await import('./services/assessmentService')).default;
+      await svc.gradeSubmission(gradingSub._id, { score: Number(gradeScore), feedback: gradeFeedback });
+      setGradingSub(null);
+      if (subsAssignment) await openSubmissions(subsAssignment);
+    } catch (err: any) { alert(err.message || 'Failed to save grade.'); }
+    finally { setSavingGrade(false); }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      setDeleting(true);
+      const svc = (await import('./services/assessmentService')).default;
+      await svc.deleteAssessment(deleteTarget._id);
+      setDeleteTarget(null);
+      setAssignments(prev => prev.filter(a => a._id !== deleteTarget._id));
+    } catch (err: any) { alert(err.message || 'Failed to delete assignment.'); }
+    finally { setDeleting(false); }
+  };
+
+  if (detailAssignment) {
+    const a = detailAssignment;
+    return (
+      <div className="max-w-4xl mx-auto space-y-6">
+        <button onClick={() => setDetailAssignment(null)} className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800 font-medium">
+          <ChevronLeft className="w-4 h-4" /> Back to Assignments
+        </button>
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-8">
+          <div className="flex items-start justify-between gap-4 mb-6">
+            <div>
+              <span className="text-xs font-semibold bg-brand-50 text-brand-700 px-2 py-0.5 rounded-md">{a.courseName}</span>
+              <h1 className="text-2xl font-extrabold text-slate-900 mt-2">{a.title}</h1>
+            </div>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-600 border border-indigo-100">
+              <FileQuestion className="w-3.5 h-3.5" /> ASSIGNMENT
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-3 mb-6">
+            {a.dueDate && <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-100 px-3 py-1.5 rounded-lg text-xs text-slate-600"><CalendarCheck className="w-3.5 h-3.5 text-brand-400" /> Due: {new Date(a.dueDate).toLocaleString()}</div>}
+            <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-100 px-3 py-1.5 rounded-lg text-xs text-slate-600"><Award className="w-3.5 h-3.5 text-amber-400" /> {a.totalPoints} pts</div>
+          </div>
+          {a.description && <div className="mb-4"><h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Description</h4><p className="text-sm text-slate-600 leading-relaxed">{a.description}</p></div>}
+          {a.instructions && <div><h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Instructions &amp; Rubric</h4><p className="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">{a.instructions}</p></div>}
+        </div>
+        <div className="flex items-center justify-end gap-3">
+          <button onClick={() => { setDeleteTarget(a); setDetailAssignment(null); }} className="inline-flex items-center gap-1.5 px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 text-sm font-semibold rounded-xl border border-rose-200 transition-colors"><Trash2 className="w-4 h-4" /> Delete Assignment</button>
+          <button onClick={() => openSubmissions(a)} className="inline-flex items-center gap-1.5 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm shadow-brand-500/20"><Users className="w-4 h-4" /> View Submissions</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (subsAssignment) {
+    return (
+      <div className="max-w-6xl mx-auto space-y-6">
+        <button onClick={() => { setSubsAssignment(null); setGradingSub(null); }} className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800 font-medium"><ChevronLeft className="w-4 h-4" /> Back to Assignments</button>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-extrabold text-slate-900 flex items-center gap-2"><Users className="w-7 h-7 text-brand-500" /> Submission Review</h1>
+            <p className="text-sm text-slate-500 mt-1">For: <span className="font-semibold text-slate-800">{subsAssignment.title}</span>&nbsp;·&nbsp;<span className="text-brand-600">{subsAssignment.courseName}</span></p>
+          </div>
+          <span className="px-3 py-1.5 bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-600">{submissions.length} Submission{submissions.length !== 1 ? 's' : ''}</span>
+        </div>
+        {loadingSubs ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-3"><div className="w-10 h-10 border-4 border-brand-200 border-t-brand-600 rounded-full animate-spin" /><span className="text-sm text-slate-400">Loading submissions...</span></div>
+        ) : submissions.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-12 text-center"><Users className="w-12 h-12 text-slate-300 mx-auto mb-3" /><h3 className="font-bold text-slate-700 mb-1">No Submissions Yet</h3><p className="text-sm text-slate-400">Students have not submitted anything for this assignment.</p></div>
+        ) : (
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <table className="w-full text-left text-sm text-slate-600">
+              <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wider text-slate-400 border-b border-slate-200">
+                <tr><th className="px-5 py-4">Student</th><th className="px-5 py-4">Submitted</th><th className="px-5 py-4">Status</th><th className="px-5 py-4">Score</th><th className="px-5 py-4 text-right">Actions</th></tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {submissions.map((sub: any) => {
+                  const isGraded = sub.status === 'GRADED';
+                  return (
+                    <tr key={sub._id} className="hover:bg-slate-50 transition-colors">
+                      <td className="px-5 py-4"><div className="font-semibold text-slate-900">{sub.studentId?.name || 'Unknown'}</div><div className="text-xs text-slate-400">{sub.studentId?.email}</div></td>
+                      <td className="px-5 py-4 text-xs text-slate-400">{new Date(sub.submittedAt).toLocaleString()}</td>
+                      <td className="px-5 py-4"><span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${isGraded ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-amber-50 text-amber-600 border border-amber-200'}`}>{isGraded ? <CheckCircle2 className="w-3 h-3" /> : <Clock className="w-3 h-3" />}{sub.status}</span></td>
+                      <td className="px-5 py-4 font-bold text-slate-800">{isGraded ? `${sub.score} / ${sub.totalPoints} (${sub.percentage}%)` : '---'}</td>
+                      <td className="px-5 py-4 text-right"><button onClick={() => { setGradingSub(sub); setGradeScore(sub.score ?? ''); setGradeFeedback(sub.feedback || ''); }} className="px-3 py-1.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold rounded-lg transition-colors">{isGraded ? 'Edit Grade' : 'Grade Now'}</button></td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+        {gradingSub && (
+          <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 p-6 sm:p-8 max-w-lg w-full space-y-5">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                <div><h3 className="text-lg font-bold text-slate-900">Grade Submission</h3><p className="text-xs text-slate-400">Student: {gradingSub.studentId?.name}</p></div>
+                <button onClick={() => setGradingSub(null)} className="p-2 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100"><X className="w-5 h-5" /></button>
+              </div>
+              <div className="bg-slate-50 border border-slate-100 p-4 rounded-2xl max-h-40 overflow-y-auto text-xs text-slate-600 space-y-2">
+                <span className="font-bold text-slate-400 uppercase block">Student Response:</span>
+                <p className="whitespace-pre-wrap">{gradingSub.content || 'No written response.'}</p>
+                {gradingSub.attachmentUrl && <a href={gradingSub.attachmentUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-brand-600 hover:underline font-medium pt-1"><ArrowUpRight className="w-3.5 h-3.5" /> View Attachment</a>}
+              </div>
+              <form onSubmit={handleSaveGrade} className="space-y-4">
+                <div><label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wider">Score (out of {gradingSub.totalPoints || 100})</label><input type="number" required min="0" max={gradingSub.totalPoints || 100} value={gradeScore} onChange={e => setGradeScore(e.target.value)} className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-brand-500" /></div>
+                <div><label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wider">Feedback</label><textarea rows={3} value={gradeFeedback} onChange={e => setGradeFeedback(e.target.value)} placeholder="Provide constructive feedback..." className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-brand-500" /></div>
+                <div className="flex items-center justify-end gap-3 pt-1">
+                  <button type="button" onClick={() => setGradingSub(null)} className="px-4 py-2 text-slate-500 hover:text-slate-800 text-sm font-semibold">Cancel</button>
+                  <button type="submit" disabled={savingGrade} className="inline-flex items-center gap-1.5 px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-xl shadow-sm disabled:opacity-50">{savingGrade ? 'Saving...' : 'Save and Publish Grade'}</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto space-y-8">
-      <PageHeader icon={ClipboardList} title="Assignments" subtitle="Manage, review, and grade assignments across your courses.">
-        {courses.length > 0 && (
-          <a
-            href={`/faculty/courses/${courses[0]._id}/assessments/create`}
-            className="flex items-center gap-2 px-4 py-2.5 bg-brand-600 text-white text-sm font-semibold rounded-xl hover:bg-brand-700 transition-colors shadow-sm shadow-brand-500/20"
-          >
-            <PlusCircle className="w-4 h-4" />New Assignment
-          </a>
-        )}
-      </PageHeader>
-
+      <PageHeader icon={ClipboardList} title="Assignments" subtitle="Manage, review, and grade assignments across your courses." />
       {loadingA ? (
-        <div className="flex flex-col items-center justify-center py-20 gap-3">
-          <div className="w-10 h-10 border-4 border-brand-200 border-t-brand-600 rounded-full animate-spin" />
-          <span className="text-sm text-slate-400">Loading assignments…</span>
-        </div>
+        <div className="flex flex-col items-center justify-center py-20 gap-3"><div className="w-10 h-10 border-4 border-brand-200 border-t-brand-600 rounded-full animate-spin" /><span className="text-sm text-slate-400">Loading assignments...</span></div>
       ) : errorA ? (
-        <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-center gap-3 text-rose-600 text-sm">
-          <AlertCircle className="w-5 h-5 flex-shrink-0" />{errorA}
-        </div>
+        <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-center gap-3 text-rose-600 text-sm"><AlertCircle className="w-5 h-5 flex-shrink-0" />{errorA}</div>
       ) : assignments.length === 0 ? (
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-12 text-center">
-          <div className="w-14 h-14 rounded-2xl bg-brand-50 flex items-center justify-center mx-auto mb-3">
-            <ClipboardList className="w-7 h-7 text-brand-400" />
-          </div>
+          <div className="w-14 h-14 rounded-2xl bg-brand-50 flex items-center justify-center mx-auto mb-3"><ClipboardList className="w-7 h-7 text-brand-400" /></div>
           <h3 className="font-bold text-slate-900 mb-1">No Assignments Yet</h3>
-          <p className="text-sm text-slate-400">Create your first assignment from any course page.</p>
-          {courses.length > 0 && (
-            <a
-              href={`/faculty/courses/${courses[0]._id}/assessments/create`}
-              className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-brand-600 text-white text-sm font-semibold rounded-xl hover:bg-brand-700 transition-colors"
-            >
-              <PlusCircle className="w-4 h-4" /> Create First Assignment
-            </a>
-          )}
+          <p className="text-sm text-slate-400">Go to a course and click Create Assessment to add your first assignment.</p>
         </div>
       ) : (
         <div className="space-y-4">
           {assignments.map((a: any) => (
-            <div key={a._id} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 hover:shadow-md transition-shadow">
-              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-4">
+            <div key={a._id} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 hover:shadow-md transition-all duration-200">
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
-                  <span className="text-xs font-semibold bg-brand-50 text-brand-700 px-2 py-0.5 rounded-md">
-                    {a.courseName}
-                  </span>
-                  <h3 className="font-bold text-slate-900 mt-2 truncate">{a.title}</h3>
-                  <p className="text-xs text-slate-400 mt-1 line-clamp-2">{a.description || 'No description.'}</p>
-                  <div className="flex flex-wrap items-center gap-3 mt-2">
-                    {a.dueDate && (
-                      <span className="text-xs text-slate-500 flex items-center gap-1">
-                        <CalendarCheck className="w-3.5 h-3.5 text-brand-400" />
-                        Due {new Date(a.dueDate).toLocaleDateString()}
-                      </span>
-                    )}
-                    <span className="text-xs text-slate-500 flex items-center gap-1">
-                      <Award className="w-3.5 h-3.5 text-amber-400" />
-                      {a.totalPoints} pts · Passing {a.passingScore}%
-                    </span>
+                  <span className="text-xs font-semibold bg-brand-50 text-brand-700 px-2 py-0.5 rounded-md">{a.courseName}</span>
+                  <h3 className="font-bold text-slate-900 mt-2 text-base truncate">{a.title}</h3>
+                  {a.description && <p className="text-xs text-slate-400 mt-1 line-clamp-2">{a.description}</p>}
+                  <div className="flex flex-wrap items-center gap-3 mt-3">
+                    {a.dueDate && <span className="text-xs text-slate-500 flex items-center gap-1.5 bg-slate-50 border border-slate-100 px-2 py-1 rounded-lg"><CalendarCheck className="w-3.5 h-3.5 text-brand-400" /> Due {new Date(a.dueDate).toLocaleDateString()}</span>}
+                    <span className="text-xs text-slate-500 flex items-center gap-1.5 bg-slate-50 border border-slate-100 px-2 py-1 rounded-lg"><Award className="w-3.5 h-3.5 text-amber-400" /> {a.totalPoints} pts</span>
                   </div>
                 </div>
-
-                {/* Action buttons */}
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  {/* ✅ Direct link to assignment submission page */}
-                  <a
-                    href={`/assessments/${a._id}/submit`}
-                    className="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg transition-colors border border-slate-200"
-                    title="View Assignment"
-                  >
-                    <Eye className="w-4 h-4" />
-                    View Assignment
-                  </a>
-
-                  {/* ✅ Direct link to submission review page */}
-                  <a
-                    href={`/assessments/${a._id}/submissions`}
-                    className="inline-flex items-center gap-1.5 px-3 py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold rounded-lg transition-colors shadow-sm shadow-brand-500/20"
-                    title="Review Submissions"
-                  >
-                    <Users className="w-4 h-4" />
-                    Submissions
-                  </a>
+                <div className="flex items-center gap-2 flex-shrink-0 flex-wrap sm:flex-nowrap">
+                  <button onClick={() => setDetailAssignment(a)} className="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg transition-colors border border-slate-200"><Eye className="w-4 h-4" /> View</button>
+                  <button onClick={() => openSubmissions(a)} className="inline-flex items-center gap-1.5 px-3 py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold rounded-lg transition-colors shadow-sm shadow-brand-500/20"><Users className="w-4 h-4" /> Submissions</button>
+                  <button onClick={() => setDeleteTarget(a)} className="inline-flex items-center gap-1.5 px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-semibold rounded-lg transition-colors border border-rose-200"><Trash2 className="w-4 h-4" /> Delete</button>
                 </div>
-              </div>
-
-              {/* Submission progress placeholder */}
-              <div className="mt-3 pt-3 border-t border-slate-100 flex items-center gap-2 text-xs text-slate-400">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-                <span>Click <strong className="text-slate-600">Submissions</strong> to review and grade student work for this assignment.</span>
               </div>
             </div>
           ))}
+        </div>
+      )}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 p-6 sm:p-8 max-w-md w-full space-y-5">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-rose-50 flex items-center justify-center flex-shrink-0"><Trash2 className="w-6 h-6 text-rose-500" /></div>
+              <div><h3 className="text-lg font-bold text-slate-900">Delete Assignment?</h3><p className="text-sm text-slate-500 mt-0.5">This action cannot be undone.</p></div>
+            </div>
+            <div className="p-4 bg-rose-50 border border-rose-100 rounded-2xl"><p className="text-sm font-semibold text-slate-800">{deleteTarget.title}</p><p className="text-xs text-slate-500 mt-0.5">{deleteTarget.courseName}</p></div>
+            <p className="text-sm text-slate-500">All student submissions will also be permanently deleted. Are you sure?</p>
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button onClick={() => setDeleteTarget(null)} disabled={deleting} className="px-5 py-2.5 text-slate-600 hover:text-slate-900 text-sm font-semibold border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">Cancel</button>
+              <button onClick={handleDelete} disabled={deleting} className="inline-flex items-center gap-2 px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold rounded-xl shadow-sm shadow-rose-500/20 transition-colors disabled:opacity-50"><Trash2 className="w-4 h-4" />{deleting ? 'Deleting...' : 'Yes, Delete'}</button>
+            </div>
+          </div>
         </div>
       )}
     </div>
