@@ -1318,8 +1318,16 @@ function StudentDiscussionsPage({ onOpenModal, onToast, currentUser }: { onOpenM
       try {
         setLoading(true);
         const { getMyEnrolledCoursesApi } = await import('./services/enrollmentService');
+        const courseSvc = (await import('./services/courseService')).default;
         const res = await getMyEnrolledCoursesApi();
-        const list = (res?.data || []).map((e: any) => e.course || e).filter((c: any) => c && c._id);
+        let list = (res?.data || []).map((e: any) => e.course || e).filter((c: any) => c && c._id);
+        
+        // If student is not yet enrolled in any course, fallback to all available system courses
+        if (list.length === 0) {
+          const allCoursesRes = await courseSvc.getCourses();
+          list = (allCoursesRes?.data || []).filter((c: any) => c && c._id);
+        }
+
         setCourses(list);
         if (list.length > 0) {
           setSelectedCourseId(list[0]._id);
@@ -1328,7 +1336,7 @@ function StudentDiscussionsPage({ onOpenModal, onToast, currentUser }: { onOpenM
         }
       } catch (err: any) {
         console.error('Failed to load enrolled courses:', err);
-        setError('Could not load enrolled courses');
+        setError('Could not load courses');
         setLoading(false);
       }
     };
