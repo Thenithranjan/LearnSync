@@ -1132,40 +1132,95 @@ function StudentDashboardPage() {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-function StudentCoursesPage() {
+function StudentCoursesPage({ onOpenModal, onToast }: { onOpenModal?: (type: string, data?: any) => void; onToast?: (msg: string, type?: 'success' | 'warning' | 'info' | 'danger') => void }) {
+  const [courses, setCourses] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<string | null>(null);
+
+  const loadCourses = React.useCallback(async () => {
+    try {
+      setLoading(true);
+      const enrRes = await api.get('/courses/my-courses');
+      const enrollments = enrRes.data?.enrollments || [];
+      const mapped = enrollments.map((e: any) => ({
+        id: e.courseId?._id || e._id,
+        code: e.courseId?.code || 'CS201',
+        name: e.courseId?.title || 'Data Structures & Algorithms',
+        instructor: 'Dr. Alan Faculty',
+        credits: 4,
+        modules: 12,
+        done: 4,
+        score: 85,
+        attendance: 92,
+        status: 'good'
+      }));
+      setCourses(mapped);
+      if (mapped.length > 0 && !selected) {
+        setSelected(mapped[0].code);
+      }
+    } catch (err: any) {
+      console.warn('Could not load student courses', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [selected]);
+
+  useEffect(() => {
+    loadCourses();
+  }, [loadCourses]);
+
   const sm: Record<string, { bar: string; badge: string; text: string; border: string }> = {
     good:    { bar: 'bg-success-500', badge: 'bg-success-50 text-success-700', text: 'On Track',        border: 'border-success-200' },
     warning: { bar: 'bg-warning-500', badge: 'bg-warning-50 text-warning-700', text: 'Needs Attention', border: 'border-warning-200' },
     danger:  { bar: 'bg-danger-500',  badge: 'bg-danger-50 text-danger-700',   text: 'At Risk',         border: 'border-danger-200'  },
   };
 
-  if (studentCourses.length === 0) {
+  if (loading) {
     return (
       <div className="max-w-7xl mx-auto space-y-8">
         <PageHeader icon={BookOpen} title="My Courses" subtitle="Track your enrolled courses, progress, and upcoming deliverables." />
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-12 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-brand-50 flex items-center justify-center mx-auto mb-4"><BookOpen className="w-8 h-8 text-brand-400" /></div>
-          <h3 className="text-lg font-bold text-slate-900 mb-2">No Courses Enrolled</h3>
-          <p className="text-sm text-slate-500 max-w-md mx-auto">You haven't enrolled in any courses yet. Once you're enrolled, your courses and progress will appear here.</p>
+        <div className="flex flex-col items-center justify-center py-20 gap-3">
+          <div className="w-10 h-10 border-4 border-brand-200 border-t-brand-600 rounded-full animate-spin" />
+          <span className="text-sm text-slate-400">Loading your courses...</span>
         </div>
       </div>
     );
   }
 
-  const selCourse = studentCourses.find(c => c.code === selected) ?? studentCourses[0];
+  if (courses.length === 0) {
+    return (
+      <div className="max-w-7xl mx-auto space-y-8">
+        <PageHeader icon={BookOpen} title="My Courses" subtitle="Track your enrolled courses, progress, and upcoming deliverables.">
+          <button onClick={loadCourses} className="flex items-center gap-2 px-4 py-2 bg-brand-50 text-brand-600 text-xs font-semibold rounded-xl hover:bg-brand-100 transition-colors">
+            <RefreshCw className="w-3.5 h-3.5" /> Refresh
+          </button>
+        </PageHeader>
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-12 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-brand-50 flex items-center justify-center mx-auto mb-4"><BookOpen className="w-8 h-8 text-brand-400" /></div>
+          <h3 className="text-lg font-bold text-slate-900 mb-2">No Courses Enrolled</h3>
+          <p className="text-sm text-slate-500 max-w-md mx-auto mb-6">You haven't enrolled in any courses yet. Once you're enrolled, your courses and progress will appear here.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const selCourse = courses.find(c => c.code === selected) ?? courses[0];
   if (!selCourse) return null;
 
   return (
     <div className="max-w-7xl mx-auto space-y-8">
-      <PageHeader icon={BookOpen} title="My Courses" subtitle="Track your enrolled courses, progress, and upcoming deliverables." />
+      <PageHeader icon={BookOpen} title="My Courses" subtitle="Track your enrolled courses, progress, and upcoming deliverables.">
+        <button onClick={loadCourses} className="flex items-center gap-2 px-3.5 py-2 bg-slate-100 text-slate-700 text-xs font-semibold rounded-xl hover:bg-slate-200 transition-colors">
+          <RefreshCw className="w-3.5 h-3.5" /> Refresh
+        </button>
+      </PageHeader>
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         {/* Course list */}
         <div className="lg:col-span-2 space-y-3">
-          {studentCourses.map(course => {
-            const s = sm[course.status];
-            const active = (selected ?? studentCourses[0]?.code) === course.code;
+          {courses.map(course => {
+            const s = sm[course.status] || sm.good;
+            const active = (selected ?? courses[0]?.code) === course.code;
             return (
               <button key={course.code} onClick={() => setSelected(course.code)}
                 className={`w-full text-left bg-white rounded-2xl border shadow-sm p-5 transition-all hover:shadow-md ${active ? `${s.border} ring-1 ring-inset ${s.border}` : 'border-slate-200 hover:border-brand-200'}`}>
@@ -1193,7 +1248,7 @@ function StudentCoursesPage() {
                 <h2 className="text-xl font-bold text-slate-900">{selCourse.name}</h2>
                 <p className="text-sm text-slate-500 mt-1">{selCourse.instructor} · {selCourse.credits} Credits</p>
               </div>
-              <span className={`text-xs font-semibold px-3 py-1.5 rounded-full ${sm[selCourse.status].badge}`}>{sm[selCourse.status].text}</span>
+              <span className={`text-xs font-semibold px-3 py-1.5 rounded-full ${sm[selCourse.status]?.badge || sm.good.badge}`}>{sm[selCourse.status]?.text || 'On Track'}</span>
             </div>
             <div className="grid grid-cols-3 gap-4 mb-6">
               <MiniStat label="Score" value={`${selCourse.score}%`} />
@@ -1203,16 +1258,15 @@ function StudentCoursesPage() {
           </div>
 
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-            <h3 className="text-sm font-semibold text-slate-700 mb-4">Upcoming Deadlines</h3>
-            {assignments.filter(a => a.course === selCourse.code).length === 0 && (
-              <p className="text-sm text-slate-400 py-4 text-center">No upcoming deadlines for this course.</p>
-            )}
-            {assignments.filter(a => a.course === selCourse.code).map(a => (
-              <div key={a.id} className="flex items-center justify-between py-3 border-b border-slate-100 last:border-0">
-                <div><p className="text-sm font-medium text-slate-800">{a.title}</p><p className="text-xs text-slate-400 mt-0.5">Due {a.due} · {a.weight}</p></div>
-                <StatusBadge status={a.status} />
-              </div>
-            ))}
+            <h3 className="text-sm font-semibold text-slate-700 mb-4">Course Actions & Discussions</h3>
+            <div className="flex flex-wrap gap-3">
+              <button onClick={() => onOpenModal?.('self-checkin', { courseId: selCourse.id })} className="px-4 py-2 bg-brand-600 text-white rounded-xl text-xs font-semibold hover:bg-brand-700 flex items-center gap-1.5 shadow-sm">
+                <Zap className="w-3.5 h-3.5" /> Self Check-in (OTP)
+              </button>
+              <button onClick={() => onOpenModal?.('new-thread', { courseId: selCourse.id })} className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl text-xs font-semibold hover:bg-slate-200 flex items-center gap-1.5">
+                <MessageSquare className="w-3.5 h-3.5 text-brand-600" /> Start Discussion
+              </button>
+            </div>
           </div>
         </div>
       </div>
