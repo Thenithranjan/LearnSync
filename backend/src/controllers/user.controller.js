@@ -2,6 +2,7 @@ const UserService = require('../services/user.service');
 const User = require('../models/User');
 const Course = require('../models/Course');
 const Enrollment = require('../models/Enrollment');
+const CourseAnalyticsService = require('../services/analytics/courseAnalytics.service');
 const { sendSuccess } = require('../utils/apiResponse');
 
 /**
@@ -70,7 +71,7 @@ class UserController {
         User.find(query).select('-password').sort({ createdAt: -1 }).skip(skip).limit(limitNum).lean()
       ]);
 
-      // Enrich faculty rows with live course + student counts
+      // Enrich faculty rows with live course, student and performance stats
       const data = await Promise.all(
         users.map(async (u) => {
           if (u.role !== 'FACULTY') return u;
@@ -79,7 +80,23 @@ class UserController {
           const studentsCount = courseIds.length
             ? await Enrollment.countDocuments({ courseId: { $in: courseIds }, status: 'ACTIVE' })
             : 0;
-          return { ...u, coursesCount: courseIds.length, studentsCount };
+          // Average class performance across the faculty's courses
+          let avgPerformance = null;
+          if (courseIds.length) {
+            const scores = [];
+            await Promise.all(courseIds.slice(0, 10).map(async (courseId) => {
+              try {
+                const courseData = await CourseAnalyticsService.getCourseStudents(courseId);
+                (courseData.students || []).forEach((s) => {
+                  if (s.overallScore !== null && s.overallScore !== undefined) scores.push(s.overallScore);
+                });
+              } catch { /* skip courses with no computable data */ }
+            }));
+            if (scores.length) {
+              avgPerformance = Number((scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1));
+            }
+          }
+          return { ...u, coursesCount: courseIds.length, studentsCount, avgPerformance };
         })
       );
 
