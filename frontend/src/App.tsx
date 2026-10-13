@@ -3563,39 +3563,59 @@ function AdminDashboardPage({ onOpenModal, onToast }: { onOpenModal?: (type: str
 // ─────────────────────────────────────────────────────────────────────────────
 
 function AdminDepartmentsPage({ onToast }: { onToast?: (msg: string, type?: 'success'|'warning'|'info') => void }) {
+  const [departments, setDepartments] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const svc = (await import('./services/analytics/adminAnalyticsService')).default;
+        const res = await svc.getDepartments();
+        if (mounted) setDepartments(res || []);
+      } catch {
+        // empty state renders on failure
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
+  const chartData = departments.map(d => ({
+    dept: (d.department || 'General').slice(0, 10),
+    score: d.averagePerformance ?? 0,
+    attendance: d.averageAttendance ?? 0,
+  }));
+
   return (
     <div className="max-w-7xl mx-auto space-y-8">
       <PageHeader icon={Building2} title="Departments" subtitle="Institution-wide department performance and health metrics." />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-        {departmentData.length === 0 ? (
+        {departments.length === 0 ? (
           <div className="col-span-3 py-16 text-center">
             <Building2 className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-            <p className="text-slate-400 text-sm">No department data available yet.</p>
+            <p className="text-slate-400 text-sm">{loading ? 'Loading departments…' : 'No department data available yet.'}</p>
           </div>
-        ) : departmentData.map(d => {
-          const atRiskPct = Math.round(d.atRisk / d.students * 100);
-          const positive = d.trend >= 0;
+        ) : departments.map(d => {
+          const avg = d.averagePerformance;
           return (
-            <div key={d.dept} onClick={() => onToast?.(`Viewing ${d.dept} Department Details`, 'info')} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 hover:shadow-md hover:border-brand-200 transition-all cursor-pointer group">
+            <div key={d.department} onClick={() => onToast?.(`Viewing ${d.department} Department Details`, 'info')} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 hover:shadow-md hover:border-brand-200 transition-all cursor-pointer group">
               <div className="flex items-start justify-between mb-5">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center"><Building2 className="w-5 h-5 text-brand-500" /></div>
-                  <div><h3 className="font-bold text-slate-900 group-hover:text-brand-600 transition-colors">{d.dept}</h3><p className="text-xs text-slate-400">{d.faculty} faculty · {d.courses} courses</p></div>
-                </div>
-                <div className={`flex items-center gap-0.5 text-xs font-bold ${positive?'text-success-600':'text-danger-600'}`}>
-                  {positive ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-                  {positive?'+':''}{d.trend}%
+                  <div><h3 className="font-bold text-slate-900 group-hover:text-brand-600 transition-colors">{d.department}</h3><p className="text-xs text-slate-400">{d.studentCount} students · {d.courseCount} courses</p></div>
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-3 mb-4">
-                <div className="text-center"><p className="text-xl font-bold text-slate-900">{d.students}</p><p className="text-xs text-slate-400">Students</p></div>
-                <div className="text-center"><p className={`text-xl font-bold ${d.avg>=70?'text-success-600':'text-warning-600'}`}>{d.avg}%</p><p className="text-xs text-slate-400">Avg Score</p></div>
-                <div className="text-center"><p className={`text-xl font-bold ${atRiskPct>=20?'text-danger-600':'text-warning-600'}`}>{d.atRisk}</p><p className="text-xs text-slate-400">At-Risk</p></div>
+                <div className="text-center"><p className="text-xl font-bold text-slate-900">{d.studentCount}</p><p className="text-xs text-slate-400">Students</p></div>
+                <div className="text-center"><p className={`text-xl font-bold ${avg != null && avg >= 70 ? 'text-success-600' : 'text-warning-600'}`}>{avg != null ? `${avg}%` : '—'}</p><p className="text-xs text-slate-400">Avg Score</p></div>
+                <div className="text-center"><p className="text-xl font-bold text-slate-900">{d.averageAttendance != null ? `${d.averageAttendance}%` : '—'}</p><p className="text-xs text-slate-400">Attendance</p></div>
               </div>
               <div>
-                <div className="flex justify-between text-xs text-slate-400 mb-1.5"><span>Performance</span><span className="font-semibold">{d.avg}%</span></div>
-                <div className="h-2 bg-slate-100 rounded-full overflow-hidden"><div className={`h-full rounded-full ${d.avg>=70?'bg-success-500':'bg-warning-500'}`} style={{width:`${d.avg}%`}}></div></div>
+                <div className="flex justify-between text-xs text-slate-400 mb-1.5"><span>Performance</span><span className="font-semibold">{avg != null ? `${avg}%` : '—'}</span></div>
+                <div className="h-2 bg-slate-100 rounded-full overflow-hidden"><div className={`h-full rounded-full ${avg != null && avg >= 70 ? 'bg-success-500' : 'bg-warning-500'}`} style={{width:`${avg ?? 0}%`}}></div></div>
               </div>
             </div>
           );
@@ -3603,33 +3623,26 @@ function AdminDepartmentsPage({ onToast }: { onToast?: (msg: string, type?: 'suc
       </div>
 
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 lg:p-8">
-        <h2 className="font-semibold text-slate-900 mb-6">Department Score Trend (Mar–Jul)</h2>
+        <h2 className="font-semibold text-slate-900 mb-1">Department Performance Comparison</h2>
+        <p className="text-sm text-slate-400 mb-6">Average score vs. attendance by department</p>
         <div className="h-64">
-          {deptTrendData.length === 0 ? (
+          {chartData.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-slate-400">
               <BarChart2 className="w-8 h-8 mb-2 opacity-40" />
-              <p className="text-sm">No trend data available yet.</p>
+              <p className="text-sm">{loading ? 'Loading…' : 'No trend data available yet.'}</p>
             </div>
           ) : (
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={deptTrendData} margin={{top:0,right:0,left:-20,bottom:0}}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-              <XAxis dataKey="month" tick={{fill:'#94a3b8',fontSize:12}} axisLine={false} tickLine={false} />
-              <YAxis domain={[55,85]} tick={{fill:'#94a3b8',fontSize:12}} axisLine={false} tickLine={false} />
+            <BarChart data={chartData} margin={{top:0,right:0,left:-20,bottom:0}} barGap={4}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+              <XAxis dataKey="dept" tick={{fill:'#94a3b8',fontSize:12}} axisLine={false} tickLine={false} />
+              <YAxis domain={[0,100]} tick={{fill:'#94a3b8',fontSize:12}} axisLine={false} tickLine={false} />
               <Tooltip contentStyle={{borderRadius:'10px',border:'none',boxShadow:'0 8px 24px -4px rgb(0 0 0/0.12)',fontSize:'13px'}} />
-              <Line type="monotone" dataKey="cse"   stroke="#6366f1" strokeWidth={2} dot={false} name="CS" />
-              <Line type="monotone" dataKey="maths" stroke="#f59e0b" strokeWidth={2} dot={false} name="Maths" />
-              <Line type="monotone" dataKey="phy"   stroke="#10b981" strokeWidth={2} dot={false} name="Physics" />
-              <Line type="monotone" dataKey="che"   stroke="#ef4444" strokeWidth={2} dot={false} name="Chem" />
-              <Line type="monotone" dataKey="ele"   stroke="#8b5cf6" strokeWidth={2} dot={false} name="Elec" />
-            </LineChart>
+              <Bar dataKey="score" fill="#6366f1" radius={[4,4,0,0]} barSize={18} name="Avg Score" />
+              <Bar dataKey="attendance" fill="#10b981" radius={[4,4,0,0]} barSize={18} name="Attendance" />
+            </BarChart>
           </ResponsiveContainer>
           )}
-        </div>
-        <div className="flex flex-wrap items-center gap-5 mt-3">
-          {[['CS','#6366f1'],['Maths','#f59e0b'],['Physics','#10b981'],['Chem','#ef4444'],['Elec','#8b5cf6']].map(([name,color]) => (
-            <span key={name} className="flex items-center gap-2 text-xs text-slate-500"><span className="w-3 h-0.5 rounded-full inline-block" style={{background:color}}></span>{name}</span>
-          ))}
         </div>
       </div>
     </div>
@@ -3640,7 +3653,26 @@ function AdminDepartmentsPage({ onToast }: { onToast?: (msg: string, type?: 'suc
 
 function AdminFacultyPage({ onOpenModal, onToast }: { onOpenModal?: (type: string, data?: any) => void; onToast?: (msg: string, type?: 'success'|'warning'|'info') => void }) {
   const [search, setSearch] = useState('');
-  const filtered = facultyRoster.filter(f => f.name.toLowerCase().includes(search.toLowerCase()) || f.dept.toLowerCase().includes(search.toLowerCase()));
+  const [roster, setRoster] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const { listUsersApi } = await import('./services/userService');
+        const res = await listUsersApi({ role: 'FACULTY', limit: 100 });
+        if (mounted) setRoster(res?.data || []);
+      } catch {
+        // empty state renders on failure
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
+  const filtered = roster.filter(f => (f.name || '').toLowerCase().includes(search.toLowerCase()) || (f.department || '').toLowerCase().includes(search.toLowerCase()));
 
   return (
     <div className="max-w-7xl mx-auto space-y-8">
@@ -3667,26 +3699,23 @@ function AdminFacultyPage({ onOpenModal, onToast }: { onOpenModal?: (type: strin
             </tr></thead>
             <tbody className="divide-y divide-slate-100">
               {filtered.length === 0 ? (
-                <tr><td colSpan={7} className="px-6 py-10 text-center text-sm text-slate-400">No faculty records found.</td></tr>
+                <tr><td colSpan={7} className="px-6 py-10 text-center text-sm text-slate-400">{loading ? 'Loading faculty…' : 'No faculty records found.'}</td></tr>
               ) : filtered.map(f => (
-                <tr key={f.id} className="hover:bg-slate-50/50 transition-colors group">
+                <tr key={f._id || f.id} className="hover:bg-slate-50/50 transition-colors group">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full bg-brand-100 flex items-center justify-center text-xs font-bold text-brand-700">{f.name.split(' ').filter((_,i)=>i>0).map(w=>w[0]).join('').slice(0,2)}</div>
-                      <span className="text-sm font-semibold text-slate-900">{f.name}</span>
+                      <div className="w-9 h-9 rounded-full bg-brand-100 flex items-center justify-center text-xs font-bold text-brand-700">{(f.name || '?').split(' ').filter((_: string,i: number)=>i>0).map((w: string)=>w[0]).join('').slice(0,2) || (f.name || '?').slice(0,2).toUpperCase()}</div>
+                      <div><span className="text-sm font-semibold text-slate-900 block">{f.name}</span><span className="text-xs text-slate-400">{f.email}</span></div>
                     </div>
                   </td>
-                  <td className="px-4 py-4 text-sm text-slate-600">{f.dept}</td>
-                  <td className="px-4 py-4 text-sm text-slate-600">{f.courses}</td>
-                  <td className="px-4 py-4 text-sm text-slate-600">{f.students}</td>
+                  <td className="px-4 py-4 text-sm text-slate-600">{f.department || '—'}</td>
+                  <td className="px-4 py-4 text-sm text-slate-600">{f.coursesCount ?? '—'}</td>
+                  <td className="px-4 py-4 text-sm text-slate-600">{f.studentsCount ?? '—'}</td>
                   <td className="px-4 py-4">
-                    <div className="flex items-center gap-1.5">
-                      <Star className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" />
-                      <span className="text-sm font-semibold text-slate-900">{f.rating}</span>
-                    </div>
+                    <span className="text-sm text-slate-400">—</span>
                   </td>
                   <td className="px-4 py-4">
-                    <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${f.status==='active'?'bg-success-50 text-success-700':'bg-warning-50 text-warning-700'}`}>{f.status}</span>
+                    <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${f.isActive === false ? 'bg-warning-50 text-warning-700' : 'bg-success-50 text-success-700'}`}>{f.isActive === false ? 'inactive' : 'active'}</span>
                   </td>
                   <td className="px-6 py-4 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button onClick={() => onToast?.(`Editing faculty ${f.name}...`, 'info')} className="p-1.5 text-slate-400 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors"><Edit3 className="w-3.5 h-3.5" /></button>
@@ -3705,6 +3734,53 @@ function AdminFacultyPage({ onOpenModal, onToast }: { onOpenModal?: (type: strin
 // ─────────────────────────────────────────────────────────────────────────────
 
 function AdminInterventionsPage({ onOpenModal, onToast }: { onOpenModal?: (type: string, data?: any) => void; onToast?: (msg: string, type?: 'success'|'warning'|'info') => void }) {
+  const [items, setItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchList = async () => {
+    try {
+      const svc = (await import('./services/interventions/interventionService')).default;
+      const res = await svc.getInterventions({ limit: 50 });
+      setItems(res?.data || []);
+    } catch {
+      // empty state renders on failure
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const svc = (await import('./services/interventions/interventionService')).default;
+        const res = await svc.getInterventions({ limit: 50 });
+        if (mounted) setItems(res?.data || []);
+      } catch {
+        // empty state renders on failure
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
+  const bucket = (s: string) =>
+    s === 'PENDING' ? 'pending'
+    : ['COMPLETED', 'REVIEWED', 'CANCELLED'].includes(s) ? 'resolved' : 'active';
+
+  const handleReview = async (id: string, student: string, outcome: string) => {
+    try {
+      const svc = (await import('./services/interventions/interventionService')).default;
+      await svc.reviewIntervention(id, { outcome, facultyNotes: `Reviewed by admin: ${outcome}` });
+      onToast?.(`Intervention ${outcome === 'IMPROVED' ? 'approved' : 'reviewed'} for ${student}!`, 'success');
+      setLoading(true);
+      await fetchList();
+    } catch (err: any) {
+      onToast?.(err?.message || 'Review failed.', 'danger');
+    }
+  };
+
   const statusColors: Record<string, string> = {
     active:   'bg-brand-50 text-brand-700',
     pending:  'bg-warning-50 text-warning-700',
@@ -3715,9 +3791,9 @@ function AdminInterventionsPage({ onOpenModal, onToast }: { onOpenModal?: (type:
       <PageHeader icon={ShieldAlert} title="Interventions" subtitle="Cross-department intervention tracking and approval dashboard." />
 
       <div className="grid grid-cols-3 gap-4">
-        <SummaryCard label="Active" value={adminInterventions.filter(i=>i.status==='active').length} color="brand" icon={Activity} />
-        <SummaryCard label="Pending Approval" value={adminInterventions.filter(i=>i.status==='pending').length} color="warning" icon={Clock} />
-        <SummaryCard label="Resolved" value={adminInterventions.filter(i=>i.status==='resolved').length} color="success" icon={CheckCircle2} />
+        <SummaryCard label="Active" value={items.filter(i=>bucket(i.status)==='active').length} color="brand" icon={Activity} />
+        <SummaryCard label="Pending Approval" value={items.filter(i=>bucket(i.status)==='pending').length} color="warning" icon={Clock} />
+        <SummaryCard label="Resolved" value={items.filter(i=>bucket(i.status)==='resolved').length} color="success" icon={CheckCircle2} />
       </div>
 
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
@@ -3737,31 +3813,35 @@ function AdminInterventionsPage({ onOpenModal, onToast }: { onOpenModal?: (type:
               <th className="px-6 py-3.5"></th>
             </tr></thead>
             <tbody className="divide-y divide-slate-100">
-              {adminInterventions.length === 0 ? (
-                <tr><td colSpan={7} className="px-6 py-10 text-center text-sm text-slate-400">No interventions recorded yet.</td></tr>
-              ) : adminInterventions.map(item => (
-                <tr key={item.id} className="hover:bg-slate-50/50 transition-colors group">
+              {items.length === 0 ? (
+                <tr><td colSpan={7} className="px-6 py-10 text-center text-sm text-slate-400">{loading ? 'Loading interventions…' : 'No interventions recorded yet.'}</td></tr>
+              ) : items.map(item => {
+                const b = bucket(item.status);
+                const studentName = item.studentId?.name || 'Unknown';
+                return (
+                <tr key={item._id} className="hover:bg-slate-50/50 transition-colors group">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-600">{item.student.split(' ').map(w=>w[0]).join('').slice(0,2)}</div>
-                      <span className="text-sm font-semibold text-slate-900">{item.student}</span>
+                      <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-600">{studentName.split(' ').map((w: string)=>w[0]).join('').slice(0,2)}</div>
+                      <div><span className="text-sm font-semibold text-slate-900 block">{studentName}</span><span className="text-xs text-slate-400">{item.title}</span></div>
                     </div>
                   </td>
-                  <td className="px-4 py-4"><span className="text-xs font-semibold bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md">{item.dept}</span></td>
-                  <td className="px-4 py-4 text-sm text-slate-600">{item.faculty}</td>
-                  <td className="px-4 py-4 text-sm text-slate-600">{item.type}</td>
-                  <td className="px-4 py-4 text-sm text-slate-500">{item.date}</td>
-                  <td className="px-4 py-4"><span className={`text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${statusColors[item.status]}`}>{item.status}</span></td>
+                  <td className="px-4 py-4"><span className="text-xs font-semibold bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md">{item.studentId?.department || '—'}</span></td>
+                  <td className="px-4 py-4 text-sm text-slate-600">{item.assignedFaculty?.name || '—'}</td>
+                  <td className="px-4 py-4 text-sm text-slate-600">{item.actionType || item.sourceType}</td>
+                  <td className="px-4 py-4 text-sm text-slate-500">{item.createdAt ? new Date(item.createdAt).toLocaleDateString() : '—'}</td>
+                  <td className="px-4 py-4"><span className={`text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${statusColors[b]}`}>{item.status?.toLowerCase().replace('_', ' ')}</span></td>
                   <td className="px-6 py-4">
-                    {item.status === 'pending' && (
+                    {b === 'pending' && (
                       <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => onToast?.(`Intervention approved for ${item.student}!`, "success")} className="p-1.5 bg-success-50 text-success-600 rounded-lg hover:bg-success-100 transition-colors"><UserCheck className="w-3.5 h-3.5" /></button>
-                        <button onClick={() => onToast?.(`Intervention rejected for ${item.student}`, "warning")} className="p-1.5 bg-danger-50 text-danger-600 rounded-lg hover:bg-danger-100 transition-colors"><UserX className="w-3.5 h-3.5" /></button>
+                        <button onClick={() => handleReview(item._id, studentName, 'IMPROVED')} className="p-1.5 bg-success-50 text-success-600 rounded-lg hover:bg-success-100 transition-colors"><UserCheck className="w-3.5 h-3.5" /></button>
+                        <button onClick={() => handleReview(item._id, studentName, 'FURTHER_SUPPORT_REQUIRED')} className="p-1.5 bg-danger-50 text-danger-600 rounded-lg hover:bg-danger-100 transition-colors"><UserX className="w-3.5 h-3.5" /></button>
                       </div>
                     )}
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -3773,28 +3853,68 @@ function AdminInterventionsPage({ onOpenModal, onToast }: { onOpenModal?: (type:
 // ─────────────────────────────────────────────────────────────────────────────
 
 function AdminAnalyticsPage() {
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const svc = (await import('./services/dashboardService')).default;
+        const res = await svc.getAdminDashboard();
+        if (mounted) setData(res);
+      } catch {
+        // empty states render on failure
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
+  const courses: any[] = data?.overview?.courses ?? [];
+  const departments: any[] = data?.departments ?? [];
+  const trend: any[] = data?.enrollmentTrend ?? [];
+
+  // Institution score distribution bucketed from live per-course averages
+  const dist = [
+    { range: '0-40', count: 0 },
+    { range: '40-55', count: 0 },
+    { range: '55-70', count: 0 },
+    { range: '70-85', count: 0 },
+    { range: '85-100', count: 0 },
+  ];
+  courses.forEach(c => {
+    const v = c.averagePerformance;
+    if (v == null) return;
+    const i = v < 40 ? 0 : v < 55 ? 1 : v < 70 ? 2 : v < 85 ? 3 : 4;
+    dist[i].count++;
+  });
+  const empty = (msg: string) => (
+    <div className="flex flex-col items-center justify-center h-full text-slate-400">
+      <BarChart2 className="w-8 h-8 mb-2 opacity-40" />
+      <p className="text-sm">{loading ? 'Loading…' : msg}</p>
+    </div>
+  );
+
   return (
     <div className="max-w-7xl mx-auto space-y-10">
       <PageHeader icon={BarChart2} title="Institution Analytics" subtitle="Comprehensive performance analytics across all departments and cohorts." />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 lg:p-8">
-          <h2 className="font-semibold text-slate-900 mb-6">Institution Score Distribution</h2>
+          <h2 className="font-semibold text-slate-900 mb-1">Institution Score Distribution</h2>
+          <p className="text-sm text-slate-400 mb-6">Courses bucketed by average performance</p>
           <div className="h-56">
-            {analyticsScoreDist.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-slate-400">
-                <BarChart2 className="w-8 h-8 mb-2 opacity-40" />
-                <p className="text-sm">No score distribution data yet.</p>
-              </div>
-            ) : (
+            {dist.every(d => !d.count) ? empty('No score distribution data yet.') : (
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={analyticsScoreDist} margin={{top:0,right:0,left:-20,bottom:0}}>
+              <BarChart data={dist} margin={{top:0,right:0,left:-20,bottom:0}}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                 <XAxis dataKey="range" tick={{fill:'#94a3b8',fontSize:12}} axisLine={false} tickLine={false} />
-                <YAxis tick={{fill:'#94a3b8',fontSize:12}} axisLine={false} tickLine={false} />
+                <YAxis tick={{fill:'#94a3b8',fontSize:12}} axisLine={false} tickLine={false} allowDecimals={false} />
                 <Tooltip contentStyle={{borderRadius:'10px',border:'none',boxShadow:'0 8px 24px -4px rgb(0 0 0/0.12)',fontSize:'13px'}} />
                 <Bar dataKey="count" radius={[4,4,0,0]} barSize={32}>
-                  {analyticsScoreDist.map((_,i)=><Cell key={i} fill={i<2?'#10b981':i<4?'#f59e0b':'#ef4444'} />)}
+                  {dist.map((_,i)=><Cell key={i} fill={i<2?'#10b981':i<4?'#f59e0b':'#ef4444'} />)}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
@@ -3803,26 +3923,23 @@ function AdminAnalyticsPage() {
         </div>
 
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 lg:p-8">
-          <h2 className="font-semibold text-slate-900 mb-6">Department Score Trends</h2>
+          <h2 className="font-semibold text-slate-900 mb-1">Enrollment & Risk Trend</h2>
+          <p className="text-sm text-slate-400 mb-6">New students vs. interventions per month</p>
           <div className="h-56">
-            {deptTrendData.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-slate-400">
-                <BarChart2 className="w-8 h-8 mb-2 opacity-40" />
-                <p className="text-sm">No trend data available yet.</p>
-              </div>
-            ) : (
+            {trend.length === 0 ? empty('No trend data available yet.') : (
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={deptTrendData} margin={{top:0,right:0,left:-20,bottom:0}}>
+              <AreaChart data={trend} margin={{top:0,right:0,left:-20,bottom:0}}>
+                <defs>
+                  <linearGradient id="anA" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#6366f1" stopOpacity={0.15}/><stop offset="95%" stopColor="#6366f1" stopOpacity={0}/></linearGradient>
+                  <linearGradient id="anR" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#ef4444" stopOpacity={0.15}/><stop offset="95%" stopColor="#ef4444" stopOpacity={0}/></linearGradient>
+                </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                 <XAxis dataKey="month" tick={{fill:'#94a3b8',fontSize:12}} axisLine={false} tickLine={false} />
-                <YAxis domain={[55,85]} tick={{fill:'#94a3b8',fontSize:12}} axisLine={false} tickLine={false} />
+                <YAxis tick={{fill:'#94a3b8',fontSize:12}} axisLine={false} tickLine={false} allowDecimals={false} />
                 <Tooltip contentStyle={{borderRadius:'10px',border:'none',boxShadow:'0 8px 24px -4px rgb(0 0 0/0.12)',fontSize:'13px'}} />
-                <Line type="monotone" dataKey="cse" stroke="#6366f1" strokeWidth={2} dot={false} name="CS" />
-                <Line type="monotone" dataKey="maths" stroke="#f59e0b" strokeWidth={2} dot={false} name="Maths" />
-                <Line type="monotone" dataKey="phy" stroke="#10b981" strokeWidth={2} dot={false} name="Physics" />
-                <Line type="monotone" dataKey="che" stroke="#ef4444" strokeWidth={2} dot={false} name="Chem" />
-                <Line type="monotone" dataKey="ele" stroke="#8b5cf6" strokeWidth={2} dot={false} name="Elec" />
-              </LineChart>
+                <Area type="monotone" dataKey="active" stroke="#6366f1" strokeWidth={2} fill="url(#anA)" name="New students" dot={false} />
+                <Area type="monotone" dataKey="atRisk" stroke="#ef4444" strokeWidth={2} fill="url(#anR)" name="Interventions" dot={false} />
+              </AreaChart>
             </ResponsiveContainer>
             )}
           </div>
@@ -3836,47 +3953,33 @@ function AdminAnalyticsPage() {
             <thead><tr className="bg-slate-50/60 text-left">
               <th className="px-6 py-3.5 text-xs font-semibold text-slate-400 uppercase tracking-wider">Department</th>
               <th className="px-4 py-3.5 text-xs font-semibold text-slate-400 uppercase tracking-wider">Students</th>
+              <th className="px-4 py-3.5 text-xs font-semibold text-slate-400 uppercase tracking-wider">Courses</th>
               <th className="px-4 py-3.5 text-xs font-semibold text-slate-400 uppercase tracking-wider">Avg Score</th>
-              <th className="px-4 py-3.5 text-xs font-semibold text-slate-400 uppercase tracking-wider">At-Risk</th>
+              <th className="px-4 py-3.5 text-xs font-semibold text-slate-400 uppercase tracking-wider">Attendance</th>
               <th className="px-4 py-3.5 text-xs font-semibold text-slate-400 uppercase tracking-wider">Score Bar</th>
-              <th className="px-4 py-3.5 text-xs font-semibold text-slate-400 uppercase tracking-wider">Trend</th>
             </tr></thead>
             <tbody className="divide-y divide-slate-100">
-              {departmentData.length === 0 ? (
-                <tr><td colSpan={6} className="px-6 py-10 text-center text-sm text-slate-400">No department data available yet.</td></tr>
-              ) : departmentData.map(row => {
-                const atRiskPct = Math.round(row.atRisk/row.students*100);
-                const positive = row.trend >= 0;
-                return (
-                  <tr key={row.dept} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-brand-50 flex items-center justify-center"><Building2 className="w-4 h-4 text-brand-500" /></div>
-                        <span className="text-sm font-semibold text-slate-900">{row.dept}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4 text-sm text-slate-600">{row.students.toLocaleString()}</td>
-                    <td className="px-4 py-4"><span className={`text-sm font-bold ${row.avg>=70?'text-success-600':'text-warning-600'}`}>{row.avg}%</span></td>
-                    <td className="px-4 py-4">
-                      <div className="flex items-center gap-2">
-                        <span className={`text-sm font-semibold ${atRiskPct>=20?'text-danger-600':'text-warning-600'}`}>{row.atRisk}</span>
-                        <span className={`text-xs px-1.5 py-0.5 rounded-md font-medium ${atRiskPct>=20?'bg-danger-50 text-danger-600':'bg-warning-50 text-warning-600'}`}>{atRiskPct}%</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4 w-40">
-                      <div className="flex h-2 w-full rounded-full bg-slate-100 overflow-hidden">
-                        <div className={`rounded-full ${row.avg>=70?'bg-success-500':'bg-warning-500'}`} style={{width:`${row.avg}%`}}></div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className={`flex items-center gap-1 text-sm font-semibold ${positive?'text-success-600':'text-danger-600'}`}>
-                        {positive?<ArrowUpRight className="w-4 h-4"/>:<ArrowDownRight className="w-4 h-4"/>}
-                        {positive?'+':''}{row.trend}%
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
+              {departments.length === 0 ? (
+                <tr><td colSpan={6} className="px-6 py-10 text-center text-sm text-slate-400">{loading ? 'Loading…' : 'No department data available yet.'}</td></tr>
+              ) : departments.map(row => (
+                <tr key={row.department} className="hover:bg-slate-50/50 transition-colors">
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-brand-50 flex items-center justify-center"><Building2 className="w-4 h-4 text-brand-500" /></div>
+                      <span className="text-sm font-semibold text-slate-900">{row.department}</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-4 text-sm text-slate-600">{row.studentCount}</td>
+                  <td className="px-4 py-4 text-sm text-slate-600">{row.courseCount}</td>
+                  <td className="px-4 py-4"><span className={`text-sm font-bold ${row.averagePerformance != null && row.averagePerformance >= 70 ? 'text-success-600' : 'text-warning-600'}`}>{row.averagePerformance != null ? `${row.averagePerformance}%` : '—'}</span></td>
+                  <td className="px-4 py-4 text-sm text-slate-600">{row.averageAttendance != null ? `${row.averageAttendance}%` : '—'}</td>
+                  <td className="px-4 py-4 w-40">
+                    <div className="flex h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+                      <div className={`rounded-full ${row.averagePerformance != null && row.averagePerformance >= 70 ? 'bg-success-500' : 'bg-warning-500'}`} style={{width:`${row.averagePerformance ?? 0}%`}}></div>
+                    </div>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
@@ -3887,11 +3990,37 @@ function AdminAnalyticsPage() {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-function AdminSettingsPage() {
-  const [emailNotifs, setEmailNotifs] = useState(true);
-  const [smsAlerts, setSmsAlerts] = useState(false);
-  const [autoIntervene, setAutoIntervene] = useState(true);
-  const [riskThreshold, setRiskThreshold] = useState('65');
+function AdminSettingsPage({ onToast }: { onToast?: (msg: string, type?: 'success'|'warning'|'info') => void }) {
+  const SETTINGS_KEY = 'edupulse-admin-settings';
+  const loadSaved = () => {
+    try { return JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}'); }
+    catch { return {}; }
+  };
+  const saved = loadSaved();
+  const [emailNotifs, setEmailNotifs] = useState(saved.emailNotifs ?? true);
+  const [smsAlerts, setSmsAlerts] = useState(saved.smsAlerts ?? false);
+  const [autoIntervene, setAutoIntervene] = useState(saved.autoIntervene ?? true);
+  const [riskThreshold, setRiskThreshold] = useState(saved.riskThreshold ?? '65');
+  const [attThreshold, setAttThreshold] = useState(saved.attThreshold ?? '75');
+  const [frequency, setFrequency] = useState(saved.frequency ?? 'Daily');
+
+  const handleSave = () => {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({
+      emailNotifs, smsAlerts, autoIntervene, riskThreshold, attThreshold, frequency,
+    }));
+    onToast?.('System Configuration Saved!', 'success');
+  };
+
+  const handleDiscard = () => {
+    const s = loadSaved();
+    setEmailNotifs(s.emailNotifs ?? true);
+    setSmsAlerts(s.smsAlerts ?? false);
+    setAutoIntervene(s.autoIntervene ?? true);
+    setRiskThreshold(s.riskThreshold ?? '65');
+    setAttThreshold(s.attThreshold ?? '75');
+    setFrequency(s.frequency ?? 'Daily');
+    onToast?.('Changes discarded', 'info');
+  };
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
@@ -3909,7 +4038,7 @@ function AdminSettingsPage() {
           </div>
           <div className="flex items-center justify-between">
             <div><p className="text-sm font-medium text-slate-800">Attendance risk threshold</p><p className="text-xs text-slate-400 mt-0.5">Students below this attendance are flagged</p></div>
-            <div className="flex items-center gap-2"><input type="number" defaultValue={75} className="w-20 px-3 py-1.5 border border-slate-200 rounded-lg text-sm text-center outline-none focus:border-brand-400" /><span className="text-sm text-slate-500">%</span></div>
+            <div className="flex items-center gap-2"><input type="number" value={attThreshold} onChange={e=>setAttThreshold(e.target.value)} className="w-20 px-3 py-1.5 border border-slate-200 rounded-lg text-sm text-center outline-none focus:border-brand-400" /><span className="text-sm text-slate-500">%</span></div>
           </div>
           <div className="flex items-center justify-between">
             <div><p className="text-sm font-medium text-slate-800">Auto-create interventions</p><p className="text-xs text-slate-400 mt-0.5">Automatically create intervention when risk is detected</p></div>
@@ -3931,7 +4060,7 @@ function AdminSettingsPage() {
           </div>
           <div className="flex items-center justify-between">
             <div><p className="text-sm font-medium text-slate-800">Notification frequency</p><p className="text-xs text-slate-400 mt-0.5">How often to batch and send digest reports</p></div>
-            <select className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm text-slate-700 outline-none focus:border-brand-400 bg-white">
+            <select value={frequency} onChange={e=>setFrequency(e.target.value)} className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm text-slate-700 outline-none focus:border-brand-400 bg-white">
               <option>Daily</option><option>Weekly</option><option>Immediately</option>
             </select>
           </div>
@@ -3951,8 +4080,8 @@ function AdminSettingsPage() {
       </SettingsCard>
 
       <div className="flex justify-end gap-3">
-        <button onClick={() => onToast?.("Changes discarded", "info")} className="px-5 py-2.5 border border-slate-200 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors">Discard Changes</button>
-        <button onClick={() => onToast?.("System Configuration Saved!", "success")} className="px-5 py-2.5 bg-brand-600 text-white rounded-xl text-sm font-semibold hover:bg-brand-700 transition-colors shadow-sm shadow-brand-500/20">Save Settings</button>
+        <button onClick={handleDiscard} className="px-5 py-2.5 border border-slate-200 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors">Discard Changes</button>
+        <button onClick={handleSave} className="px-5 py-2.5 bg-brand-600 text-white rounded-xl text-sm font-semibold hover:bg-brand-700 transition-colors shadow-sm shadow-brand-500/20">Save Settings</button>
       </div>
     </div>
   );
