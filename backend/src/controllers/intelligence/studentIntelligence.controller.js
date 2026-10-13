@@ -40,7 +40,13 @@ class StudentIntelligenceController {
 
   static async getRecommendations(req, res, next) {
     try {
-      const studentId = req.user._id;
+      // Students always see their own list; faculty/admin may pass
+      // ?studentId=<userId> to review a specific student's recommendations
+      // (used by the "create intervention from recommendation" flow).
+      let studentId = req.user._id;
+      if (req.query.studentId && ['ADMIN', 'FACULTY'].includes(req.user.role)) {
+        studentId = req.query.studentId;
+      }
       const { courseId } = req.query;
       const recommendations = await RecommendationService.getStudentRecommendations(studentId, courseId);
       return sendSuccess(res, 200, 'Student recommendations retrieved', { data: recommendations });
