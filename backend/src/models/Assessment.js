@@ -100,5 +100,6 @@ const assessmentSchema = new mongoose.Schema(
 );
 
 assessmentSchema.index({ courseId: 1, createdAt: -1 });
+assessmentSchema.index({ courseId: 1, type: 1, isPublished: 1 });
 
 module.exports = mongoose.model('Assessment', assessmentSchema);
