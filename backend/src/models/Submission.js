@@ -99,5 +99,7 @@ const submissionSchema = new mongoose.Schema(
 
 submissionSchema.index({ assessmentId: 1, studentId: 1 });
 submissionSchema.index({ courseId: 1, studentId: 1 });
+submissionSchema.index({ studentId: 1, status: 1 });
+submissionSchema.index({ courseId: 1, status: 1 });
 
 module.exports = mongoose.model('Submission', submissionSchema);
