@@ -113,6 +113,7 @@ const interventionSchema = new mongoose.Schema(
 );
 
 interventionSchema.index({ studentId: 1, courseId: 1, status: 1 });
+interventionSchema.index({ studentId: 1, courseId: 1, topic: 1, actionType: 1, status: 1 });
 interventionSchema.index({ assignedFaculty: 1, courseId: 1 });
 interventionSchema.index({ status: 1, dueDate: 1 });
 
