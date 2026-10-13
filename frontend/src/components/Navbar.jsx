@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
+import useTheme from '../hooks/useTheme';
 import {
   GraduationCap,
   LayoutDashboard,
   User,
   LogOut,
+  Moon,
+  Sun,
   Shield,
   BookOpen,
   Award,
@@ -21,6 +24,7 @@ import {
 
 const Navbar = () => {
   const { user, logout } = useAuth();
+  const { isDark, toggleTheme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
   const [loggingOut, setLoggingOut] = useState(false);
@@ -59,7 +63,7 @@ const Navbar = () => {
   const isActive = (path) => location.pathname === path;
 
   return (
-    <header className="sticky top-0 z-40 bg-slate-900/80 backdrop-blur-md border-b border-slate-800">
+    <header className="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo & Brand */}
@@ -68,7 +72,7 @@ const Navbar = () => {
               <GraduationCap className="w-6 h-6 text-white" />
             </div>
             <div>
-              <span className="text-xl font-bold bg-gradient-to-r from-white via-slate-100 to-indigo-200 bg-clip-text text-transparent">
+              <span className="text-xl font-bold bg-gradient-to-r from-slate-900 via-slate-700 to-indigo-600 dark:from-white dark:via-slate-100 dark:to-indigo-200 bg-clip-text text-transparent">
                 EduPulse
               </span>
               <span className="hidden sm:block text-[10px] text-indigo-400 font-medium tracking-wider uppercase">
@@ -83,8 +87,8 @@ const Navbar = () => {
               to="/dashboard"
               className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
                 isActive('/dashboard')
-                  ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                  ? 'bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-600/20 dark:text-indigo-300 dark:border-indigo-500/30'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/60'
               }`}
             >
               <LayoutDashboard className="w-4 h-4" />
@@ -96,8 +100,8 @@ const Navbar = () => {
               to="/courses"
               className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
                 isActive('/courses')
-                  ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                  ? 'bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-600/20 dark:text-indigo-300 dark:border-indigo-500/30'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/60'
               }`}
             >
               <Compass className="w-4 h-4" />
@@ -109,8 +113,8 @@ const Navbar = () => {
                 to="/my-courses"
                 className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
                   isActive('/my-courses')
-                    ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                    ? 'bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-600/20 dark:text-indigo-300 dark:border-indigo-500/30'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/60'
                 }`}
               >
                 <BookOpen className="w-4 h-4" />
@@ -123,8 +127,8 @@ const Navbar = () => {
                 to="/faculty/courses"
                 className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
                   isActive('/faculty/courses')
-                    ? 'bg-amber-600/20 text-amber-300 border border-amber-500/30'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                    ? 'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-600/20 dark:text-amber-300 dark:border-amber-500/30'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/60'
                 }`}
               >
                 <Layers className="w-4 h-4" />
@@ -137,8 +141,8 @@ const Navbar = () => {
                 to="/admin/courses"
                 className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
                   isActive('/admin/courses')
-                    ? 'bg-rose-600/20 text-rose-300 border border-rose-500/30'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                    ? 'bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-600/20 dark:text-rose-300 dark:border-rose-500/30'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/60'
                 }`}
               >
                 <Shield className="w-4 h-4" />
@@ -152,8 +156,8 @@ const Navbar = () => {
                   to="/attendance"
                   className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
                     isActive('/attendance')
-                      ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                      ? 'bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-600/20 dark:text-indigo-300 dark:border-indigo-500/30'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/60'
                   }`}
                 >
                   <CalendarCheck className="w-4 h-4 text-emerald-400" />
@@ -163,8 +167,8 @@ const Navbar = () => {
                   to="/forum"
                   className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
                     isActive('/forum')
-                      ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                      ? 'bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-600/20 dark:text-indigo-300 dark:border-indigo-500/30'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/60'
                   }`}
                 >
                   <MessageSquare className="w-4 h-4 text-sky-400" />
@@ -174,8 +178,8 @@ const Navbar = () => {
                   to="/analytics"
                   className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
                     isActive('/analytics')
-                      ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                      ? 'bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-600/20 dark:text-indigo-300 dark:border-indigo-500/30'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/60'
                   }`}
                 >
                   <TrendingUp className="w-4 h-4" />
@@ -185,8 +189,8 @@ const Navbar = () => {
                   to="/insights"
                   className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
                     isActive('/insights')
-                      ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                      ? 'bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-600/20 dark:text-indigo-300 dark:border-indigo-500/30'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/60'
                   }`}
                 >
                   <Sparkles className="w-4 h-4 text-indigo-400" />
@@ -196,8 +200,8 @@ const Navbar = () => {
                   to="/interventions"
                   className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
                     isActive('/interventions')
-                      ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                      ? 'bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-600/20 dark:text-indigo-300 dark:border-indigo-500/30'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/60'
                   }`}
                 >
                   <Layers className="w-4 h-4 text-emerald-400" />
@@ -212,8 +216,8 @@ const Navbar = () => {
                   to="/faculty/attendance"
                   className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
                     isActive('/faculty/attendance')
-                      ? 'bg-amber-600/20 text-amber-300 border border-amber-500/30'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                      ? 'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-600/20 dark:text-amber-300 dark:border-amber-500/30'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/60'
                   }`}
                 >
                   <CalendarCheck className="w-4 h-4 text-amber-400" />
@@ -223,8 +227,8 @@ const Navbar = () => {
                   to="/forum"
                   className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
                     isActive('/forum')
-                      ? 'bg-amber-600/20 text-amber-300 border border-amber-500/30'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                      ? 'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-600/20 dark:text-amber-300 dark:border-amber-500/30'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/60'
                   }`}
                 >
                   <MessageSquare className="w-4 h-4 text-sky-400" />
@@ -234,8 +238,8 @@ const Navbar = () => {
                   to="/faculty/analytics"
                   className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
                     isActive('/faculty/analytics')
-                      ? 'bg-amber-600/20 text-amber-300 border border-amber-500/30'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                      ? 'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-600/20 dark:text-amber-300 dark:border-amber-500/30'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/60'
                   }`}
                 >
                   <BarChart3 className="w-4 h-4" />
@@ -245,8 +249,8 @@ const Navbar = () => {
                   to="/faculty/intelligence"
                   className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
                     isActive('/faculty/intelligence')
-                      ? 'bg-amber-600/20 text-amber-300 border border-amber-500/30'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                      ? 'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-600/20 dark:text-amber-300 dark:border-amber-500/30'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/60'
                   }`}
                 >
                   <Brain className="w-4 h-4 text-amber-400" />
@@ -256,8 +260,8 @@ const Navbar = () => {
                   to="/faculty/interventions"
                   className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
                     isActive('/faculty/interventions')
-                      ? 'bg-amber-600/20 text-amber-300 border border-amber-500/30'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                      ? 'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-600/20 dark:text-amber-300 dark:border-amber-500/30'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/60'
                   }`}
                 >
                   <Layers className="w-4 h-4 text-amber-400" />
@@ -272,8 +276,8 @@ const Navbar = () => {
                   to="/faculty/attendance"
                   className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
                     isActive('/faculty/attendance')
-                      ? 'bg-rose-600/20 text-rose-300 border border-rose-500/30'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                      ? 'bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-600/20 dark:text-rose-300 dark:border-rose-500/30'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/60'
                   }`}
                 >
                   <CalendarCheck className="w-4 h-4 text-rose-400" />
@@ -283,8 +287,8 @@ const Navbar = () => {
                   to="/forum"
                   className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
                     isActive('/forum')
-                      ? 'bg-rose-600/20 text-rose-300 border border-rose-500/30'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                      ? 'bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-600/20 dark:text-rose-300 dark:border-rose-500/30'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/60'
                   }`}
                 >
                   <MessageSquare className="w-4 h-4 text-sky-400" />
@@ -294,8 +298,8 @@ const Navbar = () => {
                   to="/admin/analytics"
                   className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
                     isActive('/admin/analytics')
-                      ? 'bg-rose-600/20 text-rose-300 border border-rose-500/30'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                      ? 'bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-600/20 dark:text-rose-300 dark:border-rose-500/30'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/60'
                   }`}
                 >
                   <TrendingUp className="w-4 h-4" />
@@ -305,8 +309,8 @@ const Navbar = () => {
                   to="/admin/intelligence"
                   className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
                     isActive('/admin/intelligence')
-                      ? 'bg-rose-600/20 text-rose-300 border border-rose-500/30'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                      ? 'bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-600/20 dark:text-rose-300 dark:border-rose-500/30'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/60'
                   }`}
                 >
                   <Brain className="w-4 h-4 text-rose-400" />
@@ -316,8 +320,8 @@ const Navbar = () => {
                   to="/admin/interventions"
                   className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
                     isActive('/admin/interventions')
-                      ? 'bg-rose-600/20 text-rose-300 border border-rose-500/30'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                      ? 'bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-600/20 dark:text-rose-300 dark:border-rose-500/30'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/60'
                   }`}
                 >
                   <Layers className="w-4 h-4 text-rose-400" />
@@ -330,8 +334,8 @@ const Navbar = () => {
               to="/profile"
               className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
                 isActive('/profile')
-                  ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                  ? 'bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-600/20 dark:text-indigo-300 dark:border-indigo-500/30'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/60'
               }`}
             >
               <User className="w-4 h-4" />
@@ -341,12 +345,12 @@ const Navbar = () => {
 
           {/* User Section & Logout */}
           <div className="flex items-center gap-4">
-            <div className="hidden lg:flex items-center gap-3 pl-4 border-l border-slate-800">
-              <div className="w-9 h-9 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-indigo-400 font-semibold shadow-inner">
+            <div className="hidden lg:flex items-center gap-3 pl-4 border-l border-slate-200 dark:border-slate-800">
+              <div className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-semibold shadow-inner">
                 {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
               </div>
               <div className="flex flex-col text-left">
-                <span className="text-sm font-semibold text-slate-200 line-clamp-1">
+                <span className="text-sm font-semibold text-slate-900 dark:text-slate-200 line-clamp-1">
                   {user?.name}
                 </span>
                 <div className="flex items-center gap-2">
@@ -356,9 +360,17 @@ const Navbar = () => {
             </div>
 
             <button
+              onClick={toggleTheme}
+              title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+              aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+              className="inline-flex items-center justify-center p-2 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/60 border border-slate-200 dark:border-slate-800 transition-all duration-200"
+            >
+              {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
+            <button
               onClick={handleLogout}
               disabled={loggingOut}
-              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 border border-slate-800 hover:border-rose-500/20 transition-all duration-200 disabled:opacity-50"
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium text-slate-500 hover:text-rose-600 hover:bg-rose-500/10 border border-slate-200 hover:border-rose-500/20 dark:text-slate-400 dark:hover:text-rose-400 dark:border-slate-800 transition-all duration-200 disabled:opacity-50"
               title="Logout"
             >
               <LogOut className="w-4 h-4" />

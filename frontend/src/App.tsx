@@ -3,7 +3,7 @@ import api from './services/api';
 import { loginApi, logoutApi, getMeApi } from './services/authService';
 import { getCoursesApi } from './services/courseService';
 import {
-  LayoutDashboard, BookOpen, Users, ClipboardList, FileQuestion,
+  LayoutDashboard, BookOpen, Users, User, ClipboardList, FileQuestion,
   CalendarCheck, MessageSquare, BarChart2, Lightbulb, ShieldAlert,
   Settings, Bell, Search, ChevronDown, Activity, AlertCircle,
   TrendingDown, TrendingUp, ChevronRight, PlusCircle, Menu, X,
@@ -279,6 +279,97 @@ export default function App() {
   const [modalSelect, setModalSelect] = useState('');
   const [modalNumber, setModalNumber] = useState(4);
   const [modalSelectedOption, setModalSelectedOption] = useState(0);
+  const [modalPassword, setModalPassword] = useState('');
+  const [modalPassword2, setModalPassword2] = useState('');
+  const [modalProfile, setModalProfile] = useState<any>(null);
+
+  // Header search state (live course search)
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchCache, setSearchCache] = useState<any[]>([]);
+
+  // Live notifications (derived from interventions API, all roles)
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [notifLoading, setNotifLoading] = useState(false);
+
+  // Intervention-from-recommendation state
+  const [modalRecs, setModalRecs] = useState<any[]>([]);
+  const [modalRecId, setModalRecId] = useState('');
+
+  // Bumped after user create/edit/delete so the faculty roster refetches
+  const [userRefreshSignal, setUserRefreshSignal] = useState(0);
+
+  const openNotifications = async () => {
+    setModalType('notifications');
+    setModalData(null);
+    setNotifLoading(true);
+    try {
+      const svc = (await import('./services/interventions/interventionService')).default;
+      const res = await svc.getInterventions({ limit: 15 });
+      const list = res?.data || [];
+      setNotifications(list.map((iv: any) => ({
+        id: iv._id,
+        type: iv.priority === 'HIGH' || iv.priority === 'URGENT' ? 'critical'
+          : iv.status === 'PENDING' ? 'warning' : 'info',
+        message: `${iv.title || 'Intervention'} — ${iv.studentId?.name || 'a student'}`,
+        dept: iv.studentId?.department || iv.courseId?.title || '',
+        time: iv.createdAt,
+      })));
+    } catch {
+      setNotifications([]);
+    } finally {
+      setNotifLoading(false);
+    }
+  };
+
+  const closeModal = () => {
+    setModalType(null);
+    setModalData(null);
+    setModalText('');
+    setModalExtra('');
+    setModalRecId('');
+    setModalRecs([]);
+    setModalPassword('');
+    setModalPassword2('');
+    setModalProfile(null);
+  };
+
+  // Debounced live course search for the header bar
+  useEffect(() => {
+    if (!isLoggedIn || searchQuery.trim().length < 2) {
+      setSearchResults([]);
+      return;
+    }
+    let cancelled = false;
+    const t = setTimeout(async () => {
+      try {
+        let pool = searchCache;
+        if (!pool.length) {
+          const cSvc = (await import('./services/courseService')).default;
+          const res = await cSvc.getCourses();
+          pool = res?.courses || res?.data || (Array.isArray(res) ? res : []);
+          if (!cancelled) setSearchCache(pool);
+        }
+        if (cancelled) return;
+        const q = searchQuery.trim().toLowerCase();
+        setSearchResults(pool.filter((c: any) =>
+          (c.title || '').toLowerCase().includes(q) || (c.code || '').toLowerCase().includes(q)
+        ).slice(0, 6));
+      } catch {
+        if (!cancelled) setSearchResults([]);
+      }
+    }, 300);
+    return () => { cancelled = true; clearTimeout(t); };
+  }, [searchQuery, isLoggedIn, searchCache]);
+
+  const goToSearchResult = (c: any) => {
+    setSearchOpen(false);
+    setSearchQuery('');
+    setSearchResults([]);
+    setActivePage(role === 'faculty' ? 'faculty-assignments' : role === 'admin' ? 'admin-dashboard' : 'student-courses');
+    showToast(`Opened ${c.code || 'course'} — ${c.title || ''}`.trim(), 'info');
+  };
 
   const showToast = (message: string, type: 'success' | 'warning' | 'info' | 'danger' = 'success') => {
     setToast({ message, type });
@@ -439,9 +530,23 @@ export default function App() {
         <header className="h-20 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 lg:px-10 sticky top-0 z-30">
           <div className="flex items-center gap-4">
             <button className="lg:hidden p-2 -ml-2 text-slate-500 hover:bg-slate-100 rounded-lg" onClick={() => setSidebarOpen(true)}><Menu className="w-6 h-6" /></button>
-            <div className="hidden md:flex items-center gap-2 px-4 py-2.5 bg-slate-100/50 hover:bg-slate-100 rounded-xl border border-transparent focus-within:border-brand-300 focus-within:bg-white focus-within:shadow-sm transition-all w-80">
-              <Search className="w-4 h-4 text-slate-400" />
-              <input type="text" placeholder={searchPlaceholder} className="bg-transparent border-none outline-none text-sm w-full text-slate-900 placeholder-slate-400" />
+            <div className="hidden md:block relative w-80">
+              <div className="flex items-center gap-2 px-4 py-2.5 bg-slate-100/50 hover:bg-slate-100 rounded-xl border border-transparent focus-within:border-brand-300 focus-within:bg-white focus-within:shadow-sm transition-all w-full">
+                <Search className="w-4 h-4 text-slate-400 shrink-0" />
+                <input type="text" value={searchQuery} onChange={e => { setSearchQuery(e.target.value); setSearchOpen(true); }} onFocus={() => setSearchOpen(true)} onBlur={() => setTimeout(() => setSearchOpen(false), 150)} placeholder={searchPlaceholder} className="bg-transparent border-none outline-none text-sm w-full text-slate-900 placeholder-slate-400" />
+              </div>
+              {searchOpen && searchQuery.trim().length >= 2 && (
+                <div className="absolute left-0 right-0 mt-2 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-2 z-50">
+                  {searchResults.length === 0 ? (
+                    <p className="text-xs text-slate-400 text-center py-4">No courses match "{searchQuery}"</p>
+                  ) : searchResults.map((c: any) => (
+                    <button key={c._id || c.code} onMouseDown={() => goToSearchResult(c)} className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-slate-50 flex items-center gap-3 transition-colors">
+                      <div className="w-8 h-8 rounded-lg bg-brand-50 flex items-center justify-center shrink-0"><BookOpen className="w-4 h-4 text-brand-600" /></div>
+                      <div className="min-w-0"><p className="text-sm font-semibold text-slate-900 truncate">{c.title}</p><p className="text-xs text-slate-400">{c.code}{c.department ? ` · ${c.department}` : ''}</p></div>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             {/* Live API status badge */}
             <div className={`hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${apiConnected ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : apiConnected === false ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
@@ -453,9 +558,9 @@ export default function App() {
             <button onClick={toggleTheme} title={isDark ? 'Switch to light mode' : 'Switch to dark mode'} aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'} className="relative p-2.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors">
               {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </button>
-            <button onClick={() => setModalType('notifications')} className="relative p-2.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors">
+            <button onClick={openNotifications} className="relative p-2.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors" title="Notifications" aria-label="Notifications">
               <Bell className="w-5 h-5" />
-              <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-danger-500 rounded-full border-2 border-white"></span>
+              {notifications.length > 0 && <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-danger-500 rounded-full border-2 border-white"></span>}
             </button>
             <div className="h-8 w-px bg-slate-200"></div>
             
@@ -477,9 +582,12 @@ export default function App() {
                   </div>
                   {role === 'admin' && (
                     <button onClick={() => { setActivePage('admin-settings'); setProfileDropdownOpen(false); }} className="w-full text-left px-3 py-2 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2">
-                      <Settings className="w-4 h-4 text-slate-400" /> Profile & Account Settings
+                      <Settings className="w-4 h-4 text-slate-400" /> System Settings
                     </button>
                   )}
+                  <button onClick={() => { setProfileDropdownOpen(false); setModalType('profile'); }} className="w-full text-left px-3 py-2 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2">
+                    <User className="w-4 h-4 text-slate-400" /> Profile & Account Settings
+                  </button>
                   <button onClick={handleSignOut} className="w-full text-left px-3 py-2 rounded-xl text-xs font-semibold text-rose-600 hover:bg-rose-50 flex items-center gap-2 mt-1">
                     <UserX className="w-4 h-4" /> Sign Out
                   </button>
@@ -504,9 +612,9 @@ export default function App() {
           {activePage === 'faculty-attendance'  && <FacultyAttendancePage onOpenModal={(type, data) => { setModalType(type); setModalData(data); }} />}
           {activePage === 'faculty-analytics'   && <FacultyAnalyticsPage />}
           {activePage === 'faculty-interventions'&& <FacultyInterventionsPage onOpenModal={(type, data) => { setModalType(type); setModalData(data); }} />}
-          {activePage === 'admin-dashboard'     && <AdminDashboardPage onOpenModal={(type, data) => { setModalType(type); setModalData(data); }} onToast={showToast} />}
+          {activePage === 'admin-dashboard'     && <AdminDashboardPage onOpenModal={(type, data) => { setModalType(type); setModalData(data); }} onToast={showToast} onNavigate={(p: Page) => setActivePage(p)} />}
           {activePage === 'admin-departments'   && <AdminDepartmentsPage onToast={showToast} />}
-          {activePage === 'admin-faculty'       && <AdminFacultyPage onOpenModal={(type, data) => { setModalType(type); setModalData(data); }} onToast={showToast} />}
+          {activePage === 'admin-faculty'       && <AdminFacultyPage onOpenModal={(type, data) => { setModalType(type); setModalData(data); }} onToast={showToast} refreshSignal={userRefreshSignal} />}
           {activePage === 'admin-interventions' && <AdminInterventionsPage onOpenModal={(type, data) => { setModalType(type); setModalData(data); }} onToast={showToast} />}
           {activePage === 'admin-analytics'     && <AdminAnalyticsPage />}
           {activePage === 'admin-settings'      && <AdminSettingsPage onToast={showToast} />}
