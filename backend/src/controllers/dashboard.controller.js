@@ -11,7 +11,7 @@ class DashboardController {
   static async getStudentDashboard(req, res, next) {
     try {
       const data = await DashboardService.getStudentDashboard(req.user._id);
-      this.logPerf(req, 'done');
+      DashboardController.logPerf(req, 'done');
       return sendSuccess(res, 200, 'Student dashboard retrieved', { data });
     } catch (error) {
       next(error);
@@ -21,7 +21,7 @@ class DashboardController {
   static async getFacultyDashboard(req, res, next) {
     try {
       const data = await DashboardService.getFacultyDashboard(req.user._id);
-      this.logPerf(req, 'done');
+      DashboardController.logPerf(req, 'done');
       return sendSuccess(res, 200, 'Faculty dashboard retrieved', { data });
     } catch (error) {
       next(error);
@@ -31,7 +31,7 @@ class DashboardController {
   static async getAdminDashboard(req, res, next) {
     try {
       const data = await DashboardService.getAdminDashboard();
-      this.logPerf(req, 'done');
+      DashboardController.logPerf(req, 'done');
       return sendSuccess(res, 200, 'Admin dashboard retrieved', { data });
     } catch (error) {
       next(error);
