@@ -67,6 +67,7 @@ const threadSchema = new mongoose.Schema(
 );
 
 threadSchema.index({ courseId: 1, isPinned: -1, createdAt: -1 });
+threadSchema.index({ authorId: 1, courseId: 1 });
 threadSchema.index({ title: 'text', content: 'text', tags: 'text' });
 
 module.exports = mongoose.model('Thread', threadSchema);
