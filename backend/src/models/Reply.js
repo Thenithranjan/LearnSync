@@ -56,5 +56,6 @@ const replySchema = new mongoose.Schema(
 );
 
 replySchema.index({ threadId: 1, createdAt: 1 });
+replySchema.index({ authorId: 1 });
 
 module.exports = mongoose.model('Reply', replySchema);
