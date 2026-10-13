@@ -10,8 +10,10 @@ class RiskScoreService {
    * Compute explainable 0-100 academic risk indicator and factor contributions
    */
   static async calculateStudentRisk(studentId, courseId = null) {
-    const overview = await StudentAnalyticsService.getStudentOverview(studentId, { courseId });
-    const trends = await StudentAnalyticsService.getStudentTrends(studentId, courseId);
+    const [overview, trends] = await Promise.all([
+      StudentAnalyticsService.getStudentOverview(studentId, { courseId }),
+      StudentAnalyticsService.getStudentTrends(studentId, courseId)
+    ]);
 
     // Check data sufficiency: require student to have actually attempted an assessment or had attendance marked
     const hasAssessments = (overview.metrics?.quizzesAttempted || 0) > 0 || (overview.metrics?.assignmentsSubmitted || 0) > 0;
