@@ -33,9 +33,8 @@ class RecommendationService {
       return [];
     }
 
-    const generated = [];
-
-    for (const gap of gaps) {
+    // Resolve all gaps in parallel (was 3–4 sequential queries × gaps)
+    const resolved = await Promise.all(gaps.map(async (gap) => {
       // Find matching published materials for this topic/course
       const materialQuery = { isPublished: true };
       if (gap.courseId) {
@@ -43,22 +42,22 @@ class RecommendationService {
         materialQuery.moduleId = { $in: modules.map((m) => m._id) };
       }
 
-      // Search by topic field or title match
-      const relatedMaterial = await Material.findOne({
-        ...materialQuery,
-        $or: [
-          { topic: { $regex: gap.topic, $options: 'i' } },
-          { title: { $regex: gap.topic, $options: 'i' } }
-        ]
-      }).lean();
-
-      // Find related quiz for practice
-      const relatedQuiz = await Assessment.findOne({
-        type: 'QUIZ',
-        isPublished: true,
-        ...(gap.courseId ? { courseId: gap.courseId } : {}),
-        'questions.topic': { $regex: gap.topic, $options: 'i' }
-      }).lean();
+      // Search by topic field or title match + related quiz (independent)
+      const [relatedMaterial, relatedQuiz] = await Promise.all([
+        Material.findOne({
+          ...materialQuery,
+          $or: [
+            { topic: { $regex: gap.topic, $options: 'i' } },
+            { title: { $regex: gap.topic, $options: 'i' } }
+          ]
+        }).lean(),
+        Assessment.findOne({
+          type: 'QUIZ',
+          isPublished: true,
+          ...(gap.courseId ? { courseId: gap.courseId } : {}),
+          'questions.topic': { $regex: gap.topic, $options: 'i' }
+        }).lean()
+      ]);
 
       let targetCourseId = gap.courseId;
       if (!targetCourseId && relatedMaterial) {
@@ -72,6 +71,13 @@ class RecommendationService {
         const enr = await Enrollment.findOne({ studentId, status: 'ACTIVE' }).lean();
         if (enr) targetCourseId = enr.courseId;
       }
+
+      return { gap, relatedMaterial, relatedQuiz, targetCourseId };
+    }));
+
+    const generated = [];
+
+    for (const { gap, relatedMaterial, relatedQuiz, targetCourseId } of resolved) {
 
       let priority = 'MEDIUM';
       if (gap.accuracy < 40) priority = 'HIGH';
@@ -128,12 +134,10 @@ class RecommendationService {
     generated.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
     const topRecs = generated.slice(0, 5);
 
-    // Save newly generated recommendations to DB (avoid duplicate records)
-    const savedRecs = [];
-    for (const rec of topRecs) {
-      const created = await Recommendation.create(rec);
-      savedRecs.push(created.toObject());
-    }
+    // Save newly generated recommendations to DB (single bulk write)
+    const savedRecs = topRecs.length
+      ? (await Recommendation.insertMany(topRecs)).map((d) => d.toObject())
+      : [];
 
     return savedRecs;
   }
