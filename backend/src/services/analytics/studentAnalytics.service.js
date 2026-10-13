@@ -14,12 +14,28 @@ const {
   calculateOverallScore,
   calculateEngagementScore
 } = require('./analytics.utils');
+const requestCache = require('../../utils/requestCache');
 
 class StudentAnalyticsService {
   /**
-   * Get student overall academic summary (across all enrolled courses or specific course)
+   * Get student overall academic summary (across all enrolled courses or specific course).
+   * Memoized per request: dashboards and intelligence call this repeatedly
+   * for the same student+course within one request.
    */
   static async getStudentOverview(studentId, options = {}) {
+    const cacheKey = `studentOverview:${studentId}:${options.courseId || 'all'}`;
+    const cached = requestCache.get(cacheKey);
+    if (cached !== undefined) {
+      requestCache.mark('memo-hit:studentOverview');
+      return cached;
+    }
+    const result = await this._getStudentOverviewUncached(studentId, options);
+    requestCache.set(cacheKey, result);
+    requestCache.mark('studentOverview');
+    return result;
+  }
+
+  static async _getStudentOverviewUncached(studentId, options = {}) {
     const { courseId } = options;
 
     // 1. Get active enrolled courses
@@ -53,23 +69,49 @@ class StudentAnalyticsService {
       };
     }
 
-    // 2. Assignment Performance Calculation
-    const assignments = await Assessment.find({
-      courseId: { $in: courseIds },
-      type: 'ASSIGNMENT',
-      isPublished: true
-    }).lean();
+    // 2./3./4./5. Catalog fetches are independent — run them together
+    const [assignments, quizzes, sessions, modules] = await Promise.all([
+      Assessment.find({ courseId: { $in: courseIds }, type: 'ASSIGNMENT', isPublished: true }).lean(),
+      Assessment.find({ courseId: { $in: courseIds }, type: 'QUIZ', isPublished: true }).lean(),
+      AttendanceSession.find({ courseId: { $in: courseIds } }).lean(),
+      Module.find({ courseId: { $in: courseIds }, isPublished: true }).select('_id').lean()
+    ]);
 
+    // All record fetches only depend on the catalog above — one wave
+    const assignmentIds = assignments.map((a) => a._id);
+    const quizIds = quizzes.map((q) => q._id);
+    const sessionIds = sessions.map((s) => s._id);
+    const moduleIds = modules.map((m) => m._id);
+    const [assignmentSubs, quizSubs, records, applicableMaterials, threadsCount, replies] = await Promise.all([
+      assignmentIds.length
+        ? Submission.find({ studentId, assessmentId: { $in: assignmentIds }, status: 'GRADED' }).lean()
+        : [],
+      quizIds.length
+        ? Submission.find({ studentId, assessmentId: { $in: quizIds }, status: 'GRADED' }).lean()
+        : [],
+      sessionIds.length
+        ? AttendanceRecord.find({ studentId, sessionId: { $in: sessionIds } }).lean()
+        : [],
+      moduleIds.length
+        ? Material.find({ moduleId: { $in: moduleIds }, isPublished: true }).lean()
+        : [],
+      Thread.countDocuments({ authorId: studentId, courseId: { $in: courseIds } }),
+      Reply.find({ authorId: studentId }).populate({
+        path: 'threadId',
+        match: { courseId: { $in: courseIds } }
+      }).lean()
+    ]);
+
+    // Progress docs need material IDs from the wave above
+    const materialIds = applicableMaterials.map((m) => m._id);
+    const progressDocs = materialIds.length
+      ? await LearningProgress.find({ studentId, materialId: { $in: materialIds }, completed: true }).lean()
+      : [];
+
+    // 2. Assignment Performance Calculation
     let assignmentScore = null;
     let assignmentsSubmitted = 0;
     if (assignments.length > 0) {
-      const assignmentIds = assignments.map((a) => a._id);
-      const assignmentSubs = await Submission.find({
-        studentId,
-        assessmentId: { $in: assignmentIds },
-        status: 'GRADED'
-      }).lean();
-
       assignmentsSubmitted = assignmentSubs.length;
 
       let totalEarned = 0;
@@ -90,22 +132,9 @@ class StudentAnalyticsService {
     }
 
     // 3. Quiz Performance Calculation (Best attempt per quiz)
-    const quizzes = await Assessment.find({
-      courseId: { $in: courseIds },
-      type: 'QUIZ',
-      isPublished: true
-    }).lean();
-
     let quizScore = null;
     let quizzesAttempted = 0;
     if (quizzes.length > 0) {
-      const quizIds = quizzes.map((q) => q._id);
-      const quizSubs = await Submission.find({
-        studentId,
-        assessmentId: { $in: quizIds },
-        status: 'GRADED'
-      }).lean();
-
       const bestAttempts = new Map();
       quizSubs.forEach((sub) => {
         const aId = sub.assessmentId.toString();
@@ -127,59 +156,23 @@ class StudentAnalyticsService {
     }
 
     // 4. Attendance Percentage Calculation
-    const sessions = await AttendanceSession.find({
-      courseId: { $in: courseIds }
-    }).lean();
-
     let attendancePercentage = null;
     let presentCount = 0;
     if (sessions.length > 0) {
-      const sessionIds = sessions.map((s) => s._id);
-      const records = await AttendanceRecord.find({
-        studentId,
-        sessionId: { $in: sessionIds }
-      }).lean();
-
       presentCount = records.filter((r) => r.status === 'PRESENT' || r.status === 'LATE').length;
       attendancePercentage = safePercentage(presentCount, sessions.length);
     }
 
     // 5. Learning Progress Calculation
-    const modules = await Module.find({
-      courseId: { $in: courseIds },
-      isPublished: true
-    }).select('_id').lean();
-    const moduleIds = modules.map((m) => m._id);
-
-    const applicableMaterials = await Material.find({
-      moduleId: { $in: moduleIds },
-      isPublished: true
-    }).lean();
-
     let learningProgress = null;
     let completedMaterials = 0;
 
     if (applicableMaterials.length > 0) {
-      const materialIds = applicableMaterials.map((m) => m._id);
-      const progressDocs = await LearningProgress.find({
-        studentId,
-        materialId: { $in: materialIds },
-        completed: true
-      }).lean();
-
       completedMaterials = progressDocs.length;
       learningProgress = safePercentage(completedMaterials, applicableMaterials.length);
     }
 
     // 6. Discussion Engagement Calculation
-    const threadsCount = await Thread.countDocuments({
-      authorId: studentId,
-      courseId: { $in: courseIds }
-    });
-    const replies = await Reply.find({ authorId: studentId }).populate({
-      path: 'threadId',
-      match: { courseId: { $in: courseIds } }
-    }).lean();
     const applicableReplies = replies.filter((r) => r.threadId !== null);
     const endorsedReplies = applicableReplies.filter((r) => r.isFacultyEndorsed).length;
     const upvotesReceived = applicableReplies.reduce((sum, r) => sum + (r.upvoteCount || 0), 0);
@@ -230,15 +223,13 @@ class StudentAnalyticsService {
       .populate('courseId', 'title code department thumbnail faculty')
       .lean();
 
-    const courseList = [];
-
-    for (const enr of enrollments) {
-      if (!enr.courseId) continue;
+    const courseList = await Promise.all(enrollments.map(async (enr) => {
+      if (!enr.courseId) return null;
       const c = enr.courseId;
 
       const overview = await this.getStudentOverview(studentId, { courseId: c._id });
 
-      courseList.push({
+      return {
         courseId: c._id,
         title: c.title,
         code: c.code,
@@ -251,12 +242,13 @@ class StudentAnalyticsService {
         learningProgress: overview.learningProgress,
         engagement: overview.engagement,
         metrics: overview.metrics
-      });
-    }
+      };
+    }));
 
-    // Sort by overallScore descending
-    courseList.sort((a, b) => (b.overallScore || 0) - (a.overallScore || 0));
-    return courseList;
+    // Sort by overallScore descending (drop unenrolled ghosts)
+    return courseList
+      .filter(Boolean)
+      .sort((a, b) => (b.overallScore || 0) - (a.overallScore || 0));
   }
 
   /**
