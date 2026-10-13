@@ -14,4 +14,9 @@ router.get('/', authorize('ADMIN'), UserController.listUsers);
 router.get('/profile', UserController.getProfile);
 router.put('/profile', UserController.updateProfile);
 
+// Admin-only management of other users (registered after '/profile' so the
+// literal profile paths always match first)
+router.put('/:id', authorize('ADMIN'), UserController.updateUser);
+router.delete('/:id', authorize('ADMIN'), UserController.removeUser);
+
 module.exports = router;
