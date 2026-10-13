@@ -25,6 +25,12 @@ class FacultyAnalyticsService {
     }
 
     let totalEnrolledAcrossAll = 0;
+
+    // All courses in parallel (was sequential: 1 + C×~12 round trips)
+    const perCourse = await Promise.all(courses.map((c) =>
+      CourseAnalyticsService.getCourseStudents(c._id).then((studentData) => ({ c, studentData }))
+    ));
+
     const courseSummaries = [];
 
     let sumOverall = 0, countOverall = 0;
@@ -33,8 +39,7 @@ class FacultyAnalyticsService {
     let sumAssignment = 0, countAssignment = 0;
     let sumProgress = 0, countProgress = 0;
 
-    for (const c of courses) {
-      const studentData = await CourseAnalyticsService.getCourseStudents(c._id);
+    for (const { c, studentData } of perCourse) {
       const students = studentData.students;
 
       totalEnrolledAcrossAll += studentData.totalEnrolled;

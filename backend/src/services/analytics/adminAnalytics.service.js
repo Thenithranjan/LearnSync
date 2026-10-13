@@ -1,17 +1,22 @@
 const User = require('../../models/User');
 const Course = require('../../models/Course');
 const CourseAnalyticsService = require('./courseAnalytics.service');
+const requestCache = require('../../utils/requestCache');
 
 class AdminAnalyticsService {
   /**
    * Get institution-wide overview metrics
    */
   static async getAdminOverview() {
-    const totalStudents = await User.countDocuments({ role: 'STUDENT', isActive: true });
-    const totalFaculty = await User.countDocuments({ role: 'FACULTY', isActive: true });
-    const totalCourses = await Course.countDocuments({ status: { $in: ['PUBLISHED', 'DRAFT'] } });
+    const [totalStudents, totalFaculty, totalCourses] = await Promise.all([
+      User.countDocuments({ role: 'STUDENT', isActive: true }),
+      User.countDocuments({ role: 'FACULTY', isActive: true }),
+      Course.countDocuments({ status: { $in: ['PUBLISHED', 'DRAFT'] } })
+    ]);
+    requestCache.mark('overview:counts');
 
     const courses = await Course.find({ status: 'PUBLISHED' }).lean();
+    requestCache.mark('overview:courses-list');
 
     let sumOverall = 0, countOverall = 0;
     let sumAttendance = 0, countAttendance = 0;
@@ -19,9 +24,7 @@ class AdminAnalyticsService {
     let sumAssignment = 0, countAssignment = 0;
     let sumProgress = 0, countProgress = 0;
 
-    const coursePerformances = [];
-
-    for (const c of courses) {
+    const coursePerformances = await Promise.all(courses.map(async (c) => {
       const studentData = await CourseAnalyticsService.getCourseStudents(c._id);
       const students = studentData.students;
 
@@ -47,22 +50,29 @@ class AdminAnalyticsService {
         ? Number((validProgress.reduce((a, b) => a + b, 0) / validProgress.length).toFixed(1))
         : null;
 
-      if (avgOverall !== null) { sumOverall += avgOverall; countOverall++; }
-      if (avgAttendance !== null) { sumAttendance += avgAttendance; countAttendance++; }
-      if (avgQuiz !== null) { sumQuiz += avgQuiz; countQuiz++; }
-      if (avgAssign !== null) { sumAssignment += avgAssign; countAssignment++; }
-      if (avgProgress !== null) { sumProgress += avgProgress; countProgress++; }
-
-      coursePerformances.push({
+      return {
         courseId: c._id,
         title: c.title,
         code: c.code,
         department: c.department,
         totalEnrolled: studentData.totalEnrolled,
         averagePerformance: avgOverall,
-        averageAttendance: avgAttendance
-      });
-    }
+        averageAttendance: avgAttendance,
+        _avgQuiz: avgQuiz,
+        _avgAssign: avgAssign,
+        _avgProgress: avgProgress
+      };
+    }));
+
+    coursePerformances.forEach((cp) => {
+      if (cp.averagePerformance !== null) { sumOverall += cp.averagePerformance; countOverall++; }
+      if (cp.averageAttendance !== null) { sumAttendance += cp.averageAttendance; countAttendance++; }
+      if (cp._avgQuiz !== null) { sumQuiz += cp._avgQuiz; countQuiz++; }
+      if (cp._avgAssign !== null) { sumAssignment += cp._avgAssign; countAssignment++; }
+      if (cp._avgProgress !== null) { sumProgress += cp._avgProgress; countProgress++; }
+      delete cp._avgQuiz; delete cp._avgAssign; delete cp._avgProgress;
+    });
+    requestCache.mark('overview:course-scans');
 
     return {
       totalStudents,
@@ -81,8 +91,11 @@ class AdminAnalyticsService {
    * Get department-level analytics dynamically from real database entities
    */
   static async getDepartmentAnalytics() {
-    const courses = await Course.find({ status: { $in: ['PUBLISHED', 'DRAFT'] } }).lean();
-    const students = await User.find({ role: 'STUDENT', isActive: true }).lean();
+    const [courses, students] = await Promise.all([
+      Course.find({ status: { $in: ['PUBLISHED', 'DRAFT'] } }).lean(),
+      User.find({ role: 'STUDENT', isActive: true }).lean()
+    ]);
+    requestCache.mark('departments:base');
 
     const deptMap = new Map();
 
@@ -120,16 +133,18 @@ class AdminAnalyticsService {
       data.courseIds.push(c._id);
     });
 
-    // Calculate department averages
-    for (const [dept, data] of deptMap.entries()) {
-      for (const courseId of data.courseIds) {
-        const studentData = await CourseAnalyticsService.getCourseStudents(courseId);
+    // Calculate department averages (all courses in parallel)
+    await Promise.all([...deptMap.values()].map(async (data) => {
+      const results = await Promise.all(data.courseIds.map((courseId) =>
+        CourseAnalyticsService.getCourseStudents(courseId)
+      ));
+      results.forEach((studentData) => {
         studentData.students.forEach((s) => {
           if (s.overallScore !== null) data.scores.push(s.overallScore);
           if (s.attendance !== null) data.attendances.push(s.attendance);
         });
-      }
-    }
+      });
+    }));
 
     const results = [];
     for (const [dept, data] of deptMap.entries()) {
@@ -150,6 +165,7 @@ class AdminAnalyticsService {
     }
 
     results.sort((a, b) => (b.averagePerformance || 0) - (a.averagePerformance || 0));
+    requestCache.mark('departments:done');
     return results;
   }
 }
