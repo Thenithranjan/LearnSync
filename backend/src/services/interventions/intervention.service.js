@@ -58,8 +58,8 @@ class InterventionService {
 
     // Determine assigned faculty (creator if faculty, or course's assigned faculty)
     let assignedFaculty = creatorUser._id;
-    if (creatorUser.role === 'ADMIN' && course.facultyId) {
-      assignedFaculty = course.facultyId;
+    if (creatorUser.role === 'ADMIN' && course.faculty) {
+      assignedFaculty = course.faculty;
     }
 
     const intervention = await Intervention.create({
@@ -285,7 +285,7 @@ class InterventionService {
       if (filters.courseId) {
         query.courseId = filters.courseId;
       } else {
-        const assignedCourses = await Course.find({ facultyId: requestingUser._id }).select('_id').lean();
+        const assignedCourses = await Course.find({ faculty: requestingUser._id }).select('_id').lean();
         query.courseId = { $in: assignedCourses.map((c) => c._id) };
       }
     } else if (filters.courseId) {
