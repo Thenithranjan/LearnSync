@@ -32,7 +32,8 @@ class SubmissionController {
   static async getAssessmentSubmissions(req, res, next) {
     try {
       const { assessmentId } = req.params;
-      const submissions = await SubmissionService.getAssessmentSubmissions(assessmentId);
+      const { page, limit } = req.query;
+      const submissions = await SubmissionService.getAssessmentSubmissions(assessmentId, { page, limit });
       return sendSuccess(res, 200, 'All submissions retrieved', { data: submissions });
     } catch (error) {
       next(error);

@@ -23,7 +23,7 @@ class SubmissionService {
 
       assessment.questions.forEach((q, idx) => {
         const studentAns = studentAnswers.find((a) => a.questionIndex === idx);
-        const selectedOption = studentAns !== undefined ? studentAns.selectedOptionIndex : -1;
+        const selectedOption = (studentAns !== undefined && (studentAns.selectedOptionIndex !== undefined ? studentAns.selectedOptionIndex : studentAns.selectedOption !== undefined ? studentAns.selectedOption : -1)) ?? -1;
         const isCorrect = selectedOption === q.correctOptionIndex;
         const points = isCorrect ? (q.points || 1) : 0;
         if (isCorrect) totalEarned += points;
@@ -104,11 +104,16 @@ class SubmissionService {
   /**
    * Get all submissions for an assessment (Faculty/Admin)
    */
-  static async getAssessmentSubmissions(assessmentId) {
+  static async getAssessmentSubmissions(assessmentId, options = {}) {
+    const limit = Math.min(Math.max(parseInt(options.limit, 10) || 100, 1), 500);
+    const page = Math.max(parseInt(options.page, 10) || 1, 1);
     const submissions = await Submission.find({ assessmentId })
       .populate('studentId', 'name email department')
       .populate('gradedBy', 'name email')
-      .sort({ submittedAt: -1 });
+      .sort({ submittedAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .lean();
     return submissions;
   }
 
