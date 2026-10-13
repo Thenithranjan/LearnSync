@@ -21,6 +21,11 @@ const { sendError } = require('./utils/apiResponse');
 
 const app = express();
 
+// Dynamic authenticated JSON must never be served stale: Express ETags cause
+// browsers to revalidate with If-None-Match and get 304s with empty bodies,
+// which leaves axios with no data. Disable ETags for the whole app.
+app.set('etag', false);
+
 // Enable CORS with credentials for frontend client
 const allowedOrigins = [
   process.env.CLIENT_URL || 'http://localhost:5173',
@@ -45,6 +50,14 @@ app.use(
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
+
+// Tell browsers/proxies to never cache API responses (all are authenticated,
+// user-specific and change frequently — e.g. /api/dashboard/*, /api/auth/me).
+app.use('/api', (req, res, next) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+  res.set('Pragma', 'no-cache');
+  next();
+});
 
 // Root health check endpoint
 app.get('/api/health', (req, res) => {
