@@ -14,7 +14,7 @@ import {
   BookOpenCheck, Timer, Percent, Hash, Download, Edit3, Trash2,
   ChevronUp, MapPin, ToggleLeft, ToggleRight, Plus, UserX,
   MessageCircle, ThumbsUp, Paperclip, Mic, Video,
-  Shield, EyeOff, ArrowRight, ChevronLeft
+  Shield, EyeOff, ArrowRight, ChevronLeft, HelpCircle, Megaphone
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
