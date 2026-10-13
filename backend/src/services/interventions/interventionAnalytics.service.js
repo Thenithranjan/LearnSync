@@ -85,17 +85,17 @@ class InterventionAnalyticsService {
    * Get institution-wide intervention analytics for admins
    */
   static async getAdminInterventionAnalytics() {
-    const totalInterventions = await Intervention.countDocuments();
-    const statusCounts = await Intervention.aggregate([
-      { $group: { _id: '$status', count: { $sum: 1 } } }
+    const [totalInterventions, statusCounts, outcomeCounts, measuredOutcomes] = await Promise.all([
+      Intervention.countDocuments(),
+      Intervention.aggregate([
+        { $group: { _id: '$status', count: { $sum: 1 } } }
+      ]),
+      Intervention.aggregate([
+        { $match: { status: 'REVIEWED' } },
+        { $group: { _id: '$outcome', count: { $sum: 1 } } }
+      ]),
+      InterventionOutcome.find({ measurementStatus: 'MEASURED' }).lean()
     ]);
-
-    const outcomeCounts = await Intervention.aggregate([
-      { $match: { status: 'REVIEWED' } },
-      { $group: { _id: '$outcome', count: { $sum: 1 } } }
-    ]);
-
-    const measuredOutcomes = await InterventionOutcome.find({ measurementStatus: 'MEASURED' }).lean();
     let successfulCount = measuredOutcomes.filter((o) => o.improvement > 0).length;
 
     const statusSummary = {};
