@@ -1614,10 +1614,66 @@ function StudentQuizzesPage({ onOpenModal }: { onOpenModal?: (type: string, data
 function StudentAttendancePage({ onOpenModal }: { onOpenModal?: (type: string, data?: any) => void }) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDayRecord, setSelectedDayRecord] = useState<any>(null);
+  const [courseList, setCourseList] = useState<any[]>([]);
+  const [attendanceRecords, setAttendanceRecords] = useState<Record<string, { status: 'PRESENT' | 'ABSENT' | 'HOLIDAY' | 'LATE'; sessions: { course: string; time: string; status: string; room: string }[] }>>({});
+  const [loading, setLoading] = useState(true);
 
-  // Dynamic course list & records (starts clean/empty until courses & sessions are logged)
-  const courseList: any[] = studentCourses || [];
-  const attendanceRecords: Record<string, { status: 'PRESENT' | 'ABSENT' | 'HOLIDAY' | 'LATE'; sessions: { course: string; time: string; status: string; room: string }[] }> = {};
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const [apiMod, attMod] = await Promise.all([
+          import('./services/api'),
+          import('./services/attendanceService'),
+        ]);
+        const api = apiMod.default;
+        const attSvc = attMod.default;
+        const myCoursesRes = await api.get('/courses/my-courses');
+        const enrollments = myCoursesRes.data?.enrollments || myCoursesRes.data?.data || [];
+
+        const cards: any[] = [];
+        const records: typeof attendanceRecords = {};
+        await Promise.all(enrollments.map(async (enr: any) => {
+          const c = enr.courseId || {};
+          const courseId = c._id || enr.courseId;
+          if (!courseId) return;
+          try {
+            const res = await attSvc.getMyAttendanceSummary(courseId);
+            const s = res?.data ?? res;
+            cards.push({
+              code: c.code || 'CRS',
+              name: c.title || 'Course',
+              pct: s.percentage ?? 100,
+              present: s.presentCount ?? 0,
+              absent: s.absentCount ?? 0,
+            });
+            (s.records || []).forEach((r: any) => {
+              const d = r.sessionId?.date ? new Date(r.sessionId.date) : (r.createdAt ? new Date(r.createdAt) : null);
+              if (!d || isNaN(d.getTime())) return;
+              const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+              const st = r.status === 'ABSENT' ? 'ABSENT' : 'PRESENT';
+              if (!records[key]) records[key] = { status: st as any, sessions: [] };
+              else if (st === 'ABSENT') records[key].status = 'ABSENT' as any;
+              records[key].sessions.push({
+                course: c.code || c.title || 'Course',
+                time: d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                status: r.status === 'LATE' ? 'Late' : st === 'PRESENT' ? 'Present' : 'Absent',
+                room: r.sessionId?.sessionType || r.sessionId?.title || '—',
+              });
+            });
+          } catch {
+            cards.push({ code: c.code || 'CRS', name: c.title || 'Course', pct: 100, present: 0, absent: 0 });
+          }
+        }));
+        if (mounted) { setCourseList(cards); setAttendanceRecords(records); }
+      } catch {
+        // empty states render on failure
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -1673,7 +1729,7 @@ function StudentAttendancePage({ onOpenModal }: { onOpenModal?: (type: string, d
       {/* Course Summary Stat Cards */}
       {courseList.length === 0 ? (
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 text-center text-slate-400 text-sm">
-          No course attendance records recorded yet. Use Self Check-in with a classroom OTP code or attend scheduled sessions to populate your record.
+          {loading ? 'Loading your attendance…' : 'No course attendance records recorded yet. Use Self Check-in with a classroom OTP code or attend scheduled sessions to populate your record.'}
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -2487,6 +2543,42 @@ function StudentDiscussionsPage({ onOpenModal, onToast, currentUser }: { onOpenM
 // ─────────────────────────────────────────────────────────────────────────────
 
 function StudentProgressPage() {
+  const [radar, setRadar] = useState<any[]>([]);
+  const [trend, setTrend] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const svc = (await import('./services/analytics/studentAnalyticsService')).default;
+        const [courses, trends] = await Promise.all([svc.getCourses(), svc.getTrends()]);
+        if (!mounted) return;
+        setRadar((courses || []).map((c: any) => ({
+          subject: c.code || (c.title || '').slice(0, 12) || 'Course',
+          score: c.overallScore ?? 0,
+        })));
+        setTrend(((trends as any)?.items || []).slice(-8).map((item: any, i: number) => ({
+          week: item.assessmentTitle ? item.assessmentTitle.slice(0, 12) : `A${i + 1}`,
+          score: item.percentage ?? 0,
+          avg: null,
+        })));
+      } catch {
+        // empty states render on failure
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
+  const empty = (msg: string) => (
+    <div className="h-full flex flex-col items-center justify-center text-slate-400 text-sm">
+      <BarChart2 className="w-8 h-8 text-slate-300 mb-2" />
+      {loading ? 'Loading…' : msg}
+    </div>
+  );
+
   return (
     <div className="max-w-7xl mx-auto space-y-8">
       <PageHeader icon={BarChart2} title="My Progress" subtitle="Deep-dive into your academic performance across subjects." />
@@ -2496,14 +2588,14 @@ function StudentProgressPage() {
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 lg:p-8">
           <h2 className="font-semibold text-slate-900 mb-6">Subject Skill Map</h2>
           <div className="h-64">
-            {subjectRadar.length === 0 ? (
+            {radar.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-slate-400 text-sm">
                 <Radar className="w-8 h-8 text-slate-300 mb-2" />
-                No skill map data available yet.
+                {loading ? 'Loading…' : 'No skill map data available yet.'}
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <RadarChart data={subjectRadar}>
+                <RadarChart data={radar}>
                   <PolarGrid stroke="#f1f5f9" />
                   <PolarAngleAxis dataKey="subject" tick={{ fill: '#64748b', fontSize: 12 }} />
                   <RechartsRadar dataKey="score" stroke="#6366f1" fill="#6366f1" fillOpacity={0.2} strokeWidth={2} />
@@ -2517,14 +2609,9 @@ function StudentProgressPage() {
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 lg:p-8">
           <h2 className="font-semibold text-slate-900 mb-6">8-Week Score Trend</h2>
           <div className="h-64">
-            {performanceTrend.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-slate-400 text-sm">
-                <BarChart2 className="w-8 h-8 text-slate-300 mb-2" />
-                No score trend data available yet.
-              </div>
-            ) : (
+            {trend.length === 0 ? empty('No score trend data available yet.') : (
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={performanceTrend} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                <AreaChart data={trend} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
                   <defs>
                     <linearGradient id="pg" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#6366f1" stopOpacity={0.2} /><stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
@@ -2532,7 +2619,7 @@ function StudentProgressPage() {
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                   <XAxis dataKey="week" tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} />
-                  <YAxis domain={[50,100]} tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} />
+                  <YAxis domain={[0,100]} tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} />
                   <Tooltip contentStyle={{ borderRadius:'10px', border:'none', boxShadow:'0 8px 24px -4px rgb(0 0 0/0.12)', fontSize:'13px' }} />
                   <Area type="monotone" dataKey="score" stroke="#6366f1" strokeWidth={2.5} fill="url(#pg)" name="Score" />
                   <Line type="monotone" dataKey="avg" stroke="#cbd5e1" strokeWidth={1.5} strokeDasharray="4 4" name="Class Avg" dot={false} />
@@ -2547,10 +2634,10 @@ function StudentProgressPage() {
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="p-6 border-b border-slate-100"><h2 className="font-semibold text-slate-900">Subject Breakdown</h2></div>
         <div className="divide-y divide-slate-100">
-          {subjectRadar.length === 0 ? (
-            <p className="text-sm text-slate-400 py-8 text-center">No subject breakdown available yet.</p>
+          {radar.length === 0 ? (
+            <p className="text-sm text-slate-400 py-8 text-center">{loading ? 'Loading…' : 'No subject breakdown available yet.'}</p>
           ) : (
-            subjectRadar.map(s => (
+            radar.map(s => (
               <div key={s.subject} className="px-6 py-4 flex items-center gap-4">
                 <p className="w-32 text-sm font-medium text-slate-800 shrink-0">{s.subject}</p>
                 <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
@@ -2698,55 +2785,142 @@ function FacultyDashboardPage({ onOpenModal }: { onOpenModal?: (type: string, da
 // ─────────────────────────────────────────────────────────────────────────────
 
 function FacultyIntelligencePage({ onOpenModal }: { onOpenModal?: (type: string, data?: any) => void }) {
+  const [courses, setCourses] = useState<any[]>([]);
+  const [selectedCourse, setSelectedCourse] = useState<string>('all');
+  const [students, setStudents] = useState<any[]>([]);
+  const [topics, setTopics] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const cSvc = (await import('./services/courseService')).default;
+        const res = await cSvc.getFacultyCourses();
+        const list = res?.courses || res?.data || [];
+        if (mounted) setCourses(list);
+      } catch {
+        if (mounted) setLoading(false);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      if (!courses.length) return;
+      setLoading(true);
+      try {
+        const svc = (await import('./services/intelligence/facultyIntelligenceService')).default;
+        const targets = selectedCourse === 'all' ? courses : courses.filter(c => String(c._id) === selectedCourse);
+        const levelOf = (r: string) => r === 'CRITICAL' || r === 'HIGH' ? 'high' : r === 'MODERATE' ? 'medium' : 'low';
+        const agg: any[] = [];
+        const topicMap = new Map<string, { total: number; count: number }>();
+        await Promise.all(targets.map(async (c) => {
+          const courseId = c._id;
+          const [ew, tp] = await Promise.all([
+            svc.getCourseEarlyWarning(courseId).catch(() => null),
+            svc.getCourseTopics(courseId).catch(() => []),
+          ]);
+          (ew?.earlyWarnings || []).forEach((w: any) => {
+            agg.push({
+              id: `${courseId}-${w.studentId}`,
+              studentId: w.studentId,
+              courseId,
+              name: w.name,
+              roll: (w.email || '').split('@')[0],
+              course: ew?.courseCode || c.code || '',
+              score: w.overallPerformance ?? w.riskScore ?? 0,
+              attendance: w.attendance ?? 0,
+              risk: levelOf(w.riskLevel),
+              trend: w.trend === 'DECLINING' ? 'down' : w.trend === 'IMPROVING' ? 'up' : 'flat',
+              flags: w.flags || [],
+            });
+          });
+          (Array.isArray(tp) ? tp : (tp as any)?.topics || []).forEach((t: any) => {
+            const name = t.topic || t.name;
+            const acc = t.accuracy ?? t.avgScore ?? t.score;
+            if (!name || acc == null) return;
+            const cur = topicMap.get(name) || { total: 0, count: 0 };
+            topicMap.set(name, { total: cur.total + acc, count: cur.count + 1 });
+          });
+        }));
+        if (!mounted) return;
+        // Dedupe students across courses, keeping highest risk
+        const rank: Record<string, number> = { high: 0, medium: 1, low: 2 };
+        const seen = new Map<string, any>();
+        agg.forEach(s => {
+          const key = String(s.studentId);
+          const prev = seen.get(key);
+          if (!prev || rank[s.risk] < rank[prev.risk]) seen.set(key, s);
+        });
+        setStudents([...seen.values()].sort((a, b) => rank[a.risk] - rank[b.risk]));
+        setTopics([...topicMap.entries()]
+          .map(([name, v]) => ({ name, score: Math.round(v.total / v.count) }))
+          .sort((a, b) => a.score - b.score)
+          .slice(0, 6));
+      } catch {
+        // empty states render on failure
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    })();
+    return () => { mounted = false; };
+  }, [courses, selectedCourse]);
+
+  const high = students.filter(s => s.risk === 'high');
+
   return (
     <div className="max-w-7xl mx-auto space-y-10">
       <PageHeader icon={Lightbulb} title="Academic Intelligence" subtitle="Identify areas requiring attention and coordinate student support.">
-        <select className="px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 outline-none shadow-sm">
-          <option>All Courses</option><option>Data Structures (CSE201)</option><option>Database Systems (CSE202)</option>
+        <select value={selectedCourse} onChange={e => setSelectedCourse(e.target.value)} className="px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 outline-none shadow-sm">
+          <option value="all">All Courses</option>
+          {courses.map(c => <option key={c._id} value={String(c._id)}>{c.title} ({c.code})</option>)}
         </select>
       </PageHeader>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white p-6 lg:p-8 rounded-2xl border border-slate-200 shadow-sm">
           <h2 className="text-lg font-semibold text-slate-900 mb-6 flex items-center gap-2"><Users className="w-5 h-5 text-slate-400" />Students Requiring Attention</h2>
-          {allStudents.length > 0 ? (
+          {students.length > 0 ? (
             <>
               <div className="flex items-center justify-between gap-4">
-                <RiskMetric label="High Risk" value={allStudents.filter(s => s.risk === 'high').length} color="danger" /><div className="w-px h-12 bg-slate-100"></div>
-                <RiskMetric label="Moderate" value={allStudents.filter(s => s.risk === 'medium').length} color="warning" /><div className="w-px h-12 bg-slate-100"></div>
-                <RiskMetric label="Low Risk" value={allStudents.filter(s => s.risk === 'low').length} color="success" />
+                <RiskMetric label="High Risk" value={students.filter(s => s.risk === 'high').length} color="danger" /><div className="w-px h-12 bg-slate-100"></div>
+                <RiskMetric label="Moderate" value={students.filter(s => s.risk === 'medium').length} color="warning" /><div className="w-px h-12 bg-slate-100"></div>
+                <RiskMetric label="Low Risk" value={students.filter(s => s.risk === 'low').length} color="success" />
               </div>
               <div className="mt-8">
                 <p className="text-sm font-medium text-slate-500 mb-2">Class Distribution</p>
                 <div className="flex h-3 w-full rounded-full overflow-hidden gap-1">
-                  <div className="bg-danger-500" style={{ width: `${(allStudents.filter(s=>s.risk==='high').length / Math.max(allStudents.length,1))*100}%` }}></div>
-                  <div className="bg-warning-500" style={{ width: `${(allStudents.filter(s=>s.risk==='medium').length / Math.max(allStudents.length,1))*100}%` }}></div>
-                  <div className="bg-success-500" style={{ width: `${(allStudents.filter(s=>s.risk==='low').length / Math.max(allStudents.length,1))*100}%` }}></div>
+                  <div className="bg-danger-500" style={{ width: `${(students.filter(s=>s.risk==='high').length / Math.max(students.length,1))*100}%` }}></div>
+                  <div className="bg-warning-500" style={{ width: `${(students.filter(s=>s.risk==='medium').length / Math.max(students.length,1))*100}%` }}></div>
+                  <div className="bg-success-500" style={{ width: `${(students.filter(s=>s.risk==='low').length / Math.max(students.length,1))*100}%` }}></div>
                 </div>
               </div>
             </>
           ) : (
-            <p className="text-sm text-slate-400 py-6 text-center">No student data available yet.</p>
+            <p className="text-sm text-slate-400 py-6 text-center">{loading ? 'Loading intelligence…' : 'No student data available yet.'}</p>
           )}
         </div>
 
         <div className="bg-white p-6 lg:p-8 rounded-2xl border border-slate-200 shadow-sm">
           <h2 className="text-lg font-semibold text-slate-900 mb-6 flex items-center gap-2"><Target className="w-5 h-5 text-slate-400" />Class Attention Areas</h2>
           <div className="h-32">
-            {attentionTopics.length === 0 ? (
+            {topics.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-slate-400 text-sm">
                 <Target className="w-8 h-8 text-slate-300 mb-2" />
-                No attention topics identified yet.
+                {loading ? 'Loading…' : 'No attention topics identified yet.'}
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={attentionTopics} layout="vertical" margin={{ top:0, right:30, left:0, bottom:0 }}>
+                <BarChart data={topics} layout="vertical" margin={{ top:0, right:30, left:0, bottom:0 }}>
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
                   <XAxis type="number" hide domain={[0,100]} />
                   <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fill:'#475569', fontSize:13, fontWeight:500 }} width={110} />
                   <Tooltip cursor={{fill:'#f8fafc'}} contentStyle={{borderRadius:'8px',border:'none',boxShadow:'0 4px 6px -1px rgb(0 0 0/0.1)'}} />
                   <Bar dataKey="score" radius={[0,4,4,0]} barSize={24}>
-                    {attentionTopics.map((e,i) => <Cell key={i} fill={e.score < 50 ? '#f59e0b' : '#10b981'} />)}
+                    {topics.map((e,i) => <Cell key={i} fill={e.score < 50 ? '#f59e0b' : '#10b981'} />)}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
@@ -2756,15 +2930,15 @@ function FacultyIntelligencePage({ onOpenModal }: { onOpenModal?: (type: string,
       </div>
 
       <div className="space-y-6">
-        <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2">Action Required <span className="bg-danger-100 text-danger-700 text-xs font-bold px-2 py-0.5 rounded-full">{allStudents.filter(s => s.risk === 'high').length} Students</span></h2>
-        {allStudents.filter(s => s.risk === 'high').length === 0 ? (
+        <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2">Action Required <span className="bg-danger-100 text-danger-700 text-xs font-bold px-2 py-0.5 rounded-full">{high.length} Students</span></h2>
+        {high.length === 0 ? (
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-12 text-center">
             <div className="w-14 h-14 rounded-2xl bg-success-50 flex items-center justify-center mx-auto mb-3"><CheckCircle2 className="w-7 h-7 text-success-400" /></div>
             <h3 className="font-bold text-slate-900 mb-1">No High-Risk Students</h3>
-            <p className="text-sm text-slate-400">All students are performing within acceptable thresholds.</p>
+            <p className="text-sm text-slate-400">{loading ? 'Loading…' : 'All students are performing within acceptable thresholds.'}</p>
           </div>
         ) : (
-          allStudents.filter(s=>s.risk==='high').map(s => (
+          high.map(s => (
             <div key={s.id} onClick={() => onOpenModal?.('create-intervention', s)} className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex items-center justify-between hover:border-brand-300 transition-colors cursor-pointer group">
               <div className="flex items-center gap-4">
                 <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-bold text-sm">{s.name.split(' ').map((w: string)=>w[0]).join('').slice(0,2)}</div>
@@ -2787,7 +2961,54 @@ function FacultyIntelligencePage({ onOpenModal }: { onOpenModal?: (type: string,
 function FacultyStudentsPage({ onOpenModal }: { onOpenModal?: (type: string, data?: any) => void }) {
   const [riskFilter, setRiskFilter] = useState<'all'|'high'|'medium'|'low'>('all');
   const [search, setSearch] = useState('');
-  const filtered = allStudents.filter(s =>
+  const [students, setStudents] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const cSvc = (await import('./services/courseService')).default;
+        const fSvc = (await import('./services/analytics/facultyAnalyticsService')).default;
+        const res = await cSvc.getFacultyCourses();
+        const list = res?.courses || res?.data || [];
+        const byStudent = new Map<string, any>();
+        await Promise.all(list.map(async (c: any) => {
+          try {
+            const d = await fSvc.getCourseStudents(c._id);
+            (d?.students || []).forEach((s: any) => {
+              const key = String(s.studentId);
+              const lowScore = s.overallScore != null && s.overallScore < 60;
+              const lowAtt = s.attendance != null && s.attendance < 75;
+              const midScore = s.overallScore != null && s.overallScore < 70;
+              const risk = lowScore || lowAtt ? 'high' : midScore ? 'medium' : 'low';
+              const prev = byStudent.get(key);
+              const rank: Record<string, number> = { high: 0, medium: 1, low: 2 };
+              const entry = {
+                id: key,
+                name: s.name,
+                roll: (s.email || '').split('@')[0],
+                course: d?.courseCode || c.code || '',
+                score: s.overallScore ?? 0,
+                attendance: s.attendance ?? 0,
+                risk,
+                trend: 'flat',
+              };
+              if (!prev || rank[risk] < rank[prev.risk]) byStudent.set(key, entry);
+            });
+          } catch { /* skip courses with no data */ }
+        }));
+        if (mounted) setStudents([...byStudent.values()]);
+      } catch {
+        // empty state renders on failure
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
+  const filtered = students.filter(s =>
     (riskFilter === 'all' || s.risk === riskFilter) &&
     (s.name.toLowerCase().includes(search.toLowerCase()) || s.roll.includes(search))
   );
@@ -2825,7 +3046,7 @@ function FacultyStudentsPage({ onOpenModal }: { onOpenModal?: (type: string, dat
               {filtered.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="px-6 py-8 text-center text-sm text-slate-400">
-                    No students found matching your criteria.
+                    {loading ? 'Loading students…' : 'No students found matching your criteria.'}
                   </td>
                 </tr>
               ) : (
@@ -3197,28 +3418,110 @@ function FacultyAttendancePage({ onOpenModal }: { onOpenModal?: (type: string, d
 // ─────────────────────────────────────────────────────────────────────────────
 
 function FacultyAnalyticsPage() {
+  const [courses, setCourses] = useState<any[]>([]);
+  const [selectedCourse, setSelectedCourse] = useState<string>('all');
+  const [topics, setTopics] = useState<any[]>([]);
+  const [dist, setDist] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const cSvc = (await import('./services/courseService')).default;
+        const res = await cSvc.getFacultyCourses();
+        if (mounted) setCourses(res?.courses || res?.data || []);
+      } catch {
+        if (mounted) setLoading(false);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      if (!courses.length) return;
+      setLoading(true);
+      try {
+        const fSvc = (await import('./services/analytics/facultyAnalyticsService')).default;
+        const targets = selectedCourse === 'all' ? courses : courses.filter(c => String(c._id) === selectedCourse);
+        const topicMap = new Map<string, { total: number; count: number; attempted: number }>();
+        const buckets = [
+          { range: '0-40', count: 0 },
+          { range: '40-55', count: 0 },
+          { range: '55-70', count: 0 },
+          { range: '70-85', count: 0 },
+          { range: '85-100', count: 0 },
+        ];
+        const seen = new Set<string>();
+        await Promise.all(targets.map(async (c: any) => {
+          const [tp, roster] = await Promise.all([
+            fSvc.getCourseTopics(c._id).catch(() => []),
+            fSvc.getCourseStudents(c._id).catch(() => null),
+          ]);
+          (Array.isArray(tp) ? tp : []).forEach((t: any) => {
+            const name = t.topic;
+            if (!name || t.accuracy == null) return;
+            const cur = topicMap.get(name) || { total: 0, count: 0, attempted: 0 };
+            topicMap.set(name, {
+              total: cur.total + t.accuracy,
+              count: cur.count + 1,
+              attempted: cur.attempted + (t.questionsAttempted || 0),
+            });
+          });
+          (roster?.students || []).forEach((s: any) => {
+            if (s.overallScore == null) return;
+            const key = String(s.studentId);
+            if (selectedCourse === 'all' && seen.has(key)) return;
+            seen.add(key);
+            const i = s.overallScore < 40 ? 0 : s.overallScore < 55 ? 1 : s.overallScore < 70 ? 2 : s.overallScore < 85 ? 3 : 4;
+            buckets[i].count++;
+          });
+        }));
+        if (!mounted) return;
+        setTopics([...topicMap.entries()].map(([topic, v]) => ({
+          topic,
+          avgScore: Math.round(v.total / v.count),
+          completion: v.attempted,
+        })).sort((a, b) => a.avgScore - b.avgScore));
+        setDist(buckets);
+      } catch {
+        // empty states render on failure
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    })();
+    return () => { mounted = false; };
+  }, [courses, selectedCourse]);
+
   return (
     <div className="max-w-7xl mx-auto space-y-10">
-      <PageHeader icon={BarChart2} title="Performance Analytics" subtitle="Deep analysis of class performance across topics and time." />
+      <PageHeader icon={BarChart2} title="Performance Analytics" subtitle="Deep analysis of class performance across topics and time.">
+        <select value={selectedCourse} onChange={e => setSelectedCourse(e.target.value)} className="px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 outline-none shadow-sm">
+          <option value="all">All Courses</option>
+          {courses.map(c => <option key={c._id} value={String(c._id)}>{c.title} ({c.code})</option>)}
+        </select>
+      </PageHeader>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 lg:p-8">
           <h2 className="font-semibold text-slate-900 mb-6">Topic-wise Average Score</h2>
           <div className="h-64">
-            {courseAnalytics.length === 0 ? (
+            {topics.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-slate-400 text-sm">
                 <BarChart2 className="w-8 h-8 text-slate-300 mb-2" />
-                No topic performance data available.
+                {loading ? 'Loading…' : 'No topic performance data available.'}
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={courseAnalytics} layout="vertical" margin={{top:0,right:30,left:0,bottom:0}}>
+                <BarChart data={topics} layout="vertical" margin={{top:0,right:30,left:0,bottom:0}}>
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
                   <XAxis type="number" domain={[0,100]} tick={{fill:'#94a3b8',fontSize:12}} axisLine={false} tickLine={false} />
                   <YAxis dataKey="topic" type="category" width={120} tick={{fill:'#475569',fontSize:12,fontWeight:500}} axisLine={false} tickLine={false} />
                   <Tooltip contentStyle={{borderRadius:'10px',border:'none',boxShadow:'0 8px 24px -4px rgb(0 0 0/0.12)',fontSize:'13px'}} />
                   <Bar dataKey="avgScore" radius={[0,4,4,0]} barSize={20}>
-                    {courseAnalytics.map((e,i) => <Cell key={i} fill={e.avgScore>=70?'#10b981':e.avgScore>=55?'#f59e0b':'#ef4444'} />)}
+                    {topics.map((e,i) => <Cell key={i} fill={e.avgScore>=70?'#10b981':e.avgScore>=55?'#f59e0b':'#ef4444'} />)}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
@@ -3229,20 +3532,20 @@ function FacultyAnalyticsPage() {
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 lg:p-8">
           <h2 className="font-semibold text-slate-900 mb-6">Score Distribution</h2>
           <div className="h-64">
-            {analyticsScoreDist.length === 0 ? (
+            {dist.every(d => !d.count) ? (
               <div className="h-full flex flex-col items-center justify-center text-slate-400 text-sm">
                 <BarChart2 className="w-8 h-8 text-slate-300 mb-2" />
-                No score distribution data available.
+                {loading ? 'Loading…' : 'No score distribution data available.'}
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={analyticsScoreDist} margin={{top:0,right:0,left:-20,bottom:0}}>
+                <BarChart data={dist} margin={{top:0,right:0,left:-20,bottom:0}}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                   <XAxis dataKey="range" tick={{fill:'#94a3b8',fontSize:12}} axisLine={false} tickLine={false} />
-                  <YAxis tick={{fill:'#94a3b8',fontSize:12}} axisLine={false} tickLine={false} />
+                  <YAxis tick={{fill:'#94a3b8',fontSize:12}} axisLine={false} tickLine={false} allowDecimals={false} />
                   <Tooltip contentStyle={{borderRadius:'10px',border:'none',boxShadow:'0 8px 24px -4px rgb(0 0 0/0.12)',fontSize:'13px'}} />
                   <Bar dataKey="count" radius={[4,4,0,0]} barSize={28}>
-                    {analyticsScoreDist.map((_,i) => <Cell key={i} fill={i<2?'#10b981':i<4?'#f59e0b':'#ef4444'} />)}
+                    {dist.map((_,i) => <Cell key={i} fill={i<2?'#10b981':i<4?'#f59e0b':'#ef4444'} />)}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
@@ -3254,10 +3557,10 @@ function FacultyAnalyticsPage() {
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="p-6 border-b border-slate-100"><h2 className="font-semibold text-slate-900">Topic-wise Breakdown</h2></div>
         <div className="divide-y divide-slate-100">
-          {courseAnalytics.length === 0 ? (
-            <p className="text-sm text-slate-400 py-8 text-center">No topic breakdown data available yet.</p>
+          {topics.length === 0 ? (
+            <p className="text-sm text-slate-400 py-8 text-center">{loading ? 'Loading…' : 'No topic breakdown data available yet.'}</p>
           ) : (
-            courseAnalytics.map(t => (
+            topics.map(t => (
               <div key={t.topic} className="px-6 py-4 grid grid-cols-4 gap-4 items-center hover:bg-slate-50 transition-colors">
                 <p className="text-sm font-semibold text-slate-900">{t.topic}</p>
                 <div>
@@ -3265,8 +3568,8 @@ function FacultyAnalyticsPage() {
                   <p className="text-xs text-slate-400">Avg score</p>
                 </div>
                 <div>
-                  <div className="flex justify-between text-xs text-slate-400 mb-1"><span>Completion</span><span>{t.completion}%</span></div>
-                  <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-brand-500 rounded-full" style={{width:`${t.completion}%`}}></div></div>
+                  <p className="text-xs text-slate-400 mb-1">{t.completion} questions attempted</p>
+                  <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-brand-500 rounded-full" style={{width:`${t.avgScore}%`}}></div></div>
                 </div>
                 <div className="text-right">
                   <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${t.avgScore>=70?'bg-success-50 text-success-700':t.avgScore>=55?'bg-warning-50 text-warning-700':'bg-danger-50 text-danger-700'}`}>
