@@ -66,6 +66,29 @@ const ADMIN_NAV: { label: string; icon: React.ElementType; pageId: Page }[] = [
   { label: 'System Settings', icon: Settings,        pageId: 'admin-settings'     },
 ];
 
+// ─── Role → Page Mapping ───────────────────────────────────────────────────────
+
+type Role = 'admin' | 'faculty' | 'student';
+
+const ROLE_DEFAULT_PAGE: Record<Role, Page> = {
+  admin:   'admin-dashboard',
+  faculty: 'faculty-dashboard',
+  student: 'student-dashboard',
+};
+
+const normalizeRole = (value?: string | null): Role => {
+  const r = value?.toLowerCase();
+  return r === 'admin' || r === 'faculty' ? r : 'student';
+};
+
+/** Landing page a user of the given role should see right after signing in. */
+const getRoleDefaultPage = (role: Role): Page => ROLE_DEFAULT_PAGE[role];
+
+/** True when `page` belongs to the given role's own nav (settings included). */
+const isPageAllowedForRole = (page: Page, role: Role): boolean =>
+  (role === 'admin' ? ADMIN_NAV : role === 'faculty' ? FACULTY_NAV : STUDENT_NAV)
+    .some((item) => item.pageId === page);
+
 // ─── Shared Data ─────────────────────────────────────────────────────────────
 
 const performanceTrend: any[] = [];
@@ -280,6 +303,10 @@ export default function App() {
         if (isMounted && me?.user) {
           setCurrentUser(me.user);
           setIsLoggedIn(true);
+          // Restore the session on the role's own landing page — otherwise a
+          // refreshed admin/faculty tab would stay on the default student
+          // dashboard while the sidebar already switched to their portal.
+          setActivePage(getRoleDefaultPage(normalizeRole(me.user.role)));
         }
       } catch (err) {
         // Unauthenticated — show login screen
@@ -297,7 +324,18 @@ export default function App() {
     };
   }, []);
 
-  const role = (currentUser?.role?.toLowerCase() || (activePage.startsWith('admin') ? 'admin' : activePage.startsWith('faculty') ? 'faculty' : 'student')) as 'admin' | 'faculty' | 'student';
+  const role: Role = currentUser?.role
+    ? normalizeRole(currentUser.role)
+    : (activePage.startsWith('admin') ? 'admin' : activePage.startsWith('faculty') ? 'faculty' : 'student');
+
+  // Safety net: never let a page from another role's portal stay mounted once
+  // the signed-in user's role is known (e.g. stale state after a refresh).
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    if (!isPageAllowedForRole(activePage, role)) {
+      setActivePage(getRoleDefaultPage(role));
+    }
+  }, [isLoggedIn, role, activePage]);
 
   const handleSignOut = async () => {
     setProfileDropdownOpen(false);
@@ -313,12 +351,9 @@ export default function App() {
   const handleAppLogin = async (email: string, password: string) => {
     const data = await loginApi(email, password);
     if (data?.user) {
+      const role = normalizeRole(data.user.role);
       setCurrentUser(data.user);
-      // Set default page based on role
-      const r = data.user.role?.toLowerCase();
-      if (r === 'admin') setActivePage('admin-dashboard');
-      else if (r === 'faculty') setActivePage('faculty-dashboard');
-      else setActivePage('student-dashboard');
+      setActivePage(getRoleDefaultPage(role));
       setIsLoggedIn(true);
     }
   };
@@ -388,11 +423,13 @@ export default function App() {
           ))}
         </div>
 
-        <div className="p-4 border-t border-slate-100">
-          <button onClick={() => { setActivePage('admin-settings'); setSidebarOpen(false); }} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors">
-            <Settings className="w-5 h-5 text-slate-400" />Settings
-          </button>
-        </div>
+        {role === 'admin' && (
+          <div className="p-4 border-t border-slate-100">
+            <button onClick={() => { setActivePage('admin-settings'); setSidebarOpen(false); }} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors">
+              <Settings className="w-5 h-5 text-slate-400" />Settings
+            </button>
+          </div>
+        )}
       </aside>
 
       {/* Main */}
@@ -433,9 +470,11 @@ export default function App() {
                     <p className="text-sm font-bold text-slate-900">{userName}</p>
                     <p className="text-xs text-slate-500">{currentUser?.email || 'user@edupulse.edu'}</p>
                   </div>
-                  <button onClick={() => { setActivePage('admin-settings'); setProfileDropdownOpen(false); }} className="w-full text-left px-3 py-2 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2">
-                    <Settings className="w-4 h-4 text-slate-400" /> Profile & Account Settings
-                  </button>
+                  {role === 'admin' && (
+                    <button onClick={() => { setActivePage('admin-settings'); setProfileDropdownOpen(false); }} className="w-full text-left px-3 py-2 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2">
+                      <Settings className="w-4 h-4 text-slate-400" /> Profile & Account Settings
+                    </button>
+                  )}
                   <button onClick={handleSignOut} className="w-full text-left px-3 py-2 rounded-xl text-xs font-semibold text-rose-600 hover:bg-rose-50 flex items-center gap-2 mt-1">
                     <UserX className="w-4 h-4" /> Sign Out
                   </button>
@@ -977,7 +1016,44 @@ export default function App() {
 
 function StudentDashboardPage() {
   const [activeLoop, setActiveLoop] = useState(0);
-  const overallScore = 0;
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const svc = (await import('./services/dashboardService')).default;
+        const res = await svc.getStudentDashboard();
+        if (mounted) setData(res);
+      } catch {
+        // Backend offline or no data — empty states render instead
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
+  const overallScore = data?.overview?.overallScore ?? 0;
+  const attendance = data?.overview?.attendance;
+  const streak = data?.streak ?? 0;
+  const trend: any[] = data?.performanceTrend ?? [];
+  const courses: any[] = (data?.courses ?? []).map((c: any) => ({
+    code: c.code,
+    name: c.title,
+    attendance: c.attendance ?? 0,
+    score: c.overallScore ?? 0,
+    status: (c.overallScore ?? 0) >= 70 ? 'good' : (c.overallScore ?? 0) >= 50 ? 'warning' : 'danger',
+  }));
+  const activityIcons: Record<string, React.ElementType> = { success: CheckCircle2, warning: AlertCircle, info: Activity };
+  const activity: any[] = (data?.recentActivity ?? []).map((a: any) => ({
+    ...a,
+    icon: activityIcons[a.type] || Activity,
+    time: a.time ? new Date(a.time).toLocaleDateString() : '',
+  }));
+  const metrics = data?.overview?.metrics;
+  const topicsNeedingWork: any[] = data?.topicsNeedingWork ?? [];
   const gradients = ['from-brand-500 to-brand-600','from-violet-500 to-violet-600','from-amber-500 to-amber-600','from-rose-500 to-rose-600','from-emerald-500 to-emerald-600'];
 
   return (
@@ -993,11 +1069,11 @@ function StudentDashboardPage() {
               Live Academic Pulse
             </span>
             <h1 className="text-3xl lg:text-4xl font-bold text-white tracking-tight mb-2">Welcome to EduPulse</h1>
-            <p className="text-white/70 text-base max-w-md leading-relaxed">Your academic dashboard will populate once courses and data are available from the system.</p>
+            <p className="text-white/70 text-base max-w-md leading-relaxed">{loading ? 'Loading your live academic data…' : data ? 'Here is your live academic pulse across courses, assessments and attendance.' : 'Your academic dashboard will populate once courses and data are available from the system.'}</p>
             <div className="flex flex-wrap items-center gap-4 mt-6">
-              <PulseStat label="Overall Score" value="—" /><div className="w-px h-8 bg-white/20"></div>
-              <PulseStat label="Attendance" value="—" /><div className="w-px h-8 bg-white/20"></div>
-              <PulseStat label="Streak" value="—" icon={Flame} />
+              <PulseStat label="Overall Score" value={overallScore ? `${overallScore}%` : '—'} /><div className="w-px h-8 bg-white/20"></div>
+              <PulseStat label="Attendance" value={attendance != null ? `${attendance}%` : '—'} /><div className="w-px h-8 bg-white/20"></div>
+              <PulseStat label="Streak" value={streak ? `${streak} 🔥` : '—'} icon={Flame} />
             </div>
           </div>
           <div className="w-36 h-36 lg:w-44 lg:h-44 relative flex-none">
@@ -1019,17 +1095,17 @@ function StudentDashboardPage() {
         <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm p-6 lg:p-8">
           <div className="flex items-center justify-between mb-6">
             <div><h2 className="text-lg font-semibold text-slate-900">Performance Trend</h2><p className="text-sm text-slate-400 mt-0.5">Your quiz scores vs. class average</p></div>
-            {performanceTrend.length > 0 && <span className="text-xs font-semibold text-success-600 bg-success-50 px-2.5 py-1 rounded-full flex items-center gap-1"><TrendingUp className="w-3 h-3" /> +17pts</span>}
+            {trend.length > 0 && <span className="text-xs font-semibold text-success-600 bg-success-50 px-2.5 py-1 rounded-full flex items-center gap-1"><TrendingUp className="w-3 h-3" /> {trend.length} assessments</span>}
           </div>
           <div className="h-52">
-            {performanceTrend.length === 0 ? (
+            {trend.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-slate-400 text-sm">
                 <BarChart2 className="w-8 h-8 text-slate-300 mb-2" />
-                No performance data available yet.
+                {loading ? 'Loading performance data…' : 'No performance data available yet.'}
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={performanceTrend} margin={{ top: 0, right: 0, left: -24, bottom: 0 }}>
+                <AreaChart data={trend} margin={{ top: 0, right: 0, left: -24, bottom: 0 }}>
                   <defs>
                     <linearGradient id="scoreGrad" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#6366f1" stopOpacity={0.2} /><stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
@@ -1037,7 +1113,7 @@ function StudentDashboardPage() {
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                   <XAxis dataKey="week" tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} />
-                  <YAxis domain={[50, 100]} tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} />
+                  <YAxis domain={[0, 100]} tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} />
                   <Tooltip contentStyle={{ borderRadius: '10px', border: 'none', boxShadow: '0 8px 24px -4px rgb(0 0 0 / 0.12)', fontSize: '13px' }} />
                   <Area type="monotone" dataKey="score" stroke="#6366f1" strokeWidth={2.5} fill="url(#scoreGrad)" name="Your Score" dot={{ fill: '#6366f1', strokeWidth: 0, r: 3 }} activeDot={{ r: 5 }} />
                   <Line type="monotone" dataKey="avg" stroke="#cbd5e1" strokeWidth={1.5} strokeDasharray="4 4" name="Class Avg" dot={false} />
@@ -1047,22 +1123,22 @@ function StudentDashboardPage() {
           </div>
         </div>
         <div className="flex flex-col gap-4">
-          <StudentStatCard label="Assignments Completed" value="— / —" sub="No data yet" accent="warning" icon={ClipboardList} />
-          <StudentStatCard label="Quiz Average" value="—" sub="No data yet" accent="success" icon={Star} />
-          <StudentStatCard label="Topics Needing Work" value="—" sub="No data yet" accent="danger" icon={AlertCircle} />
+          <StudentStatCard label="Assignments Completed" value={metrics ? `${metrics.assignmentsSubmitted} / ${metrics.assignmentsTotal}` : '— / —'} sub={metrics ? `${metrics.assignmentsTotal - metrics.assignmentsSubmitted} pending` : 'No data yet'} accent="warning" icon={ClipboardList} />
+          <StudentStatCard label="Quiz Average" value={data?.overview?.quizPerformance != null ? `${data.overview.quizPerformance}%` : '—'} sub={metrics ? `${metrics.quizzesAttempted}/${metrics.quizzesTotal} attempted` : 'No data yet'} accent="success" icon={Star} />
+          <StudentStatCard label="Topics Needing Work" value={topicsNeedingWork.length ? `${topicsNeedingWork.length}` : '—'} sub={topicsNeedingWork.length ? topicsNeedingWork[0].topic : 'No data yet'} accent="danger" icon={AlertCircle} />
         </div>
       </div>
 
       {/* Courses */}
       <div>
         <h2 className="text-lg font-semibold text-slate-900 mb-4">My Courses</h2>
-        {studentCourses.length === 0 ? (
+        {courses.length === 0 ? (
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8 text-center text-slate-400 text-sm">
-            No courses enrolled yet.
+            {loading ? 'Loading your courses…' : 'No courses enrolled yet.'}
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            {studentCourses.map(course => {
+            {courses.map(course => {
               const sm = { good: { bar:'bg-success-500', badge:'bg-success-50 text-success-700', text:'On Track' }, warning: { bar:'bg-warning-500', badge:'bg-warning-50 text-warning-700', text:'Needs Attention' }, danger: { bar:'bg-danger-500', badge:'bg-danger-50 text-danger-700', text:'At Risk' } };
               const s = sm[course.status as keyof typeof sm];
               return (
@@ -1113,7 +1189,10 @@ function StudentDashboardPage() {
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 lg:p-8">
         <h2 className="text-lg font-semibold text-slate-900 mb-5">Recent Activity</h2>
         <div className="space-y-3">
-          {recentActivity.map((item, i) => {
+          {activity.length === 0 && (
+            <p className="text-sm text-slate-400 text-center py-6">{loading ? 'Loading activity…' : 'No recent activity yet.'}</p>
+          )}
+          {activity.map((item, i) => {
             const Icon = item.icon;
             const t: Record<string, string> = { success: 'bg-success-50 text-success-600', warning: 'bg-warning-50 text-warning-600', info: 'bg-brand-50 text-brand-600' };
             return (
@@ -2495,15 +2574,40 @@ function StudentProgressPage() {
 // ════════════════════════════════════════════════════════════════════════════
 
 function FacultyDashboardPage({ onOpenModal }: { onOpenModal?: (type: string, data?: any) => void }) {
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const svc = (await import('./services/dashboardService')).default;
+        const res = await svc.getFacultyDashboard();
+        if (mounted) setData(res);
+      } catch {
+        // empty states render on failure
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
+  const kpis = data?.kpis;
+  const scoreDist: any[] = data?.scoreDistribution ?? [];
+  const atRisk: any[] = data?.atRiskStudents ?? [];
+  const recentIv: any[] = data?.recentInterventions ?? [];
+  const fmt = (v: any, suffix = '') => (v === null || v === undefined ? '—' : `${v}${suffix}`);
+
   return (
     <div className="max-w-7xl mx-auto space-y-10">
       <PageHeader icon={LayoutDashboard} title="Faculty Dashboard" subtitle="Your daily overview — classes, students, and pending actions." />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-        <KpiCard label="My Students"       value="—"  delta="No data loaded"     deltaDir="up"  icon={Users}      accent="brand"   />
-        <KpiCard label="At-Risk Students"  value="—"  delta="No data loaded"      deltaDir="up"   icon={ShieldAlert} accent="danger"  />
-        <KpiCard label="Avg. Class Score"  value="—"  delta="No data loaded"      deltaDir="up"  icon={BarChart2}  accent="success" />
-        <KpiCard label="Pending Reviews"   value="—"  delta="No data loaded"      deltaDir="up"  icon={ClipboardList} accent="brand" />
+        <KpiCard label="My Students"       value={loading ? '…' : fmt(kpis?.myStudents)}  delta={kpis ? `${data?.overview?.totalCourses ?? 0} courses` : 'No data loaded'}     deltaDir="up"  icon={Users}      accent="brand"   />
+        <KpiCard label="At-Risk Students"  value={loading ? '…' : fmt(kpis?.atRiskCount)}  delta={kpis ? 'Flagged for support' : 'No data loaded'}      deltaDir="up"   icon={ShieldAlert} accent="danger"  />
+        <KpiCard label="Avg. Class Score"  value={loading ? '…' : fmt(kpis?.avgClassScore, kpis?.avgClassScore != null ? '%' : '')}  delta={kpis?.avgClassScore != null ? 'Across your courses' : 'No data loaded'}      deltaDir="up"  icon={BarChart2}  accent="success" />
+        <KpiCard label="Pending Reviews"   value={loading ? '…' : fmt(kpis?.pendingReviews)}  delta={kpis ? 'Submissions awaiting grading' : 'No data loaded'}      deltaDir="up"  icon={ClipboardList} accent="brand" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -2511,20 +2615,20 @@ function FacultyDashboardPage({ onOpenModal }: { onOpenModal?: (type: string, da
         <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm p-6 lg:p-8">
           <h2 className="font-semibold text-slate-900 mb-6">Class Score Distribution</h2>
           <div className="h-52">
-            {analyticsScoreDist.length === 0 ? (
+            {scoreDist.length === 0 || scoreDist.every(d => !d.count) ? (
               <div className="h-full flex flex-col items-center justify-center text-slate-400 text-sm">
                 <BarChart2 className="w-8 h-8 text-slate-300 mb-2" />
-                No score distribution data available.
+                {loading ? 'Loading distribution…' : 'No score distribution data available.'}
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={analyticsScoreDist} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                <BarChart data={scoreDist} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                   <XAxis dataKey="range" tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} />
                   <Tooltip contentStyle={{ borderRadius:'10px', border:'none', boxShadow:'0 8px 24px -4px rgb(0 0 0/0.12)', fontSize:'13px' }} />
                   <Bar dataKey="count" radius={[4,4,0,0]} barSize={32}>
-                    {analyticsScoreDist.map((_, i) => <Cell key={i} fill={i < 2 ? '#10b981' : i < 4 ? '#f59e0b' : '#ef4444'} />)}
+                    {scoreDist.map((_, i) => <Cell key={i} fill={i < 2 ? '#10b981' : i < 4 ? '#f59e0b' : '#ef4444'} />)}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
@@ -2536,7 +2640,18 @@ function FacultyDashboardPage({ onOpenModal }: { onOpenModal?: (type: string, da
         <div className="space-y-4">
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
             <h3 className="font-semibold text-slate-900 mb-4 text-sm">Today's Tasks</h3>
-            <p className="text-sm text-slate-400 py-4 text-center">No tasks scheduled for today.</p>
+            {recentIv.length === 0 ? (
+              <p className="text-sm text-slate-400 py-4 text-center">{loading ? 'Loading…' : 'No tasks scheduled for today.'}</p>
+            ) : (
+              <div className="space-y-2">
+                {recentIv.slice(0, 4).map((iv: any) => (
+                  <div key={iv.id} className="p-2.5 bg-slate-50 rounded-xl text-xs">
+                    <p className="font-semibold text-slate-800 truncate">{iv.title}</p>
+                    <p className="text-slate-400 mt-0.5">{iv.student?.name || 'Student'} · {iv.status}</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="bg-gradient-to-br from-brand-600 to-brand-800 rounded-2xl p-5 text-white shadow-lg shadow-brand-500/20">
@@ -2551,13 +2666,13 @@ function FacultyDashboardPage({ onOpenModal }: { onOpenModal?: (type: string, da
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="p-6 border-b border-slate-100 flex items-center justify-between">
           <h2 className="font-semibold text-slate-900 flex items-center gap-2"><ShieldAlert className="w-4 h-4 text-danger-500" />Students Requiring Immediate Attention</h2>
-          <span className="text-xs bg-danger-100 text-danger-700 font-bold px-2.5 py-1 rounded-full">{allStudents.filter(s => s.risk === 'high').length} students</span>
+          <span className="text-xs bg-danger-100 text-danger-700 font-bold px-2.5 py-1 rounded-full">{atRisk.length} students</span>
         </div>
         <div className="divide-y divide-slate-100">
-          {allStudents.filter(s => s.risk === 'high').length === 0 ? (
-            <p className="text-sm text-slate-400 py-8 text-center">No students currently flagged as high risk.</p>
+          {atRisk.length === 0 ? (
+            <p className="text-sm text-slate-400 py-8 text-center">{loading ? 'Loading at-risk students…' : 'No students currently flagged as high risk.'}</p>
           ) : (
-            allStudents.filter(s => s.risk === 'high').map(s => (
+            atRisk.map(s => (
               <div key={s.id} className="px-6 py-4 flex items-center gap-4 hover:bg-slate-50 transition-colors">
                 <div className="w-9 h-9 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-600 shrink-0">
                   {s.name.split(' ').map(w=>w[0]).join('').slice(0,2)}
@@ -3283,7 +3398,35 @@ function FacultyInterventionsPage({ onOpenModal }: { onOpenModal?: (type: string
 
 function AdminDashboardPage({ onOpenModal, onToast }: { onOpenModal?: (type: string, data?: any) => void; onToast?: (msg: string, type?: 'success'|'warning'|'info') => void }) {
   const [alertFilter, setAlertFilter] = useState<'all'|'critical'|'warning'>('all');
-  const filteredAlerts = alertFilter === 'all' ? recentAlerts : recentAlerts.filter(a => a.type === alertFilter);
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const svc = (await import('./services/dashboardService')).default;
+        const res = await svc.getAdminDashboard();
+        if (mounted) setData(res);
+      } catch {
+        // empty states render on failure
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
+  const kpis = data?.kpis;
+  const trend: any[] = data?.enrollmentTrend ?? [];
+  const outcomes: any[] = data?.interventionOutcomes ?? [];
+  const alerts: any[] = data?.recentAlerts ?? [];
+  const interveners: any[] = data?.topInterveners ?? [];
+  const filteredAlerts = alertFilter === 'all' ? alerts : alerts.filter(a => a.type === alertFilter);
+  const fmt = (v: any, suffix = '') => {
+    if (loading) return '…';
+    return (v === null || v === undefined ? '—' : `${v}${suffix}`);
+  };
 
   return (
     <div className="max-w-7xl mx-auto space-y-10">
@@ -3301,10 +3444,10 @@ function AdminDashboardPage({ onOpenModal, onToast }: { onOpenModal?: (type: str
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-        <KpiCard label="Total Students"    value="—" delta="No data loaded"          deltaDir="up"  icon={Users}      accent="brand"   />
-        <KpiCard label="At-Risk Students"  value="—" delta="No data loaded"          deltaDir="up"  icon={ShieldAlert} accent="danger"  />
-        <KpiCard label="Avg. Performance"  value="—" delta="No data loaded"          deltaDir="up"  icon={BarChart2}  accent="success" />
-        <KpiCard label="Intervention Rate" value="—" delta="No data loaded"          deltaDir="up"  icon={Zap}        accent="brand"   />
+        <KpiCard label="Total Students"    value={fmt(kpis?.totalStudents)} delta={kpis ? `${kpis.totalCourses ?? 0} courses · ${kpis.totalFaculty ?? 0} faculty` : 'No data loaded'}          deltaDir="up"  icon={Users}      accent="brand"   />
+        <KpiCard label="At-Risk Students"  value={fmt(kpis?.atRiskStudents)} delta={kpis ? 'With active interventions' : 'No data loaded'}          deltaDir="up"  icon={ShieldAlert} accent="danger"  />
+        <KpiCard label="Avg. Performance"  value={fmt(kpis?.avgPerformance, kpis?.avgPerformance != null ? '%' : '')} delta={kpis?.avgAttendance != null ? `Attendance ${kpis.avgAttendance}%` : 'No data loaded'}          deltaDir="up"  icon={BarChart2}  accent="success" />
+        <KpiCard label="Intervention Rate" value={fmt(kpis?.interventionRate, kpis?.interventionRate != null ? '%' : '')} delta={kpis ? `${kpis.openInterventions ?? 0} open cases` : 'No data loaded'}          deltaDir="up"  icon={Zap}        accent="brand"   />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
@@ -3312,8 +3455,11 @@ function AdminDashboardPage({ onOpenModal, onToast }: { onOpenModal?: (type: str
           <h2 className="font-semibold text-slate-900 mb-1">Enrollment & Risk Trend</h2>
           <p className="text-sm text-slate-400 mb-6">Active students vs. flagged at-risk (monthly)</p>
           <div className="h-52">
+            {trend.length === 0 ? (
+              <p className="text-sm text-slate-400 text-center py-16">{loading ? 'Loading trend…' : 'No trend data yet.'}</p>
+            ) : (
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={enrollmentTrend} margin={{top:0,right:0,left:-20,bottom:0}}>
+              <AreaChart data={trend} margin={{top:0,right:0,left:-20,bottom:0}}>
                 <defs>
                   <linearGradient id="aG" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#6366f1" stopOpacity={0.15}/><stop offset="95%" stopColor="#6366f1" stopOpacity={0}/></linearGradient>
                   <linearGradient id="rG" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#ef4444" stopOpacity={0.15}/><stop offset="95%" stopColor="#ef4444" stopOpacity={0}/></linearGradient>
@@ -3326,6 +3472,7 @@ function AdminDashboardPage({ onOpenModal, onToast }: { onOpenModal?: (type: str
                 <Area type="monotone" dataKey="atRisk" stroke="#ef4444" strokeWidth={2} fill="url(#rG)" name="At-Risk" dot={false} />
               </AreaChart>
             </ResponsiveContainer>
+            )}
           </div>
         </div>
 
@@ -3333,8 +3480,11 @@ function AdminDashboardPage({ onOpenModal, onToast }: { onOpenModal?: (type: str
           <h2 className="font-semibold text-slate-900 mb-1">Intervention Outcomes</h2>
           <p className="text-sm text-slate-400 mb-6">Resolved vs. pending cases</p>
           <div className="h-44">
+            {outcomes.length === 0 ? (
+              <p className="text-sm text-slate-400 text-center py-12">{loading ? 'Loading…' : 'No outcome data yet.'}</p>
+            ) : (
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={interventionOutcomes} margin={{top:0,right:0,left:-20,bottom:0}} barGap={4}>
+              <BarChart data={outcomes} margin={{top:0,right:0,left:-20,bottom:0}} barGap={4}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                 <XAxis dataKey="month" tick={{fill:'#94a3b8',fontSize:12}} axisLine={false} tickLine={false} />
                 <YAxis tick={{fill:'#94a3b8',fontSize:12}} axisLine={false} tickLine={false} />
@@ -3343,10 +3493,11 @@ function AdminDashboardPage({ onOpenModal, onToast }: { onOpenModal?: (type: str
                 <Bar dataKey="pending" fill="#f59e0b" radius={[4,4,0,0]} barSize={14} name="Pending" />
               </BarChart>
             </ResponsiveContainer>
+            )}
           </div>
           <div className="mt-auto pt-5 border-t border-slate-100 grid grid-cols-2 gap-4">
-            <div><p className="text-2xl font-bold text-slate-900">—</p><p className="text-xs text-slate-400 mt-0.5">Total resolved</p></div>
-            <div><p className="text-2xl font-bold text-warning-600">—</p><p className="text-xs text-slate-400 mt-0.5">Currently open</p></div>
+            <div><p className="text-2xl font-bold text-slate-900">{fmt(kpis?.resolvedInterventions)}</p><p className="text-xs text-slate-400 mt-0.5">Total resolved</p></div>
+            <div><p className="text-2xl font-bold text-warning-600">{fmt(kpis?.openInterventions)}</p><p className="text-xs text-slate-400 mt-0.5">Currently open</p></div>
           </div>
         </div>
       </div>
@@ -3363,12 +3514,12 @@ function AdminDashboardPage({ onOpenModal, onToast }: { onOpenModal?: (type: str
           </div>
           <div className="flex-1 divide-y divide-slate-100">
             {filteredAlerts.length === 0 ? (
-              <p className="text-sm text-slate-400 text-center py-10">No alerts to display.</p>
+              <p className="text-sm text-slate-400 text-center py-10">{loading ? 'Loading alerts…' : 'No alerts to display.'}</p>
             ) : (
               filteredAlerts.map(a => (
                 <div key={a.id} className="px-6 py-4 flex items-start gap-4 hover:bg-slate-50/50 transition-colors">
                   <AlertDot type={a.type} />
-                  <div className="flex-1 min-w-0"><p className="text-sm text-slate-800">{a.message}</p><p className="text-xs text-slate-400 mt-1">{a.dept} · {a.time}</p></div>
+                  <div className="flex-1 min-w-0"><p className="text-sm text-slate-800">{a.message}</p><p className="text-xs text-slate-400 mt-1">{a.dept} · {a.time ? new Date(a.time).toLocaleDateString() : ''}</p></div>
                   <button onClick={() => onOpenModal?.('notifications', a)} className="text-xs text-brand-600 font-medium hover:underline mt-0.5">Review</button>
                 </div>
               ))
@@ -3380,10 +3531,10 @@ function AdminDashboardPage({ onOpenModal, onToast }: { onOpenModal?: (type: str
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex-1">
             <h2 className="font-semibold text-slate-900 mb-5 flex items-center gap-2"><Award className="w-5 h-5 text-slate-400" />Top Interveners</h2>
             <div className="space-y-4">
-              {topFaculty.length === 0 ? (
-                <p className="text-sm text-slate-400 text-center py-4">No intervener data yet.</p>
+              {interveners.length === 0 ? (
+                <p className="text-sm text-slate-400 text-center py-4">{loading ? 'Loading…' : 'No intervener data yet.'}</p>
               ) : (
-                topFaculty.map((f,i) => (
+                interveners.map((f,i) => (
                   <div key={f.name} className="flex items-center gap-3">
                     <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${i===0?'bg-yellow-100 text-yellow-700':i===1?'bg-slate-100 text-slate-600':'bg-orange-100 text-orange-700'}`}>{i+1}</div>
                     <div className="flex-1 min-w-0"><p className="text-sm font-semibold text-slate-800 truncate">{f.name}</p><p className="text-xs text-slate-400">{f.dept}</p></div>
