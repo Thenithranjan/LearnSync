@@ -1622,11 +1622,7 @@ function StudentAttendancePage({ onOpenModal }: { onOpenModal?: (type: string, d
     let mounted = true;
     (async () => {
       try {
-        const [apiMod, attMod] = await Promise.all([
-          import('./services/api'),
-          import('./services/attendanceService'),
-        ]);
-        const api = apiMod.default;
+        const attMod = await import('./services/attendanceService');
         const attSvc = attMod.default;
         const myCoursesRes = await api.get('/courses/my-courses');
         const enrollments = myCoursesRes.data?.enrollments || myCoursesRes.data?.data || [];
