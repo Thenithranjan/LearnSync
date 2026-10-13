@@ -108,6 +108,63 @@ class UserController {
       next(error);
     }
   }
+
+  /**
+  * PUT /api/users/:id
+  * Admin-only update of another user's profile (name, department, role, active flag).
+  */
+  static async updateUser(req, res, next) {
+    try {
+      const { id } = req.params;
+      const { name, department, role, isActive } = req.body;
+      const target = await User.findById(id);
+      if (!target) {
+        const err = new Error('User not found');
+        err.statusCode = 404;
+        throw err;
+      }
+      // Admins cannot change their own role or deactivate themselves
+      const isSelf = String(target._id) === String(req.user._id);
+      if (name !== undefined) target.name = name;
+      if (department !== undefined) target.department = department;
+      if (role !== undefined && !isSelf && ['ADMIN', 'FACULTY', 'STUDENT'].includes(String(role).toUpperCase())) {
+        target.role = String(role).toUpperCase();
+      }
+      if (isActive !== undefined && !isSelf) target.isActive = Boolean(isActive);
+      await target.save();
+      const safe = target.toObject();
+      delete safe.password;
+      return sendSuccess(res, 200, 'User updated successfully', { user: safe });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+  * DELETE /api/users/:id
+  * Admin-only soft-delete (deactivates the account so historical refs stay intact).
+  */
+  static async removeUser(req, res, next) {
+    try {
+      const { id } = req.params;
+      if (String(id) === String(req.user._id)) {
+        const err = new Error('You cannot deactivate your own account');
+        err.statusCode = 400;
+        throw err;
+      }
+      const target = await User.findById(id);
+      if (!target) {
+        const err = new Error('User not found');
+        err.statusCode = 404;
+        throw err;
+      }
+      target.isActive = false;
+      await target.save();
+      return sendSuccess(res, 200, 'User deactivated successfully', { userId: target._id });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 module.exports = UserController;
