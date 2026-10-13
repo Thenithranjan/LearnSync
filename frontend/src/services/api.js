@@ -6,7 +6,11 @@ const api = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true, // Enables HTTP-only cookies transmission
   headers: {
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/json',
+    // Never serve dashboard/auth data from browser cache (avoids 304s
+    // with empty bodies on revalidation).
+    'Cache-Control': 'no-cache',
+    Pragma: 'no-cache'
   }
 });
 
