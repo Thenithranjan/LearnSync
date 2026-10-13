@@ -3109,6 +3109,15 @@ function FacultyAssignmentsPage({ onOpenModal }: { onOpenModal?: (type: string, 
   const [savingGrade, setSavingGrade]     = React.useState(false);
   const [deleteTarget, setDeleteTarget]   = React.useState<any>(null);
   const [deleting, setDeleting]           = React.useState(false);
+  const [showCreate, setShowCreate]       = React.useState(false);
+  const [creating, setCreating]           = React.useState(false);
+  const [createError, setCreateError]     = React.useState('');
+  const [newCourseId, setNewCourseId]     = React.useState('');
+  const [newTitle, setNewTitle]           = React.useState('');
+  const [newDesc, setNewDesc]             = React.useState('');
+  const [newInstructions, setNewInstructions] = React.useState('');
+  const [newPoints, setNewPoints]         = React.useState('100');
+  const [newDueDate, setNewDueDate]       = React.useState('');
 
   const loadData = React.useCallback(async () => {
     try {
@@ -3165,6 +3174,43 @@ function FacultyAssignmentsPage({ onOpenModal }: { onOpenModal?: (type: string, 
       setAssignments(prev => prev.filter(a => a._id !== deleteTarget._id));
     } catch (err: any) { alert(err.message || 'Failed to delete assignment.'); }
     finally { setDeleting(false); }
+  };
+
+  const openCreate = () => {
+    setCreateError('');
+    setNewCourseId(courses.length === 1 ? courses[0]._id : '');
+    setNewTitle('');
+    setNewDesc('');
+    setNewInstructions('');
+    setNewPoints('100');
+    setNewDueDate('');
+    setShowCreate(true);
+  };
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCourseId || !newTitle.trim()) {
+      setCreateError('Please select a course and enter a title.');
+      return;
+    }
+    try {
+      setCreating(true);
+      setCreateError('');
+      const svc = (await import('./services/assessmentService')).default;
+      await svc.createAssessment(newCourseId, {
+        title: newTitle.trim(),
+        description: newDesc.trim(),
+        instructions: newInstructions.trim(),
+        type: 'ASSIGNMENT',
+        totalPoints: Math.max(1, Number(newPoints) || 100),
+        passingScore: 50,
+        dueDate: newDueDate ? new Date(newDueDate) : null,
+        isPublished: true
+      });
+      setShowCreate(false);
+      await loadData();
+    } catch (err: any) { setCreateError(err.message || 'Failed to create assignment.'); }
+    finally { setCreating(false); }
   };
 
   if (detailAssignment) {
@@ -3266,7 +3312,9 @@ function FacultyAssignmentsPage({ onOpenModal }: { onOpenModal?: (type: string, 
 
   return (
     <div className="max-w-7xl mx-auto space-y-8">
-      <PageHeader icon={ClipboardList} title="Assignments" subtitle="Manage, review, and grade assignments across your courses." />
+      <PageHeader icon={ClipboardList} title="Assignments" subtitle="Manage, review, and grade assignments across your courses.">
+        <button onClick={openCreate} className="inline-flex items-center gap-2 px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm shadow-brand-500/20"><PlusCircle className="w-4 h-4" /> New Assignment</button>
+      </PageHeader>
       {loadingA ? (
         <div className="flex flex-col items-center justify-center py-20 gap-3"><div className="w-10 h-10 border-4 border-brand-200 border-t-brand-600 rounded-full animate-spin" /><span className="text-sm text-slate-400">Loading assignments...</span></div>
       ) : errorA ? (
@@ -3275,7 +3323,8 @@ function FacultyAssignmentsPage({ onOpenModal }: { onOpenModal?: (type: string, 
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-12 text-center">
           <div className="w-14 h-14 rounded-2xl bg-brand-50 flex items-center justify-center mx-auto mb-3"><ClipboardList className="w-7 h-7 text-brand-400" /></div>
           <h3 className="font-bold text-slate-900 mb-1">No Assignments Yet</h3>
-          <p className="text-sm text-slate-400">Go to a course and click Create Assessment to add your first assignment.</p>
+          <p className="text-sm text-slate-400 mb-5">Create your first assignment for your students.</p>
+          <button onClick={openCreate} className="inline-flex items-center gap-2 px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm shadow-brand-500/20"><PlusCircle className="w-4 h-4" /> New Assignment</button>
         </div>
       ) : (
         <div className="space-y-4">
@@ -3314,6 +3363,36 @@ function FacultyAssignmentsPage({ onOpenModal }: { onOpenModal?: (type: string, 
               <button onClick={() => setDeleteTarget(null)} disabled={deleting} className="px-5 py-2.5 text-slate-600 hover:text-slate-900 text-sm font-semibold border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">Cancel</button>
               <button onClick={handleDelete} disabled={deleting} className="inline-flex items-center gap-2 px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold rounded-xl shadow-sm shadow-rose-500/20 transition-colors disabled:opacity-50"><Trash2 className="w-4 h-4" />{deleting ? 'Deleting...' : 'Yes, Delete'}</button>
             </div>
+          </div>
+        </div>
+      )}
+      {showCreate && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 p-6 sm:p-8 max-w-lg w-full space-y-5 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+              <div><h3 className="text-lg font-bold text-slate-900">New Assignment</h3><p className="text-xs text-slate-400">Publish to your students immediately</p></div>
+              <button onClick={() => setShowCreate(false)} className="p-2 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100"><X className="w-5 h-5" /></button>
+            </div>
+            {createError && <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-600 text-xs font-medium">{createError}</div>}
+            <form onSubmit={handleCreate} className="space-y-4">
+              <div><label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wider">Course</label>
+                <select required value={newCourseId} onChange={e => setNewCourseId(e.target.value)} className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-brand-500 bg-white">
+                  <option value="">Select a course…</option>
+                  {courses.map((c: any) => <option key={c._id} value={c._id}>{c.title} ({c.code})</option>)}
+                </select>
+              </div>
+              <div><label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wider">Title</label><input type="text" required value={newTitle} onChange={e => setNewTitle(e.target.value)} placeholder="e.g. Problem Set 2: Joins & Indexing" className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-brand-500" /></div>
+              <div><label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wider">Description</label><textarea rows={2} value={newDesc} onChange={e => setNewDesc(e.target.value)} placeholder="What should students do?" className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-brand-500" /></div>
+              <div><label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wider">Instructions / Rubric</label><textarea rows={3} value={newInstructions} onChange={e => setNewInstructions(e.target.value)} placeholder="Grading criteria, submission format…" className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-brand-500" /></div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wider">Total Points</label><input type="number" min={1} value={newPoints} onChange={e => setNewPoints(e.target.value)} className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-brand-500" /></div>
+                <div><label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wider">Due Date</label><input type="datetime-local" value={newDueDate} onChange={e => setNewDueDate(e.target.value)} className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-brand-500" /></div>
+              </div>
+              <div className="flex items-center justify-end gap-3 pt-1">
+                <button type="button" onClick={() => setShowCreate(false)} className="px-4 py-2 text-slate-500 hover:text-slate-800 text-sm font-semibold">Cancel</button>
+                <button type="submit" disabled={creating} className="inline-flex items-center gap-1.5 px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-xl shadow-sm disabled:opacity-50"><PlusCircle className="w-4 h-4" />{creating ? 'Publishing...' : 'Publish Assignment'}</button>
+              </div>
+            </form>
           </div>
         </div>
       )}
