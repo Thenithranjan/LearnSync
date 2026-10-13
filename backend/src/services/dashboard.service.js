@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const requestCache = require('../utils/requestCache');
 const User = require('../models/User');
 const Course = require('../models/Course');
 const Enrollment = require('../models/Enrollment');
@@ -224,18 +225,63 @@ class DashboardService {
 
   // ─── Admin ────────────────────────────────────────────────
   static async getAdminDashboard() {
-    const [overview, interventionStats, departments] = await Promise.all([
+    // Overview + intervention stats are independent — run together.
+    // Departments runs AFTER: it reuses the per-course scans the overview
+    // just memoized instead of recomputing them concurrently.
+    const [overview, interventionStats] = await Promise.all([
       AdminAnalyticsService.getAdminOverview(),
-      InterventionAnalyticsService.getAdminInterventionAnalytics(),
-      AdminAnalyticsService.getDepartmentAnalytics()
+      InterventionAnalyticsService.getAdminInterventionAnalytics()
     ]);
+    requestCache.mark('dash:overview+stats');
+
+    const departments = await AdminAnalyticsService.getDepartmentAnalytics();
+    requestCache.mark('dash:departments');
+
+    // All independent tail queries in one wave (was 7 sequential round trips)
+    const [
+      atRiskAgg,
+      studentSignups,
+      interventionByMonth,
+      reviewedByMonth,
+      alertDocs,
+      topAgg,
+      totalAssessments,
+      totalEnrollments
+    ] = await Promise.all([
+      Intervention.aggregate([
+        { $match: { status: { $in: ACTIVE_INTERVENTION_STATUSES } } },
+        { $group: { _id: '$studentId' } },
+        { $count: 'count' }
+      ]),
+      User.aggregate([
+        { $match: { role: 'STUDENT' } },
+        { $group: { _id: { $dateToString: { format: '%Y-%m', date: '$createdAt' } }, count: { $sum: 1 } } }
+      ]),
+      Intervention.aggregate([
+        { $group: { _id: { $dateToString: { format: '%Y-%m', date: '$createdAt' } }, count: { $sum: 1 } } }
+      ]),
+      Intervention.aggregate([
+        { $match: { status: { $in: ['COMPLETED', 'REVIEWED'] } } },
+        { $group: { _id: { $dateToString: { format: '%Y-%m', date: '$updatedAt' } }, success: { $sum: 1 } } }
+      ]),
+      Intervention.find({
+        $or: [{ priority: { $in: ['HIGH', 'CRITICAL'] } }, { status: 'OVERDUE' }]
+      })
+        .populate('courseId', 'department title')
+        .sort({ updatedAt: -1 })
+        .limit(10)
+        .lean(),
+      Intervention.aggregate([
+        { $group: { _id: '$assignedFaculty', interventions: { $sum: 1 } } },
+        { $sort: { interventions: -1 } },
+        { $limit: 5 }
+      ]),
+      Assessment.countDocuments({ isPublished: true }),
+      Enrollment.countDocuments({ status: 'ACTIVE' })
+    ]);
+    requestCache.mark('dash:tail-queries');
 
     // At-risk proxy: distinct students with active interventions
-    const atRiskAgg = await Intervention.aggregate([
-      { $match: { status: { $in: ACTIVE_INTERVENTION_STATUSES } } },
-      { $group: { _id: '$studentId' } },
-      { $count: 'count' }
-    ]);
     const atRiskStudents = atRiskAgg.length ? atRiskAgg[0].count : 0;
 
     const openInterventions =
@@ -254,14 +300,7 @@ class DashboardService {
 
     // Enrollment & risk trend: last 6 months of student signups + active interventions
     const months = lastNMonthLabels(6);
-    const studentSignups = await User.aggregate([
-      { $match: { role: 'STUDENT' } },
-      { $group: { _id: { $dateToString: { format: '%Y-%m', date: '$createdAt' } }, count: { $sum: 1 } } }
-    ]);
     const signupMap = new Map(studentSignups.map((s) => [s._id, s.count]));
-    const interventionByMonth = await Intervention.aggregate([
-      { $group: { _id: { $dateToString: { format: '%Y-%m', date: '$createdAt' } }, count: { $sum: 1 } } }
-    ]);
     const ivMap = new Map(interventionByMonth.map((s) => [s._id, s.count]));
     const enrollmentTrend = months.map((m) => ({
       month: m.label,
@@ -270,10 +309,6 @@ class DashboardService {
     }));
 
     // Intervention outcomes by month (resolved vs pending)
-    const reviewedByMonth = await Intervention.aggregate([
-      { $match: { status: { $in: ['COMPLETED', 'REVIEWED'] } } },
-      { $group: { _id: { $dateToString: { format: '%Y-%m', date: '$updatedAt' } }, success: { $sum: 1 } } }
-    ]);
     const reviewedMap = new Map(reviewedByMonth.map((s) => [s._id, s.success]));
     const interventionOutcomes = months.map((m) => ({
       month: m.label,
@@ -282,13 +317,6 @@ class DashboardService {
     }));
 
     // System alerts: latest high-priority / overdue interventions
-    const alertDocs = await Intervention.find({
-      $or: [{ priority: { $in: ['HIGH', 'CRITICAL'] } }, { status: 'OVERDUE' }]
-    })
-      .populate('courseId', 'department title')
-      .sort({ updatedAt: -1 })
-      .limit(10)
-      .lean();
     const recentAlerts = alertDocs.map((iv) => ({
       id: iv._id,
       type: iv.priority === 'CRITICAL' || iv.status === 'OVERDUE' ? 'critical' : 'warning',
@@ -298,20 +326,15 @@ class DashboardService {
     }));
 
     // Top interveners: faculty with most interventions + success rate
-    const topAgg = await Intervention.aggregate([
-      { $group: { _id: '$assignedFaculty', interventions: { $sum: 1 } } },
-      { $sort: { interventions: -1 } },
-      { $limit: 5 }
-    ]);
     const topInterveners = await Promise.all(
       topAgg.map(async (row) => {
-        const faculty = row._id
-          ? await User.findById(row._id).select('name department').lean()
-          : null;
-        const reviewed = await Intervention.countDocuments({
-          assignedFaculty: row._id,
-          status: { $in: ['COMPLETED', 'REVIEWED'] }
-        });
+        const [faculty, reviewed] = await Promise.all([
+          row._id ? User.findById(row._id).select('name department').lean() : null,
+          Intervention.countDocuments({
+            assignedFaculty: row._id,
+            status: { $in: ['COMPLETED', 'REVIEWED'] }
+          })
+        ]);
         return {
           name: faculty?.name || 'Unknown Faculty',
           dept: faculty?.department || 'General',
@@ -320,9 +343,7 @@ class DashboardService {
         };
       })
     );
-
-    const totalAssessments = await Assessment.countDocuments({ isPublished: true });
-    const totalEnrollments = await Enrollment.countDocuments({ status: 'ACTIVE' });
+    requestCache.mark('dash:interveners');
 
     return {
       kpis: {
