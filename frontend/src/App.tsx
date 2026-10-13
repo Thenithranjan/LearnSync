@@ -14,7 +14,7 @@ import {
   BookOpenCheck, Timer, Percent, Hash, Download, Edit3, Trash2,
   ChevronUp, MapPin, ToggleLeft, ToggleRight, Plus, UserX,
   MessageCircle, ThumbsUp, Paperclip, Mic, Video,
-  Shield, EyeOff, ArrowRight, ChevronLeft, HelpCircle, Megaphone
+  Shield, EyeOff, ArrowRight, ChevronLeft, HelpCircle, Megaphone, Sun, Moon
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -22,6 +22,7 @@ import {
   RadarChart, PolarGrid, PolarAngleAxis, Radar as RechartsRadar,
   LineChart,
 } from 'recharts';
+import useTheme from './hooks/useTheme';
 
 // ─── Page Types ───────────────────────────────────────────────────────────────
 
@@ -259,6 +260,7 @@ function AppLoginScreen({ onLogin }: { onLogin: (email: string, password: string
 export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activePage, setActivePage] = useState<Page>('student-dashboard');
+  const { isDark, toggleTheme } = useTheme();
   const [apiConnected, setApiConnected] = useState<boolean | null>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -383,7 +385,7 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-screen bg-slate-50 overflow-hidden font-sans relative">
+    <div className="flex h-screen bg-slate-50 dark:bg-slate-950 overflow-hidden font-sans relative">
       {/* Toast Notification Banner */}
       {toast && (
         <div className="fixed top-5 right-5 z-50 flex items-center gap-3 px-5 py-3 rounded-2xl bg-slate-900 text-white shadow-2xl border border-slate-700 animate-bounce">
@@ -398,7 +400,7 @@ export default function App() {
       )}
 
       {/* Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-slate-200 transform transition-transform duration-300 lg:relative lg:translate-x-0 flex flex-col shadow-2xl lg:shadow-none ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <aside className={`fixed inset-y-0 left-0 z-50 w-72 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 transform transition-transform duration-300 lg:relative lg:translate-x-0 flex flex-col shadow-2xl lg:shadow-none ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="h-20 flex items-center px-6 border-b border-slate-100 justify-between lg:justify-start">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center shadow-lg shadow-brand-500/20">
@@ -434,7 +436,7 @@ export default function App() {
 
       {/* Main */}
       <main className="flex-1 flex flex-col h-full overflow-hidden">
-        <header className="h-20 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-4 lg:px-10 sticky top-0 z-30">
+        <header className="h-20 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 lg:px-10 sticky top-0 z-30">
           <div className="flex items-center gap-4">
             <button className="lg:hidden p-2 -ml-2 text-slate-500 hover:bg-slate-100 rounded-lg" onClick={() => setSidebarOpen(true)}><Menu className="w-6 h-6" /></button>
             <div className="hidden md:flex items-center gap-2 px-4 py-2.5 bg-slate-100/50 hover:bg-slate-100 rounded-xl border border-transparent focus-within:border-brand-300 focus-within:bg-white focus-within:shadow-sm transition-all w-80">
@@ -448,6 +450,9 @@ export default function App() {
             </div>
           </div>
           <div className="flex items-center gap-5 relative">
+            <button onClick={toggleTheme} title={isDark ? 'Switch to light mode' : 'Switch to dark mode'} aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'} className="relative p-2.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors">
+              {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            </button>
             <button onClick={() => setModalType('notifications')} className="relative p-2.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors">
               <Bell className="w-5 h-5" />
               <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-danger-500 rounded-full border-2 border-white"></span>
@@ -465,7 +470,7 @@ export default function App() {
               </button>
 
               {profileDropdownOpen && (
-                <div className="absolute right-0 mt-3 w-56 bg-white rounded-2xl shadow-2xl border border-slate-200 p-2 z-50">
+                <div className="absolute right-0 mt-3 w-56 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-2 z-50">
                   <div className="px-3 py-2 border-b border-slate-100 mb-1">
                     <p className="text-sm font-bold text-slate-900">{userName}</p>
                     <p className="text-xs text-slate-500">{currentUser?.email || 'user@edupulse.edu'}</p>
@@ -511,7 +516,7 @@ export default function App() {
       {/* Universal Interactive Action Modal */}
       {modalType && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-lg w-full p-6 lg:p-8 animate-in fade-in zoom-in duration-200">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 max-w-lg w-full p-6 lg:p-8 animate-in fade-in zoom-in duration-200">
             <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-6">
               <h3 className="text-xl font-bold text-slate-900 capitalize">
                 {modalType.replace('-', ' ')}
@@ -3950,12 +3955,30 @@ function AdminDashboardPage({ onOpenModal, onToast }: { onOpenModal?: (type: str
 function AdminDepartmentsPage({ onToast }: { onToast?: (msg: string, type?: 'success'|'warning'|'info') => void }) {
   const [departments, setDepartments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showCreate, setShowCreate] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState('');
+  const [newName, setNewName] = useState('');
+  const [newCode, setNewCode] = useState('');
+  const [newDesc, setNewDesc] = useState('');
+
+  const fetchDepartments = async () => {
+    try {
+      const svc = (await import('./services/departmentService')).default;
+      const res = await svc.getDepartments();
+      setDepartments(res || []);
+    } catch {
+      // empty state renders on failure
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     let mounted = true;
     (async () => {
       try {
-        const svc = (await import('./services/analytics/adminAnalyticsService')).default;
+        const svc = (await import('./services/departmentService')).default;
         const res = await svc.getDepartments();
         if (mounted) setDepartments(res || []);
       } catch {
@@ -3967,6 +3990,31 @@ function AdminDepartmentsPage({ onToast }: { onToast?: (msg: string, type?: 'suc
     return () => { mounted = false; };
   }, []);
 
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newName.trim()) {
+      setCreateError('Please enter a department name.');
+      return;
+    }
+    try {
+      setCreating(true);
+      setCreateError('');
+      const svc = (await import('./services/departmentService')).default;
+      await svc.createDepartment({ name: newName.trim(), code: newCode.trim(), description: newDesc.trim() });
+      setShowCreate(false);
+      setNewName('');
+      setNewCode('');
+      setNewDesc('');
+      setLoading(true);
+      await fetchDepartments();
+      onToast?.('Department created successfully!', 'success');
+    } catch (err: any) {
+      setCreateError(err?.message || 'Failed to create department.');
+    } finally {
+      setCreating(false);
+    }
+  };
+
   const chartData = departments.map(d => ({
     dept: (d.department || 'General').slice(0, 10),
     score: d.averagePerformance ?? 0,
@@ -3975,7 +4023,9 @@ function AdminDepartmentsPage({ onToast }: { onToast?: (msg: string, type?: 'suc
 
   return (
     <div className="max-w-7xl mx-auto space-y-8">
-      <PageHeader icon={Building2} title="Departments" subtitle="Institution-wide department performance and health metrics." />
+      <PageHeader icon={Building2} title="Departments" subtitle="Institution-wide department performance and health metrics.">
+        <button onClick={() => { setCreateError(''); setShowCreate(true); }} className="inline-flex items-center gap-2 px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm shadow-brand-500/20"><PlusCircle className="w-4 h-4" /> Add Department</button>
+      </PageHeader>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {departments.length === 0 ? (
@@ -4030,6 +4080,27 @@ function AdminDepartmentsPage({ onToast }: { onToast?: (msg: string, type?: 'suc
           )}
         </div>
       </div>
+
+      {showCreate && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 p-6 sm:p-8 max-w-md w-full space-y-5">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+              <div><h3 className="text-lg font-bold text-slate-900">Add Department</h3><p className="text-xs text-slate-400">Creates a managed department record</p></div>
+              <button onClick={() => setShowCreate(false)} className="p-2 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100"><X className="w-5 h-5" /></button>
+            </div>
+            {createError && <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-600 text-xs font-medium">{createError}</div>}
+            <form onSubmit={handleCreate} className="space-y-4">
+              <div><label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wider">Department Name</label><input type="text" required value={newName} onChange={e => setNewName(e.target.value)} placeholder="e.g. Electrical Engineering" className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-brand-500" /></div>
+              <div><label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wider">Code</label><input type="text" value={newCode} onChange={e => setNewCode(e.target.value.toUpperCase())} placeholder="e.g. EE" className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-brand-500 uppercase" /></div>
+              <div><label className="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wider">Description</label><textarea rows={3} value={newDesc} onChange={e => setNewDesc(e.target.value)} placeholder="What does this department cover?" className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:border-brand-500" /></div>
+              <div className="flex items-center justify-end gap-3 pt-1">
+                <button type="button" onClick={() => setShowCreate(false)} className="px-4 py-2 text-slate-500 hover:text-slate-800 text-sm font-semibold">Cancel</button>
+                <button type="submit" disabled={creating} className="inline-flex items-center gap-1.5 px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-xl shadow-sm disabled:opacity-50"><PlusCircle className="w-4 h-4" />{creating ? 'Creating...' : 'Create Department'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
