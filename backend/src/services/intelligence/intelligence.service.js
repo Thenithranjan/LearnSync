@@ -35,8 +35,10 @@ class IntelligenceService {
    * Get institution-wide academic intelligence for admins
    */
   static async getAdminIntelligenceOverview() {
-    const totalStudents = await User.countDocuments({ role: 'STUDENT', isActive: true });
-    const students = await User.find({ role: 'STUDENT', isActive: true }).select('_id name department').lean();
+    const [totalStudents, students] = await Promise.all([
+      User.countDocuments({ role: 'STUDENT', isActive: true }),
+      User.find({ role: 'STUDENT', isActive: true }).select('_id name department').lean()
+    ]);
 
     const riskSummary = {
       CRITICAL: 0,
@@ -46,11 +48,15 @@ class IntelligenceService {
       INSUFFICIENT_DATA: 0
     };
 
+    // All students in parallel (was sequential: ~13 queries × students)
+    const risks = await Promise.all(
+      students.map((s) => RiskScoreService.calculateStudentRisk(s._id))
+    );
+
     let totalRiskScores = 0;
     let validRiskScoresCount = 0;
 
-    for (const s of students) {
-      const riskAnalysis = await RiskScoreService.calculateStudentRisk(s._id);
+    risks.forEach((riskAnalysis) => {
       const level = riskAnalysis.riskLevel || 'INSUFFICIENT_DATA';
       if (riskSummary[level] !== undefined) {
         riskSummary[level]++;
@@ -59,18 +65,20 @@ class IntelligenceService {
         totalRiskScores += riskAnalysis.riskScore;
         validRiskScoresCount++;
       }
-    }
+    });
 
     const avgRiskScore = validRiskScoresCount > 0
       ? Number((totalRiskScores / validRiskScoresCount).toFixed(1))
       : null;
 
-    // Collect all published courses for topic analysis
+    // Collect all published courses for topic analysis (in parallel)
     const courses = await Course.find({ status: 'PUBLISHED' }).select('_id title').lean();
     const commonAttentionTopicsMap = new Map();
 
-    for (const c of courses) {
-      const courseGaps = await LearningGapService.detectCourseAttentionTopics(c._id);
+    const allGaps = await Promise.all(
+      courses.map((c) => LearningGapService.detectCourseAttentionTopics(c._id))
+    );
+    allGaps.forEach((courseGaps) => {
       courseGaps.attentionAreas.forEach((area) => {
         const existing = commonAttentionTopicsMap.get(area.topic);
         if (!existing) {
@@ -86,7 +94,7 @@ class IntelligenceService {
           existing.totalQuestions += area.questionsAttempted;
         }
       });
-    }
+    });
 
     const commonAttentionTopics = Array.from(commonAttentionTopicsMap.values());
     commonAttentionTopics.sort((a, b) => a.averageAccuracy - b.averageAccuracy);
