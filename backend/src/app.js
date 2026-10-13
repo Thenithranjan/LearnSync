@@ -17,6 +17,7 @@ const interventionRoutes = require('./routes/intervention.routes');
 const dashboardRoutes = require('./routes/dashboard.routes');
 const testRoutes = require('./routes/test.routes');
 const errorHandler = require('./middleware/error.middleware');
+const requestCache = require('./utils/requestCache');
 const { sendError } = require('./utils/apiResponse');
 
 const app = express();
@@ -58,6 +59,9 @@ app.use('/api', (req, res, next) => {
   res.set('Pragma', 'no-cache');
   next();
 });
+
+// Request-scoped memo cache for expensive analytics computations
+app.use(requestCache.middleware);
 
 // Root health check endpoint
 app.get('/api/health', (req, res) => {
