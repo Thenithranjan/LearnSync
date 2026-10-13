@@ -34,7 +34,7 @@ router.get(
 router.get(
   '/intelligence/student/recommendations',
   authenticate,
-  authorize('STUDENT', 'ADMIN'),
+  authorize('STUDENT', 'ADMIN', 'FACULTY'),
   StudentIntelligenceController.getRecommendations
 );
 
