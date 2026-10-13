@@ -29,7 +29,8 @@ const userSchema = new mongoose.Schema(
         message: 'Role must be either ADMIN, FACULTY, or STUDENT'
       },
       default: 'STUDENT',
-      required: [true, 'Role is required']
+      required: [true, 'Role is required'],
+      index: true
     },
     department: {
       type: String,
