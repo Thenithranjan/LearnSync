@@ -18,23 +18,14 @@ class EarlyWarningService {
     const studentData = await CourseAnalyticsService.getCourseStudents(courseId);
     const students = studentData.students || [];
 
-    const earlyWarnings = [];
-    const riskCounts = {
-      CRITICAL: 0,
-      HIGH: 0,
-      MODERATE: 0,
-      LOW: 0,
-      INSUFFICIENT_DATA: 0
-    };
-
-    for (const student of students) {
-      const riskAnalysis = await RiskScoreService.calculateStudentRisk(student.studentId, courseId);
-      const gapAnalysis = await LearningGapService.detectStudentGaps(student.studentId, courseId);
+    // Analyze every student in parallel (was fully sequential: ~15 queries × students)
+    const analyzed = await Promise.all(students.map(async (student) => {
+      const [riskAnalysis, gapAnalysis] = await Promise.all([
+        RiskScoreService.calculateStudentRisk(student.studentId, courseId),
+        LearningGapService.detectStudentGaps(student.studentId, courseId)
+      ]);
 
       const level = riskAnalysis.riskLevel || 'INSUFFICIENT_DATA';
-      if (riskCounts[level] !== undefined) {
-        riskCounts[level]++;
-      }
 
       // Identify flag reasons
       const flags = [];
@@ -70,8 +61,9 @@ class EarlyWarningService {
 
       const isAtRisk = level === 'HIGH' || level === 'CRITICAL' || level === 'MODERATE' || flags.length > 0;
 
-      if (isAtRisk) {
-        earlyWarnings.push({
+      return {
+        level,
+        entry: isAtRisk ? {
           studentId: student.studentId,
           name: student.name,
           email: student.email,
@@ -91,9 +83,25 @@ class EarlyWarningService {
             severity: g.severity
           })),
           suggestedActions
-        });
+        } : null
+      };
+    }));
+
+    const earlyWarnings = [];
+    const riskCounts = {
+      CRITICAL: 0,
+      HIGH: 0,
+      MODERATE: 0,
+      LOW: 0,
+      INSUFFICIENT_DATA: 0
+    };
+
+    analyzed.forEach(({ level, entry }) => {
+      if (riskCounts[level] !== undefined) {
+        riskCounts[level]++;
       }
-    }
+      if (entry) earlyWarnings.push(entry);
+    });
 
     // Sort by risk score descending
     earlyWarnings.sort((a, b) => (b.riskScore || 0) - (a.riskScore || 0));
