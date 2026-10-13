@@ -90,6 +90,19 @@ async function seedDemoData() {
       console.log(`[Seed] Created demo course: MATH201 - Linear Algebra`);
     }
 
+    // Managed department records for the admin Departments page
+    const Department = require('../models/Department');
+    for (const d of [
+      { name: 'Computer Science', code: 'CS', description: 'Computing, algorithms, systems and software.' },
+      { name: 'Mathematics', code: 'MATH', description: 'Pure and applied mathematics for computing.' }
+    ]) {
+      const exists = await Department.findOne({ name: d.name });
+      if (!exists) {
+        await Department.create(d);
+        console.log(`[Seed] Created department: ${d.name}`);
+      }
+    }
+
     // Enroll demo students across courses
     const enrollmentPlan = [
       [users['STUDENT'], ['CS201', 'CS301', 'CS401', 'MATH201']],

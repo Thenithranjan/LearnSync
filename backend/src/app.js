@@ -3,6 +3,7 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
+const departmentRoutes = require('./routes/department.routes');
 const courseRoutes = require('./routes/course.routes');
 const moduleRoutes = require('./routes/module.routes');
 const materialRoutes = require('./routes/material.routes');
@@ -75,6 +76,7 @@ app.get('/api/health', (req, res) => {
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/departments', departmentRoutes);
 app.use('/api', enrollmentRoutes);
 app.use('/api/courses', courseRoutes);
 app.use('/api', moduleRoutes);
