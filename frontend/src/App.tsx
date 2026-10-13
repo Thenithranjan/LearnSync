@@ -1981,12 +1981,15 @@ function StudentDiscussionsPage({ onOpenModal, onToast, currentUser }: { onOpenM
         const { getMyEnrolledCoursesApi } = await import('./services/enrollmentService');
         const courseSvc = (await import('./services/courseService')).default;
         const res = await getMyEnrolledCoursesApi();
-        let list = (res?.data || []).map((e: any) => e.course || e).filter((c: any) => c && c._id);
-        
+        // NOTE: getMyEnrolledCoursesApi already unwraps response.data, so the
+        // payload is { enrollments } (not { data }). Enrollments carry the
+        // populated course under `courseId`.
+        let list = (res?.enrollments || []).map((e: any) => e.courseId || e.course || e).filter((c: any) => c && c._id);
+
         // If student is not yet enrolled in any course, fallback to all available system courses
         if (list.length === 0) {
           const allCoursesRes = await courseSvc.getCourses();
-          list = (allCoursesRes?.data || []).filter((c: any) => c && c._id);
+          list = (allCoursesRes?.courses || allCoursesRes?.data || []).filter((c: any) => c && c._id);
         }
 
         setCourses(list);
@@ -2049,7 +2052,11 @@ function StudentDiscussionsPage({ onOpenModal, onToast, currentUser }: { onOpenM
   // Create new thread
   const handleCreatePost = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !content.trim() || !selectedCourseId) {
+    if (!selectedCourseId) {
+      onToast?.('Please select a course first.', 'warning');
+      return;
+    }
+    if (!title.trim() || !content.trim()) {
       onToast?.('Please fill out the title and content.', 'warning');
       return;
     }
