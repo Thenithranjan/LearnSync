@@ -3996,7 +3996,7 @@ function AdminFacultyPage({ onOpenModal, onToast }: { onOpenModal?: (type: strin
               <th className="px-4 py-3.5 text-xs font-semibold text-slate-400 uppercase tracking-wider">Department</th>
               <th className="px-4 py-3.5 text-xs font-semibold text-slate-400 uppercase tracking-wider">Courses</th>
               <th className="px-4 py-3.5 text-xs font-semibold text-slate-400 uppercase tracking-wider">Students</th>
-              <th className="px-4 py-3.5 text-xs font-semibold text-slate-400 uppercase tracking-wider">Rating</th>
+              <th className="px-4 py-3.5 text-xs font-semibold text-slate-400 uppercase tracking-wider">Avg Score</th>
               <th className="px-4 py-3.5 text-xs font-semibold text-slate-400 uppercase tracking-wider">Status</th>
               <th className="px-6 py-3.5"></th>
             </tr></thead>
@@ -4015,7 +4015,11 @@ function AdminFacultyPage({ onOpenModal, onToast }: { onOpenModal?: (type: strin
                   <td className="px-4 py-4 text-sm text-slate-600">{f.coursesCount ?? '—'}</td>
                   <td className="px-4 py-4 text-sm text-slate-600">{f.studentsCount ?? '—'}</td>
                   <td className="px-4 py-4">
-                    <span className="text-sm text-slate-400">—</span>
+                    {f.avgPerformance != null ? (
+                      <span className={`text-sm font-bold ${f.avgPerformance >= 70 ? 'text-success-600' : f.avgPerformance >= 55 ? 'text-warning-600' : 'text-danger-600'}`}>{f.avgPerformance}%</span>
+                    ) : (
+                      <span className="text-sm text-slate-400">—</span>
+                    )}
                   </td>
                   <td className="px-4 py-4">
                     <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${f.isActive === false ? 'bg-warning-50 text-warning-700' : 'bg-success-50 text-success-700'}`}>{f.isActive === false ? 'inactive' : 'active'}</span>
