@@ -2,10 +2,13 @@ import api from '../api';
 
 const recommendationService = {
   /**
-   * Get personalized study recommendations
+   * Get personalized study recommendations.
+   * Faculty/admin may pass studentId to review a specific student's list.
    */
-  async getRecommendations(courseId = null) {
-    const params = courseId ? { courseId } : {};
+  async getRecommendations(courseId = null, studentId = null) {
+    const params = {};
+    if (courseId) params.courseId = courseId;
+    if (studentId) params.studentId = studentId;
     const response = await api.get('/intelligence/student/recommendations', { params });
     return response.data.data;
   },
