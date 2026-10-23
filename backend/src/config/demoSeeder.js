@@ -648,4 +648,7 @@ async function seedRichDemoContent(users) {
   }
 }
 
+module.exports = seedDemoData;
+
+
 

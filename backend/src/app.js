@@ -32,14 +32,20 @@ app.set('etag', false);
 const allowedOrigins = [
   process.env.CLIENT_URL || 'http://localhost:5173',
   'http://localhost:5173',
-  'http://127.0.0.1:5173'
+  'http://127.0.0.1:5173',
+  'https://learnsync-9gpd.vercel.app',
+  'https://learnsync-nine.vercel.app'
 ];
 
 app.use(
   cors({
     origin: function (origin, callback) {
       if (!origin) return callback(null, true);
-      if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
+      if (
+        allowedOrigins.indexOf(origin) !== -1 ||
+        origin.endsWith('.vercel.app') ||
+        process.env.NODE_ENV !== 'production'
+      ) {
         return callback(null, true);
       }
       return callback(new Error('CORS policy violation'));
