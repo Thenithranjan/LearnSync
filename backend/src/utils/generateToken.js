@@ -7,11 +7,13 @@ const generateTokenAndSetCookie = (res, userId, role) => {
     { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
   );
 
+  const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL;
+
   const cookieOptions = {
     httpOnly: true,
     expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax'
+    secure: isProd,
+    sameSite: isProd ? 'none' : 'lax'
   };
 
   res.cookie('token', token, cookieOptions);
@@ -19,11 +21,13 @@ const generateTokenAndSetCookie = (res, userId, role) => {
 };
 
 const clearAuthCookie = (res) => {
+  const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL;
+
   res.cookie('token', '', {
     httpOnly: true,
     expires: new Date(0),
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax'
+    secure: isProd,
+    sameSite: isProd ? 'none' : 'lax'
   });
 };
 

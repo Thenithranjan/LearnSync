@@ -2,17 +2,27 @@ import api from './api';
 
 export const loginApi = async (email, password) => {
   const response = await api.post('/auth/login', { email, password });
+  if (response.data?.data?.token) {
+    localStorage.setItem('token', response.data.data.token);
+  }
   return response.data;
 };
 
 export const registerApi = async (userData) => {
   const response = await api.post('/auth/register', userData);
+  if (response.data?.data?.token) {
+    localStorage.setItem('token', response.data.data.token);
+  }
   return response.data;
 };
 
 export const logoutApi = async () => {
-  const response = await api.post('/auth/logout');
-  return response.data;
+  try {
+    const response = await api.post('/auth/logout');
+    return response.data;
+  } finally {
+    localStorage.removeItem('token');
+  }
 };
 
 export const getMeApi = async () => {

@@ -15,10 +15,11 @@ class AuthController {
       const user = await AuthService.registerUser({ name, email, password, role, department });
 
       // Generate JWT and set HTTP-only cookie
-      generateTokenAndSetCookie(res, user._id, user.role);
+      const token = generateTokenAndSetCookie(res, user._id, user.role);
 
       return sendSuccess(res, 201, 'User registered successfully', {
-        user: user.toAuthJSON()
+        user: user.toAuthJSON(),
+        token
       });
     } catch (error) {
       next(error);
@@ -34,10 +35,11 @@ class AuthController {
       const user = await AuthService.loginUser({ email, password });
 
       // Generate JWT and set HTTP-only cookie
-      generateTokenAndSetCookie(res, user._id, user.role);
+      const token = generateTokenAndSetCookie(res, user._id, user.role);
 
       return sendSuccess(res, 200, 'Login successful', {
-        user: user.toAuthJSON()
+        user: user.toAuthJSON(),
+        token
       });
     } catch (error) {
       next(error);
