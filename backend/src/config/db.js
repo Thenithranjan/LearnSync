@@ -1,15 +1,35 @@
 const mongoose = require('mongoose');
 
+let cached = global.mongoose;
+
+if (!cached) {
+  cached = global.mongoose = { conn: null, promise: null };
+}
+
 const connectDB = async () => {
-  try {
-    const conn = await mongoose.connect(process.env.MONGODB_URI, {
-      serverSelectionTimeoutMS: 3000
+  if (cached.conn) {
+    return cached.conn;
+  }
+
+  if (!cached.promise) {
+    const opts = {
+      bufferCommands: false,
+      serverSelectionTimeoutMS: 8000,
+    };
+
+    cached.promise = mongoose.connect(process.env.MONGODB_URI, opts).then((mongooseInstance) => {
+      console.log(`[MongoDB] Connected successfully: ${mongooseInstance.connection.host}`);
+      return mongooseInstance;
     });
-    console.log(`[MongoDB] Connected successfully: ${conn.connection.host}`);
+  }
+
+  try {
+    cached.conn = await cached.promise;
+    return cached.conn;
   } catch (error) {
-    console.warn(`[MongoDB Warning] Could not connect to local MongoDB (${error.message}).`);
-    
-    // In development mode, fallback to in-memory MongoDB instance so full platform is immediately usable
+    cached.promise = null;
+    console.warn(`[MongoDB Warning] Could not connect to MongoDB: ${error.message}`);
+
     if (process.env.NODE_ENV !== 'production') {
       console.log(`[MongoDB] Initializing in-memory MongoDB development instance...`);
       try {
@@ -18,14 +38,17 @@ const connectDB = async () => {
         const memoryUri = mongoServer.getUri();
         const conn = await mongoose.connect(memoryUri);
         console.log(`[MongoDB] ✅ Connected to in-memory MongoDB dev database: ${conn.connection.host}`);
+        cached.conn = conn;
+        return cached.conn;
       } catch (memErr) {
         console.error(`[MongoDB Error] Failed to initialize in-memory database: ${memErr.message}`);
-        process.exit(1);
+        throw memErr;
       }
     } else {
-      process.exit(1);
+      throw error;
     }
   }
 };
 
 module.exports = connectDB;
+

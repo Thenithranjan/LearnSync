@@ -59,6 +59,18 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
+// Ensure MongoDB connection is initialized
+const connectDB = require('./config/db');
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    console.error('Database connection error in request:', err);
+    res.status(500).json({ success: false, message: 'Database connection failure', error: err.message });
+  }
+});
+
 // Tell browsers/proxies to never cache API responses (all are authenticated,
 // user-specific and change frequently — e.g. /api/dashboard/*, /api/auth/me).
 app.use('/api', (req, res, next) => {
