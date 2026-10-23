@@ -14,7 +14,8 @@ import {
   BookOpenCheck, Timer, Percent, Hash, Download, Edit3, Trash2,
   ChevronUp, MapPin, ToggleLeft, ToggleRight, Plus, UserX,
   MessageCircle, ThumbsUp, Paperclip, Mic, Video,
-  Shield, EyeOff, ArrowRight, ChevronLeft, HelpCircle, Megaphone, Sun, Moon
+  Shield, EyeOff, ArrowRight, ChevronLeft, HelpCircle, Megaphone, Sun, Moon,
+  Save, CheckCircle, XCircle
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -32,7 +33,7 @@ type Page =
   | 'student-discussions'
   | 'faculty-dashboard' | 'faculty-intelligence' | 'faculty-students'
   | 'faculty-interventions' | 'faculty-analytics'
-  | 'faculty-assignments' | 'faculty-attendance'
+  | 'faculty-assignments' | 'faculty-quizzes' | 'faculty-attendance'
   | 'admin-dashboard' | 'admin-departments' | 'admin-faculty'
   | 'admin-interventions' | 'admin-analytics' | 'admin-settings';
 
@@ -52,6 +53,7 @@ const FACULTY_NAV: { label: string; icon: React.ElementType; pageId: Page }[] = 
   { label: 'Dashboard',            icon: LayoutDashboard, pageId: 'faculty-dashboard'     },
   { label: 'Students',             icon: Users,           pageId: 'faculty-students'      },
   { label: 'Assignments',          icon: ClipboardList,   pageId: 'faculty-assignments'   },
+  { label: 'Quizzes',              icon: FileQuestion,    pageId: 'faculty-quizzes'       },
   { label: 'Attendance',           icon: CalendarCheck,   pageId: 'faculty-attendance'    },
   { label: 'Performance Analytics',icon: BarChart2,       pageId: 'faculty-analytics'     },
   { label: 'Academic Intelligence',icon: Lightbulb,       pageId: 'faculty-intelligence'  },
@@ -609,6 +611,7 @@ export default function App() {
           {activePage === 'faculty-intelligence'&& <FacultyIntelligencePage onOpenModal={(type, data) => { setModalType(type); setModalData(data); }} />}
           {activePage === 'faculty-students'    && <FacultyStudentsPage onOpenModal={(type, data) => { setModalType(type); setModalData(data); }} />}
           {activePage === 'faculty-assignments' && <FacultyAssignmentsPage onOpenModal={(type, data) => { setModalType(type); setModalData(data); }} />}
+          {activePage === 'faculty-quizzes'     && <FacultyQuizzesPage onOpenModal={(type, data) => { setModalType(type); setModalData(data); }} />}
           {activePage === 'faculty-attendance'  && <FacultyAttendancePage onOpenModal={(type, data) => { setModalType(type); setModalData(data); }} />}
           {activePage === 'faculty-analytics'   && <FacultyAnalyticsPage />}
           {activePage === 'faculty-interventions'&& <FacultyInterventionsPage onOpenModal={(type, data) => { setModalType(type); setModalData(data); }} />}
@@ -1096,6 +1099,78 @@ export default function App() {
               </form>
             )}
 
+            {modalType === 'course-syllabus' && (
+              <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
+                <div className="p-3 bg-brand-50 dark:bg-brand-950/40 border border-brand-200 dark:border-brand-800 rounded-2xl flex items-center justify-between">
+                  <div>
+                    <span className="px-2 py-0.5 bg-brand-600 text-white rounded text-[10px] font-bold font-mono">
+                      {modalData?.code || 'CS201'}
+                    </span>
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-white mt-1">
+                      {modalData?.name || modalData?.title || 'Data Structures & Algorithms'}
+                    </h4>
+                  </div>
+                  <span className="text-xs font-semibold text-brand-600 dark:text-brand-400 bg-white dark:bg-slate-900 px-3 py-1 rounded-xl border border-brand-200 dark:border-brand-800">
+                    {modalData?.modules?.length || 5} Lessons
+                  </span>
+                </div>
+
+                <div className="space-y-3">
+                  {(!modalData?.modules || modalData.modules.length === 0) ? (
+                    <div className="p-6 text-center text-slate-400 text-xs">
+                      No lesson modules found for this course.
+                    </div>
+                  ) : (
+                    modalData.modules.map((m: any, idx: number) => (
+                      <div key={m._id || idx} className="p-4 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700/60 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <h5 className="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                            <span className="w-5 h-5 rounded-full bg-brand-100 text-brand-700 dark:bg-brand-900/60 dark:text-brand-300 flex items-center justify-center text-[10px] font-extrabold">
+                              {idx + 1}
+                            </span>
+                            {m.title}
+                          </h5>
+                          <span className="text-[10px] font-semibold text-slate-400">
+                            {m.materials?.length || 0} Materials
+                          </span>
+                        </div>
+                        {m.description && (
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 pl-7 leading-relaxed">
+                            {m.description}
+                          </p>
+                        )}
+                        {m.materials && m.materials.length > 0 && (
+                          <div className="pl-7 pt-1 space-y-1.5">
+                            {m.materials.map((mat: any, mIdx: number) => (
+                              <a
+                                key={mat._id || mIdx}
+                                href={mat.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center justify-between p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 hover:border-brand-300 dark:hover:border-brand-700 transition-colors group"
+                              >
+                                <div className="flex items-center gap-2 min-w-0 pr-2">
+                                  <span className="px-1.5 py-0.5 rounded text-[9px] font-bold font-mono uppercase bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                                    {mat.type}
+                                  </span>
+                                  <span className="text-xs font-medium text-slate-700 dark:text-slate-200 truncate group-hover:text-brand-600 dark:group-hover:text-brand-400">
+                                    {mat.title}
+                                  </span>
+                                </div>
+                                <span className="text-[10px] font-semibold text-brand-600 dark:text-brand-400 shrink-0 flex items-center gap-1">
+                                  Open <ArrowUpRight className="w-3 h-3" />
+                                </span>
+                              </a>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+
             {modalType === 'notifications' && (
               <div className="space-y-3">
                 {recentAlerts.length === 0 ? (
@@ -1334,18 +1409,40 @@ function StudentCoursesPage({ onOpenModal, onToast }: { onOpenModal?: (type: str
       setLoading(true);
       const enrRes = await api.get('/courses/my-courses');
       const enrollments = enrRes.data?.enrollments || [];
-      const mapped = enrollments.map((e: any) => ({
-        id: e.courseId?._id || e._id,
-        code: e.courseId?.code || 'CS201',
-        name: e.courseId?.title || 'Data Structures & Algorithms',
-        instructor: 'Dr. Alan Faculty',
-        credits: 4,
-        modules: 12,
-        done: 4,
-        score: 85,
-        attendance: 92,
-        status: 'good'
-      }));
+      const mapped = await Promise.all(
+        enrollments.map(async (e: any) => {
+          const courseId = e.courseId?._id || e.courseId;
+          let moduleCount = 5;
+          let completedCount = 0;
+          try {
+            const detailRes = await api.get(`/courses/${courseId}/details`);
+            const details = detailRes.data;
+            if (details?.modules) {
+              moduleCount = details.modules.length || 1;
+              const completedIds = details.progress?.completedMaterialIds || [];
+              const totalMaterials = details.modules.reduce((acc: number, m: any) => acc + (m.materials?.length || 0), 0);
+              completedCount = completedIds.length > 0 && totalMaterials > 0
+                ? Math.round((completedIds.length / totalMaterials) * moduleCount)
+                : 0;
+            }
+          } catch (e) {
+            // fallback gracefully
+          }
+
+          return {
+            id: courseId,
+            code: e.courseId?.code || 'CS201',
+            name: e.courseId?.title || 'Data Structures & Algorithms',
+            instructor: e.courseId?.faculty?.name || 'Dr. Alan Faculty',
+            credits: 4,
+            modules: moduleCount,
+            done: completedCount,
+            score: 85,
+            attendance: 92,
+            status: 'good'
+          };
+        })
+      );
       setCourses(mapped);
       if (mapped.length > 0 && !selected) {
         setSelected(mapped[0].code);
@@ -1452,6 +1549,22 @@ function StudentCoursesPage({ onOpenModal, onToast }: { onOpenModal?: (type: str
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
             <h3 className="text-sm font-semibold text-slate-700 mb-4">Course Actions & Discussions</h3>
             <div className="flex flex-wrap gap-3">
+              <button
+                onClick={async () => {
+                  try {
+                    const detailRes = await api.get(`/courses/${selCourse.id}/details`);
+                    onOpenModal?.('course-syllabus', {
+                      ...selCourse,
+                      modules: detailRes.data?.modules || []
+                    });
+                  } catch (err: any) {
+                    onToast?.(err.response?.data?.message || 'Could not load syllabus', 'warning');
+                  }
+                }}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-semibold hover:bg-indigo-700 flex items-center gap-1.5 shadow-sm"
+              >
+                <BookOpen className="w-3.5 h-3.5" /> View 5 Lessons & Materials
+              </button>
               <button onClick={() => onOpenModal?.('self-checkin', { courseId: selCourse.id })} className="px-4 py-2 bg-brand-600 text-white rounded-xl text-xs font-semibold hover:bg-brand-700 flex items-center gap-1.5 shadow-sm">
                 <Zap className="w-3.5 h-3.5" /> Self Check-in (OTP)
               </button>
@@ -1599,6 +1712,15 @@ function StudentQuizzesPage({ onOpenModal }: { onOpenModal?: (type: string, data
   const [quizList, setQuizList] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Active quiz taking state
+  const [activeQuiz, setActiveQuiz] = useState<any>(null);      // quiz currently being taken
+  const [quizView, setQuizView] = useState<'list' | 'taking' | 'result'>('list');
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number>>({});
+  const [submitting, setSubmitting] = useState(false);
+  const [quizResult, setQuizResult] = useState<any>(null);
+  const [quizError, setQuizError] = useState('');
+
   const loadQuizzes = React.useCallback(async () => {
     try {
       setLoading(true);
@@ -1628,7 +1750,6 @@ function StudentQuizzesPage({ onOpenModal }: { onOpenModal?: (type: string, data
                   duration: `${item.timeLimitMinutes || 20}m`,
                   questions: item.questions?.length || 5,
                   status: 'upcoming',
-                  score: 100,
                   questionsData: item.questions
                 });
               });
@@ -1647,79 +1768,354 @@ function StudentQuizzesPage({ onOpenModal }: { onOpenModal?: (type: string, data
     loadQuizzes();
   }, [loadQuizzes]);
 
-  return (
-    <div className="max-w-7xl mx-auto space-y-8">
-      <PageHeader icon={FileQuestion} title="Quizzes" subtitle="Your quiz history, upcoming tests, and performance breakdown.">
-        <button onClick={loadQuizzes} className="flex items-center gap-2 px-3.5 py-2 bg-slate-100 text-slate-700 text-xs font-semibold rounded-xl hover:bg-slate-200 transition-colors">
-          <RefreshCw className="w-3.5 h-3.5" /> Refresh
-        </button>
-      </PageHeader>
+  const startQuiz = (quiz: any) => {
+    setActiveQuiz(quiz);
+    setSelectedAnswers({});
+    setQuizResult(null);
+    setQuizError('');
+    setCurrentIndex(0);
+    setQuizView('taking');
+  };
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <SummaryCard label="Upcoming" value={quizList.filter(q=>q.status==='upcoming').length} color="brand" icon={Timer} />
-        <SummaryCard label="Completed" value={quizList.filter(q=>q.status==='graded').length} color="success" icon={CheckCircle2} />
-        <SummaryCard label="Avg Score" value="85%" color="warning" icon={Percent} />
-        <SummaryCard label="Best Score" value="100%" color="success" icon={Trophy} />
-      </div>
+  const handleOptionSelect = (optionIdx: number) => {
+    setSelectedAnswers((prev) => ({ ...prev, [currentIndex]: optionIdx }));
+  };
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Upcoming */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="p-5 border-b border-slate-100 flex items-center justify-between">
-            <h2 className="font-semibold text-slate-900 flex items-center gap-2"><Timer className="w-4 h-4 text-brand-500" />Upcoming</h2>
-            <button onClick={loadQuizzes} className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-600"><RefreshCw className="w-3 h-3" /></button>
-          </div>
-          {loading ? (
-            <div className="p-8 text-center text-sm text-slate-400">Loading quizzes...</div>
-          ) : quizList.length === 0 ? (
-            <p className="text-sm text-slate-400 p-8 text-center">No upcoming quizzes scheduled.</p>
-          ) : (
-            quizList.map(q => (
-              <div key={q.id} className="p-5 border-b border-slate-100 last:border-0">
-                <p className="text-xs font-semibold text-brand-600 mb-1">{q.course}</p>
-                <p className="font-semibold text-slate-900 text-sm mb-2">{q.title}</p>
-                <div className="flex items-center gap-3 text-xs text-slate-500 mb-4">
-                  <span className="flex items-center gap-1"><CalendarCheck className="w-3 h-3" />{q.date}</span>
-                  <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{q.duration}</span>
-                  <span className="flex items-center gap-1"><Hash className="w-3 h-3" />{q.questions} Qs</span>
-                </div>
-                <button onClick={() => onOpenModal?.('take-quiz', q)} className="w-full py-2 bg-brand-600 text-white text-xs font-semibold rounded-xl hover:bg-brand-700 transition-colors shadow-sm">Start Quiz</button>
-              </div>
-            ))
-          )}
+  const nextQuestion = () => {
+    if (currentIndex < (activeQuiz?.questionsData?.length || 0) - 1) {
+      setCurrentIndex((prev) => prev + 1);
+    }
+  };
+
+  const prevQuestion = () => {
+    setCurrentIndex((prev) => Math.max(0, prev - 1));
+  };
+
+  const handleSubmitQuiz = async () => {
+    if (!activeQuiz) return;
+    setSubmitting(true);
+    setQuizError('');
+    try {
+      const assessmentSvc = (await import('./services/assessmentService')).default;
+      const answersPayload = (activeQuiz.questionsData || []).map((_: any, idx: number) => ({
+        questionIndex: idx,
+        selectedOptionIndex: selectedAnswers[idx] !== undefined ? selectedAnswers[idx] : -1
+      }));
+      const res = await assessmentSvc.submitAssessment(activeQuiz._id, { answers: answersPayload });
+      if (res?.success) {
+        setQuizResult(res.data);
+        setQuizView('result');
+      } else {
+        setQuizError(res?.message || 'Failed to submit quiz.');
+      }
+    } catch (err: any) {
+      setQuizError(err.response?.data?.message || 'Failed to submit quiz.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const formatTime = (secs: number) => {
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
+  const totalQuestions = activeQuiz?.questionsData?.length || 0;
+  const answeredCount = Object.keys(selectedAnswers).length;
+
+  // ── LIST VIEW ──
+  if (quizView === 'list') {
+    return (
+      <div className="max-w-7xl mx-auto space-y-8">
+        <PageHeader icon={FileQuestion} title="Quizzes" subtitle="Your quiz history, upcoming tests, and performance breakdown.">
+          <button onClick={loadQuizzes} className="flex items-center gap-2 px-3.5 py-2 bg-slate-100 text-slate-700 text-xs font-semibold rounded-xl hover:bg-slate-200 transition-colors">
+            <RefreshCw className="w-3 h-3" /> Refresh
+          </button>
+        </PageHeader>
+
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <SummaryCard label="Upcoming" value={quizList.filter(q=>q.status==='upcoming').length} color="brand" icon={Timer} />
+          <SummaryCard label="Completed" value={quizList.filter(q=>q.status==='graded').length} color="success" icon={CheckCircle2} />
+          <SummaryCard label="Avg Score" value="85%" color="warning" icon={Percent} />
+          <SummaryCard label="Best Score" value="100%" color="success" icon={Trophy} />
         </div>
 
-        {/* History */}
-        <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="p-5 border-b border-slate-100 flex items-center justify-between">
-            <h2 className="font-semibold text-slate-900">Quiz History</h2>
-            <button onClick={() => onOpenModal?.('take-quiz')} className="text-xs text-brand-600 font-medium hover:underline flex items-center gap-1"><Download className="w-3 h-3" />Export</button>
-          </div>
-          <div className="divide-y divide-slate-100">
-            {quizList.length === 0 ? (
-              <p className="text-sm text-slate-400 p-8 text-center">No quizzes completed yet.</p>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Upcoming */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+              <h2 className="font-semibold text-slate-900 flex items-center gap-2"><Timer className="w-4 h-4 text-brand-500" />Upcoming</h2>
+              <button onClick={loadQuizzes} className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-600"><RefreshCw className="w-3 h-3" /></button>
+            </div>
+            {loading ? (
+              <div className="p-8 text-center text-sm text-slate-400">Loading quizzes...</div>
+            ) : quizList.length === 0 ? (
+              <p className="text-sm text-slate-400 p-8 text-center">No upcoming quizzes scheduled.</p>
             ) : (
-              quizList.slice(0, 2).map(q => (
-                <div key={`hist-${q.id}`} className="p-5 flex items-center gap-4 hover:bg-slate-50 transition-colors">
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-sm font-bold shrink-0 bg-success-50 text-success-700`}>100%</div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-slate-900 truncate">{q.title}</p>
-                    <p className="text-xs text-slate-400 mt-0.5">{q.course} · {q.date} · {q.questions} questions</p>
+              quizList.map(q => (
+                <div key={q.id} className="p-5 border-b border-slate-100 last:border-0">
+                  <p className="text-xs font-semibold text-brand-600 mb-1">{q.course}</p>
+                  <p className="font-semibold text-slate-900 text-sm mb-2">{q.title}</p>
+                  <div className="flex items-center gap-3 text-xs text-slate-500 mb-4">
+                    <span className="flex items-center gap-1"><CalendarCheck className="w-3 h-3" />{q.date}</span>
+                    <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{q.duration}</span>
+                    <span className="flex items-center gap-1"><Hash className="w-3 h-3" />{q.questions} Qs</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-20 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                      <div className={`h-full rounded-full bg-success-500`} style={{ width: `100%` }}></div>
-                    </div>
-                    <button onClick={() => onOpenModal?.('take-quiz', q)} className="text-xs text-brand-600 font-medium hover:underline ml-2">Review</button>
-                  </div>
+                  <button onClick={() => startQuiz(q)} className="w-full py-2 bg-brand-600 text-white text-xs font-semibold rounded-xl hover:bg-brand-700 transition-colors shadow-sm">Start Quiz</button>
                 </div>
               ))
             )}
           </div>
+
+          {/* History */}
+          <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+              <h2 className="font-semibold text-slate-900">Quiz History</h2>
+              <button onClick={() => onOpenModal?.('take-quiz')} className="text-xs text-brand-600 font-medium hover:underline flex items-center gap-1"><Download className="w-3 h-3" />Export</button>
+            </div>
+            <div className="divide-y divide-slate-100">
+              {quizList.length === 0 ? (
+                <p className="text-sm text-slate-400 p-8 text-center">No quizzes completed yet.</p>
+              ) : (
+                quizList.slice(0, 2).map(q => (
+                  <div key={`hist-${q.id}`} className="p-5 flex items-center gap-4 hover:bg-slate-50 transition-colors">
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-sm font-bold shrink-0 bg-success-50 text-success-700`}>100%</div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-slate-900 truncate">{q.title}</p>
+                      <p className="text-xs text-slate-400 mt-0.5">{q.course} · {q.date} · {q.questions} questions</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-20 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                        <div className={`h-full rounded-full bg-success-500`} style={{ width: `100%` }}></div>
+                      </div>
+                      <button onClick={() => startQuiz(q)} className="text-xs text-brand-600 font-medium hover:underline ml-2">Review</button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
         </div>
       </div>
-    </div>
   );
+  }
+
+  // ── TAKING VIEW ──
+  if (quizView === 'taking') {
+    const currentQuestion = activeQuiz?.questionsData?.[currentIndex];
+    const isLastQuestion = currentIndex === totalQuestions - 1;
+
+    return (
+      <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => { setQuizView('list'); setActiveQuiz(null); }}
+            className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors"
+          >
+            <ChevronLeft className="w-4 h-4" /> Back to Quizzes
+          </button>
+          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+            Quiz · {totalQuestions} Questions
+          </span>
+        </div>
+
+        {quizError && (
+          <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-between text-rose-300 text-sm">
+            <AlertCircle className="w-5 h-5 text-rose-400 shrink-0" />
+            <span>{quizError}</span>
+            <button onClick={() => setQuizError('')} className="text-rose-400 hover:text-rose-200"><X className="w-4 h-4" /></button>
+          </div>
+        )}
+
+        {/* Header + Timer */}
+        <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-xl flex items-center justify-between gap-4">
+          <div>
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">{activeQuiz?.course}</p>
+            <h2 className="text-xl font-bold text-white mb-1">{activeQuiz?.title}</h2>
+            <p className="text-xs text-slate-400">{activeQuiz?.description || 'Answer all questions and submit.'}</p>
+          </div>
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border text-sm font-mono font-bold bg-slate-800 text-indigo-400 border-indigo-500/30">
+            <Clock className="w-4 h-4" />
+            <span>{formatTime((activeQuiz?.timeLimitMinutes || 20) * 60)}</span>
+          </div>
+        </div>
+
+        {/* Progress */}
+        <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+          <div className="bg-brand-600 h-full transition-all duration-300" style={{ width: `${((currentIndex + 1) / Math.max(totalQuestions, 1)) * 100}%` }}></div>
+        </div>
+        <div className="flex justify-between text-xs text-slate-400 mb-4">
+          <span>Question {currentIndex + 1} of {totalQuestions}</span>
+          <span>{answeredCount}/{totalQuestions} answered</span>
+        </div>
+
+        {/* Question Card */}
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-8">
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-xs font-bold text-brand-600 uppercase tracking-wider">Question {currentIndex + 1}</span>
+            <span className="text-xs text-slate-400">{currentQuestion?.points || 10} pt(s)</span>
+          </div>
+          <h3 className="text-lg font-semibold text-slate-900 leading-relaxed mb-6">
+            {currentQuestion?.questionText || 'Loading question...'}
+          </h3>
+
+          <div className="space-y-3">
+            {(currentQuestion?.options || []).map((opt: string, idx: number) => {
+              const isSelected = selectedAnswers[currentIndex] === idx;
+              return (
+                <button
+                  key={idx}
+                  onClick={() => handleOptionSelect(idx)}
+                  className={`w-full text-left p-4 rounded-2xl border transition-all flex items-center justify-between ${isSelected
+                    ? 'bg-brand-50 border-brand-500 text-slate-900 shadow-md'
+                    : 'bg-white border-slate-200 text-slate-700 hover:border-brand-300 hover:bg-brand-50/50'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${isSelected ? 'bg-brand-600 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                      {String.fromCharCode(65 + idx)}
+                    </div>
+                    <span className="text-sm">{opt}</span>
+                  </div>
+                  {isSelected && <CheckCircle className="w-5 h-5 text-brand-600" />}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="mt-8 pt-6 border-t border-slate-100 flex items-center justify-between">
+            <button
+              onClick={prevQuestion}
+              disabled={currentIndex === 0}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-slate-400 hover:text-white bg-slate-100 disabled:opacity-30 disabled:hover:text-slate-400"
+            >
+              <ChevronLeft className="w-4 h-4" /> Previous
+            </button>
+
+            {isLastQuestion ? (
+              <button
+                onClick={handleSubmitQuiz}
+                disabled={submitting}
+                className="inline-flex items-center gap-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm rounded-xl shadow-lg shadow-emerald-600/30 transition-all disabled:opacity-50"
+              >
+                {submitting ? 'Calculating Score...' : 'Submit Quiz'}
+              </button>
+            ) : (
+              <button
+                onClick={nextQuestion}
+                className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-semibold text-sm rounded-xl shadow-lg shadow-brand-500/20 transition-all"
+              >
+                Next <ChevronRight className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="text-xs text-slate-400 text-center">
+          Unanswered questions will be marked incorrect.
+        </div>
+      </div>
+    );
+  }
+
+  // ── RESULT VIEW ──
+  if (quizView === 'result') {
+    const isPassed = quizResult?.isPassed;
+    const answers = quizResult?.answers || [];
+
+    return (
+      <div className="max-w-3xl mx-auto px-4 py-10 space-y-6">
+        <div className="text-center">
+          <div
+            className={`w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-4 ${
+              isPassed
+                ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400'
+                : 'bg-rose-500/10 border border-rose-500/20 text-rose-400'
+            }`}
+          >
+            {isPassed ? <CheckCircle className="w-10 h-10" /> : <XCircle className="w-10 h-10" />}
+          </div>
+          <h2 className="text-2xl font-extrabold text-slate-900">
+            {isPassed ? 'Congratulations! You Passed' : 'Quiz Completed'}
+          </h2>
+          <p className="text-slate-500 text-sm mt-1">{activeQuiz?.title}</p>
+
+          <div className="grid grid-cols-3 gap-4 my-8 max-w-lg mx-auto">
+            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+              <span className="text-xs text-slate-400 font-medium">Your Score</span>
+              <p className="text-2xl font-bold text-brand-600 mt-1">
+                {quizResult?.score} / {quizResult?.totalPoints}
+              </p>
+            </div>
+            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+              <span className="text-xs text-slate-400 font-medium">Percentage</span>
+              <p className={`text-2xl font-bold mt-1 ${isPassed ? 'text-emerald-600' : 'text-rose-600'}`}>
+                {quizResult?.percentage}%
+              </p>
+            </div>
+            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+              <span className="text-xs text-slate-400 font-medium">Status</span>
+              <p className={`text-2xl font-bold mt-1 ${isPassed ? 'text-emerald-600' : 'text-amber-600'}`}>
+                {isPassed ? 'PASSED' : 'RETRY'}
+              </p>
+            </div>
+          </div>
+
+          {/* Per-question review */}
+          {answers.length > 0 && (
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="p-5 border-b border-slate-100">
+                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+                  <HelpCircle className="w-4 h-4 text-brand-500" /> Answer Review
+                </h3>
+              </div>
+              <div className="divide-y divide-slate-100">
+                {answers.map((ans: any, i: number) => {
+                  const q = activeQuiz?.questionsData?.[i];
+                  const correct = ans.isCorrect;
+                  return (
+                    <div key={i} className="p-4 flex items-start gap-3">
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-0.5 ${
+                        correct ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
+                      }`}>
+                        {correct ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-slate-900 truncate">{q?.questionText || `Question ${i + 1}`}</p>
+                        <p className={`text-[11px] mt-0.5 ${correct ? 'text-emerald-700 font-semibold' : 'text-rose-700 font-semibold'}`}>
+                          {correct
+                            ? `Correct — +${q?.points || 10} pts`
+                            : `Incorrect — correct answer: ${q?.options?.[q?.correctOptionIndex] || '—'}`}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          <div className="flex items-center justify-center gap-4">
+            <button
+              onClick={() => { setQuizView('list'); setActiveQuiz(null); setQuizResult(null); }}
+              className="px-5 py-2.5 text-slate-400 hover:text-slate-600 text-sm font-semibold transition-colors"
+            >
+              Back to Quizzes
+            </button>
+            <button
+              onClick={() => { setCurrentIndex(0); setSelectedAnswers({}); setQuizResult(null); setQuizView('taking'); }}
+              className="inline-flex items-center gap-2 px-6 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-semibold text-sm rounded-xl shadow-lg shadow-brand-600/30 transition-all hover:scale-105"
+            >
+              <RefreshCw className="w-4 h-4" /> Retake Quiz
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -3504,6 +3900,368 @@ function FacultyAssignmentsPage({ onOpenModal }: { onOpenModal?: (type: string, 
               <div className="flex items-center justify-end gap-3 pt-1">
                 <button type="button" onClick={() => setShowCreate(false)} className="px-4 py-2 text-slate-500 hover:text-slate-800 text-sm font-semibold">Cancel</button>
                 <button type="submit" disabled={creating} className="inline-flex items-center gap-1.5 px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-xl shadow-sm disabled:opacity-50"><PlusCircle className="w-4 h-4" />{creating ? 'Publishing...' : 'Publish Assignment'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+function FacultyQuizzesPage({ onOpenModal }: { onOpenModal?: (type: string, data?: any) => void }) {
+  const [courses, setCourses]         = React.useState<any[]>([]);
+  const [quizzes, setQuizzes]         = React.useState<any[]>([]);
+  const [loading, setLoading]         = React.useState(true);
+  const [error, setError]             = React.useState('');
+  const [detailQuiz, setDetailQuiz]   = React.useState<any>(null);
+  const [subsQuiz, setSubsQuiz]       = React.useState<any>(null);
+  const [submissions, setSubmissions] = React.useState<any[]>([]);
+  const [loadingSubs, setLoadingSubs] = React.useState(false);
+  const [deleteTarget, setDeleteTarget] = React.useState<any>(null);
+  const [deleting, setDeleting]       = React.useState(false);
+  const [showCreate, setShowCreate]   = React.useState(false);
+  const [creating, setCreating]       = React.useState(false);
+  const [createError, setCreateError] = React.useState('');
+  const [newCourseId, setNewCourseId] = React.useState('');
+  const [newTitle, setNewTitle]       = React.useState('');
+  const [newDesc, setNewDesc]         = React.useState('');
+  const [newPassing, setNewPassing]   = React.useState('60');
+  const [newTimeLimit, setNewTimeLimit] = React.useState('30');
+  const [newQuestions, setNewQuestions] = React.useState<any[]>([]);
+
+  const loadData = React.useCallback(async () => {
+    try {
+      setLoading(true); setError('');
+      const courseService = (await import('./services/courseService')).default;
+      const assessmentSvc = (await import('./services/assessmentService')).default;
+      const courseRes     = await courseService.getFacultyCourses();
+      const myCourses: any[] = courseRes?.courses || courseRes?.data || [];
+      setCourses(myCourses);
+      const allQuizzes: any[] = [];
+      await Promise.all(myCourses.map(async (c: any) => {
+        try {
+          const aRes = await assessmentSvc.getCourseAssessments(c._id);
+          const aList: any[] = aRes?.data || aRes?.assessments || (Array.isArray(aRes) ? aRes : []);
+          aList.filter((a: any) => a.type === 'QUIZ')
+            .forEach((a: any) => allQuizzes.push({ ...a, courseName: c.title, courseId: c._id }));
+        } catch { /* skip */ }
+      }));
+      setQuizzes(allQuizzes);
+    } catch (err: any) { setError(err.message || 'Failed to load quizzes'); }
+    finally { setLoading(false); }
+  }, []);
+
+  React.useEffect(() => { loadData(); }, [loadData]);
+
+  const openSubmissions = async (a: any) => {
+    setSubsQuiz(a); setDetailQuiz(null); setSubmissions([]); setLoadingSubs(true);
+    try {
+      const svc = (await import('./services/assessmentService')).default;
+      const res = await svc.getAssessmentSubmissions(a._id);
+      if (res?.success) setSubmissions(res.data);
+    } catch { /* ignore */ } finally { setLoadingSubs(false); }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      setDeleting(true);
+      const svc = (await import('./services/assessmentService')).default;
+      await svc.deleteAssessment(deleteTarget._id);
+      setDeleteTarget(null);
+      setQuizzes(prev => prev.filter(q => q._id !== deleteTarget._id));
+    } catch (err: any) { alert(err.message || 'Failed to delete quiz.'); }
+    finally { setDeleting(false); }
+  };
+
+  const resetCreateForm = () => {
+    setCreateError('');
+    setNewCourseId(courses.length === 1 ? courses[0]._id : '');
+    setNewTitle('');
+    setNewDesc('');
+    setNewPassing('60');
+    setNewTimeLimit('30');
+    setNewQuestions([
+      { questionText: '', options: ['', '', '', ''], correctOptionIndex: 0, points: 10, explanation: '' },
+      { questionText: '', options: ['', '', '', ''], correctOptionIndex: 0, points: 10, explanation: '' },
+      { questionText: '', options: ['', '', '', ''], correctOptionIndex: 0, points: 10, explanation: '' },
+      { questionText: '', options: ['', '', '', ''], correctOptionIndex: 0, points: 10, explanation: '' },
+      { questionText: '', options: ['', '', '', ''], correctOptionIndex: 0, points: 10, explanation: '' },
+      { questionText: '', options: ['', '', '', ''], correctOptionIndex: 0, points: 10, explanation: '' },
+      { questionText: '', options: ['', '', '', ''], correctOptionIndex: 0, points: 10, explanation: '' },
+      { questionText: '', options: ['', '', '', ''], correctOptionIndex: 0, points: 10, explanation: '' },
+      { questionText: '', options: ['', '', '', ''], correctOptionIndex: 0, points: 10, explanation: '' },
+      { questionText: '', options: ['', '', '', ''], correctOptionIndex: 0, points: 10, explanation: '' }
+    ]);
+    setShowCreate(true);
+  };
+
+  const handleAddQuestion = () => {
+    setNewQuestions((prev) => [...prev, {
+      questionText: '', options: ['', '', '', ''], correctOptionIndex: 0, points: 10, explanation: ''
+    }]);
+  };
+
+  const handleRemoveQuestion = (index: number) => {
+    if (newQuestions.length <= 1) return;
+    setNewQuestions((prev) => prev.filter((_, idx) => idx !== index));
+  };
+
+  const handleQuestionChange = (index: number, field: string, value: any) => {
+    setNewQuestions((prev) => {
+      const updated = [...prev];
+      updated[index][field] = value;
+      return updated;
+    });
+  };
+
+  const handleOptionChange = (qIndex: number, optIndex: number, value: string) => {
+    setNewQuestions((prev) => {
+      const updated = [...prev];
+      updated[qIndex].options[optIndex] = value;
+      return updated;
+    });
+  };
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCourseId || !newTitle.trim()) {
+      setCreateError('Please select a course and enter a title.');
+      return;
+    }
+    if (newQuestions.length === 0) {
+      setCreateError('A quiz must contain at least one question.');
+      return;
+    }
+    for (let i = 0; i < newQuestions.length; i++) {
+      if (!newQuestions[i].questionText.trim()) {
+        setCreateError(`Question #${i + 1} text cannot be blank.`); return;
+      }
+      if (newQuestions[i].options.some((opt: string) => !opt.trim())) {
+        setCreateError(`All 4 options in Question #${i + 1} must be filled.`); return;
+      }
+      if (newQuestions[i].correctOptionIndex == null || newQuestions[i].correctOptionIndex < 0 || newQuestions[i].correctOptionIndex > 3) {
+        setCreateError(`Please select a correct option for Question #${i + 1}.`); return;
+      }
+    }
+    try {
+      setCreating(true); setCreateError('');
+      const svc = (await import('./services/assessmentService')).default;
+      await svc.createAssessment(newCourseId, {
+        title: newTitle.trim(),
+        description: newDesc.trim(),
+        type: 'QUIZ',
+        totalPoints: newQuestions.reduce((sum, q) => sum + (Number(q.points) || 10), 0),
+        passingScore: Number(newPassing) || 50,
+        timeLimitMinutes: Number(newTimeLimit) || 30,
+        isPublished: true,
+        questions: newQuestions
+      });
+      setShowCreate(false);
+      await loadData();
+    } catch (err: any) { setCreateError(err.message || 'Failed to create quiz.'); }
+    finally { setCreating(false); }
+  };
+
+  if (detailQuiz) {
+    const q = detailQuiz;
+    return (
+      <div className="max-w-4xl mx-auto space-y-6">
+        <button onClick={() => setDetailQuiz(null)} className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800 font-medium">
+          <ChevronLeft className="w-4 h-4" /> Back to Quizzes
+        </button>
+        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8">
+          <div className="flex items-start justify-between gap-4 mb-6">
+            <div>
+              <span className="text-xs font-semibold bg-amber-50 text-amber-700 px-2 py-0.5 rounded-md">{q.courseName}</span>
+              <h1 className="text-2xl font-extrabold text-slate-900 mt-2">{q.title}</h1>
+            </div>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+              <HelpCircle className="w-3.5 h-3.5" /> QUIZ
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-3 mb-6">
+            {q.timeLimitMinutes > 0 && <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-100 px-3 py-1.5 rounded-lg text-xs text-slate-600"><Clock className="w-3.5 h-3.5 text-amber-400" /> {q.timeLimitMinutes} min limit</div>}
+            <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-100 px-3 py-1.5 rounded-lg text-xs text-slate-600"><Award className="w-3.5 h-3.5 text-amber-400" /> {q.totalPoints} pts</div>
+            <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-100 px-3 py-1.5 rounded-lg text-xs text-slate-600"><Hash className="w-3 h-3" /> {q.questions?.length || 0} questions</div>
+          </div>
+          {q.description && <div className="mb-4"><h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Description</h4><p className="text-sm text-slate-600 leading-relaxed">{q.description}</p></div>}
+        </div>
+        <div className="flex items-center justify-end gap-3">
+          <button onClick={() => { setDeleteTarget(q); setDetailQuiz(null); }} className="inline-flex items-center gap-1.5 px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 text-sm font-semibold rounded-xl border border-rose-200 transition-colors"><Trash2 className="w-4 h-4" /> Delete Quiz</button>
+          <button onClick={() => openSubmissions(q)} className="inline-flex items-center gap-1.5 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm shadow-brand-500/20"><Users className="w-4 h-4" /> View Submissions</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (subsQuiz) {
+    return (
+      <div className="max-w-6xl mx-auto space-y-6">
+        <button onClick={() => { setSubsQuiz(null); setDetailQuiz(null); }} className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800 font-medium"><ChevronLeft className="w-4 h-4" /> Back to Quizzes</button>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-extrabold text-slate-900 flex items-center gap-2"><Users className="w-7 h-7 text-amber-500" /> Quiz Submissions</h1>
+            <p className="text-sm text-slate-500 mt-1">For: <span className="font-semibold text-slate-800">{subsQuiz.title}</span>&nbsp;·&nbsp;<span className="text-amber-600">{subsQuiz.courseName}</span></p>
+          </div>
+          <span className="px-3 py-1.5 bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-600">{submissions.length} Submission{submissions.length !== 1 ? 's' : ''}</span>
+        </div>
+        {loadingSubs ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-3"><div className="w-10 h-10 border-4 border-amber-200 border-t-amber-500 rounded-full animate-spin" /><span className="text-sm text-slate-400">Loading submissions...</span></div>
+        ) : submissions.length === 0 ? (
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-sm p-12 text-center"><Users className="w-12 h-12 text-slate-600 mx-auto mb-3" /><h3 className="font-bold text-slate-200 mb-1">No Submissions Yet</h3><p className="text-sm text-slate-400">Students have not attempted this quiz.</p></div>
+        ) : (
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-sm overflow-hidden">
+            <table className="w-full text-left text-sm text-slate-400">
+              <thead className="bg-slate-800 text-xs font-semibold uppercase tracking-wider border-b border-slate-700">
+                <tr><th className="px-5 py-4">Student</th><th className="px-5 py-4">Submitted</th><th className="px-5 py-4">Status</th><th className="px-5 py-4">Score</th><th className="px-5 py-4 text-right">Actions</th></tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800">
+                {submissions.map((sub: any) => {
+                  const isGraded = sub.status === 'GRADED';
+                  return (
+                    <tr key={sub._id} className="hover:bg-slate-800/40 transition-colors">
+                      <td className="px-5 py-4"><div className="font-semibold text-slate-200">{sub.studentId?.name || 'Unknown'}</div><div className="text-xs text-slate-500">{sub.studentId?.email}</div></td>
+                      <td className="px-5 py-4 text-xs text-slate-500">{new Date(sub.submittedAt).toLocaleString()}</td>
+                      <td className="px-5 py-4"><span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${isGraded ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'}`}>{isGraded ? <CheckCircle className="w-3 h-3" /> : <Clock className="w-3 h-3" />}{sub.status}</span></td>
+                      <td className="px-5 py-4 font-bold text-slate-200">{isGraded ? `${sub.score} / ${sub.totalPoints} (${sub.percentage}%)` : '---'}</td>
+                      <td className="px-5 py-4 text-right"></td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-7xl mx-auto space-y-8">
+      <PageHeader icon={HelpCircle} title="Quizzes" subtitle="Create, manage, and review MCQ quizzes across your courses.">
+        <button onClick={resetCreateForm} className="inline-flex items-center gap-2 px-4 py-2.5 bg-amber-600 hover:bg-amber-500 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm shadow-amber-500/20"><Plus className="w-4 h-4" /> New Quiz</button>
+      </PageHeader>
+      {loading ? (
+        <div className="flex flex-col items-center justify-center py-20 gap-3"><div className="w-10 h-10 border-4 border-amber-200 border-t-amber-500 rounded-full animate-spin" /><span className="text-sm text-slate-400">Loading quizzes...</span></div>
+      ) : error ? (
+        <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-center gap-3 text-rose-600 text-sm"><AlertCircle className="w-5 h-5 flex-shrink-0" />{error}</div>
+      ) : quizzes.length === 0 ? (
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-sm p-12 text-center">
+          <HelpCircle className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+          <h3 className="font-bold text-slate-200 mb-1">No Quizzes Yet</h3>
+          <p className="text-sm text-slate-400 mb-5">Create your first MCQ quiz for your students.</p>
+          <button onClick={resetCreateForm} className="inline-flex items-center gap-2 px-5 py-2.5 bg-amber-600 hover:bg-amber-500 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm shadow-amber-500/20"><Plus className="w-4 h-4" /> New Quiz</button>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {quizzes.map((q: any) => (
+            <div key={q._id} className="bg-slate-900 border border-slate-800 rounded-2xl shadow-sm p-6 hover:border-amber-500/40 transition-all duration-200">
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <span className="text-xs font-semibold bg-amber-50 text-amber-700 px-2 py-0.5 rounded-md">{q.courseName}</span>
+                  <h3 className="font-bold text-slate-900 mt-2 text-base truncate">{q.title}</h3>
+                  {q.description && <p className="text-xs text-slate-400 mt-1 line-clamp-2">{q.description}</p>}
+                  <div className="flex flex-wrap items-center gap-3 mt-3">
+                    {q.timeLimitMinutes > 0 && <span className="text-xs text-slate-500 flex items-center gap-1.5 bg-slate-800 border border-slate-700 px-2 py-1 rounded-lg"><Clock className="w-3 h-3.5 text-amber-400" /> {q.timeLimitMinutes} min</span>}
+                    <span className="text-xs text-slate-500 flex items-center gap-1.5 bg-slate-800 border border-slate-700 px-2 py-1 rounded-lg"><Award className="w-3.5 h-3.5 text-amber-400" /> {q.totalPoints} pts</span>
+                    <span className="text-xs text-slate-500 flex items-center gap-1.5 bg-slate-800 border border-slate-700 px-2 py-1 rounded-lg"><Hash className="w-3 h-3" /> {q.questions?.length || 0} Qs</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0 flex-wrap sm:flex-nowrap">
+                  <button onClick={() => setDetailQuiz(q)} className="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-lg transition-colors border border-slate-700"><Eye className="w-4 h-4" /> View</button>
+                  <button onClick={() => openSubmissions(q)} className="inline-flex items-center gap-1.5 px-3 py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold rounded-lg transition-colors shadow-sm shadow-brand-500/20"><Users className="w-4 h-4" /> Submissions</button>
+                  <button onClick={() => setDeleteTarget(q)} className="inline-flex items-center gap-1.5 px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-semibold rounded-lg transition-colors border border-rose-200"><Trash2 className="w-4 h-4" /> Delete</button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl p-6 sm:p-8 max-w-md w-full space-y-5">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-rose-50 flex items-center justify-center flex-shrink-0"><Trash2 className="w-6 h-6 text-rose-500" /></div>
+              <div><h3 className="text-lg font-bold text-slate-900">Delete Quiz?</h3><p className="text-sm text-slate-500 mt-0.5">This action cannot be undone.</p></div>
+            </div>
+            <div className="p-4 bg-rose-50 border border-rose-100 rounded-2xl"><p className="text-sm font-semibold text-slate-300">{deleteTarget.title}</p><p className="text-xs text-slate-500 mt-0.5">{deleteTarget.courseName}</p></div>
+            <p className="text-sm text-slate-500">All student attempts will also be permanently deleted. Are you sure?</p>
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button onClick={() => setDeleteTarget(null)} disabled={deleting} className="px-5 py-2.5 text-slate-400 hover:text-slate-200 text-sm font-semibold border border-slate-700 rounded-xl hover:bg-slate-800 transition-colors">Cancel</button>
+              <button onClick={handleDelete} disabled={deleting} className="inline-flex items-center gap-2 px-5 py-2.5 bg-rose-600 hover:bg-rose-500 text-white text-sm font-semibold rounded-xl shadow-sm shadow-rose-500/20 transition-colors disabled:opacity-50"><Trash2 className="w-4 h-4" />{deleting ? 'Deleting...' : 'Yes, Delete'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showCreate && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl p-6 sm:p-8 max-w-lg w-full space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+              <div><h3 className="text-lg font-bold text-slate-900">New Quiz</h3><p className="text-xs text-slate-400">Publish a 10-question MCQ quiz</p></div>
+              <button onClick={() => setShowCreate(false)} className="p-2 text-slate-400 hover:text-slate-200 rounded-full hover:bg-slate-800"><X className="w-5 h-5" /></button>
+            </div>
+            {createError && <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-400 text-xs font-medium">{createError}</div>}
+            <form onSubmit={handleCreate} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 mb-1 uppercase tracking-wider">Course</label>
+                <select required value={newCourseId} onChange={e => setNewCourseId(e.target.value)} className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-slate-200 text-sm focus:outline-none focus:border-amber-500">
+                  <option value="">Select a course…</option>
+                  {courses.map((c: any) => <option key={c._id} value={c._id}>{c.title} ({c.code})</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 mb-1 uppercase tracking-wider">Title</label>
+                <input type="text" required value={newTitle} onChange={e => setNewTitle(e.target.value)} placeholder="e.g. Module 1: DSA Quiz" className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-slate-200 text-sm focus:outline-none focus:border-amber-500" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 mb-1 uppercase tracking-wider">Description</label>
+                <textarea rows={2} value={newDesc} onChange={e => setNewDesc(e.target.value)} placeholder="What does this quiz cover?" className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-slate-200 text-sm focus:outline-none focus:border-amber-500" />
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1 uppercase tracking-wider">Passing Score (%)</label>
+                  <input type="number" min="0" max="100" value={newPassing} onChange={e => setNewPassing(e.target.value)} className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-slate-200 text-sm focus:outline-none focus:border-amber-500" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1 uppercase tracking-wider">Time Limit (mins)</label>
+                  <input type="number" min="0" value={newTimeLimit} onChange={e => setNewTimeLimit(e.target.value)} className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-slate-200 text-sm focus:outline-none focus:border-amber-500" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1 uppercase tracking-wider">Questions</label>
+                  <span className="w-full px-4 py-2.5 bg-slate-800/50 border border-slate-700 rounded-xl text-slate-400 text-sm">{newQuestions.length}</span>
+                </div>
+              </div>
+              <div className="border border-slate-800/50 rounded-xl bg-slate-800/30 p-3">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider">MCQ Questions ({newQuestions.length})</h4>
+                  <button type="button" onClick={handleAddQuestion} className="text-xs text-amber-400 hover:text-amber-300"><Plus className="w-3 h-3" /> Add</button>
+                </div>
+                {newQuestions.map((q, qIdx) => (
+                  <div key={qIdx} className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-3 mb-3 space-y-3 relative">
+                    {newQuestions.length > 1 && (
+                      <button type="button" onClick={() => handleRemoveQuestion(qIdx)} className="absolute top-2 right-2 text-slate-500 hover:text-rose-400 p-1" title="Delete">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                    <input type="text" value={q.questionText} onChange={e => handleQuestionChange(qIdx, 'questionText', e.target.value)} placeholder="Question text" className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-200 text-sm focus:outline-none focus:border-amber-500 font-medium" />
+                    <div className="grid grid-cols-2 gap-2 pt-1">
+                      {q.options.map((opt: string, oIdx: number) => (
+                        <div key={oIdx} className="flex items-center gap-2">
+                          <input type="radio" name={`correctOpt-${qIdx}`} checked={q.correctOptionIndex === oIdx} onChange={() => handleQuestionChange(qIdx, 'correctOptionIndex', oIdx)} className="w-4 h-4 text-amber-500" />
+                          <input type="text" value={opt} onChange={e => handleOptionChange(qIdx, oIdx, e.target.value)} placeholder={`Option ${String.fromCharCode(65 + oIdx)}`} className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-300 text-xs focus:outline-none focus:border-amber-500" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button type="button" onClick={() => setShowCreate(false)} className="px-4 py-2 text-slate-400 hover:text-slate-200 text-sm font-semibold">Cancel</button>
+                <button type="submit" disabled={creating} className="inline-flex items-center gap-1.5 px-5 py-2 bg-amber-600 hover:bg-amber-500 text-white text-sm font-semibold rounded-xl shadow-sm shadow-amber-600/30 disabled:opacity-50"><Save className="w-4 h-4" />{creating ? 'Publishing...' : 'Publish Quiz'}</button>
               </div>
             </form>
           </div>

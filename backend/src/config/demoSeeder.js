@@ -178,6 +178,7 @@ async function seedDemoData() {
       const Assessment = require('../models/Assessment');
       const existingAssessments = await Assessment.find({ courseId: course._id });
       if (existingAssessments.length === 0) {
+        const quizQuestions = courseQuizQuestions(course);
         await Assessment.create([
           {
             title: `${course.code} Problem Set 1`,
@@ -192,33 +193,38 @@ async function seedDemoData() {
           },
           {
             title: `${course.code} Concept Evaluation Quiz`,
-            description: `Quick diagnostic quiz on fundamentals of ${course.title}.`,
+            description: `A 10-question MCQ quiz covering fundamentals of ${course.title}.`,
             type: 'QUIZ',
             courseId: course._id,
             facultyId: users['FACULTY']._id,
-            totalPoints: 50,
-            passingScore: 25,
+            totalPoints: 100,
+            passingScore: 60,
             dueDate: new Date(Date.now() + 3 * 86400000),
             isPublished: true,
-            questions: [
-              {
-                questionText: `Which fundamental principle applies to ${course.title}?`,
-                options: ['Decomposition & modularity', 'Random search', 'Ignoring base cases', 'Hardcoded values'],
-                correctOptionIndex: 0,
-                points: 25,
-                topic: 'Fundamentals'
-              },
-              {
-                questionText: 'What is the standard optimal evaluation measure?',
-                options: ['O(1) or O(log n)', 'Exponential complexity', 'Infinite loop', 'Unbounded recursion'],
-                correctOptionIndex: 0,
-                points: 25,
-                topic: 'Efficiency'
-              }
-            ]
+            timeLimitMinutes: 30,
+            questions: quizQuestions
           }
         ]);
-        console.log(`[Seed] Created demo assessments for ${course.code}`);
+        console.log(`[Seed] Created demo assessments (incl. 10-question quiz) for ${course.code}`);
+      } else {
+        // Ensure each course always has a 10-question quiz even if partially seeded before
+        const hasQuiz = existingAssessments.some((a) => a.type === 'QUIZ');
+        if (!hasQuiz) {
+          await Assessment.create({
+            title: `${course.code} Concept Evaluation Quiz`,
+            description: `A 10-question MCQ quiz covering fundamentals of ${course.title}.`,
+            type: 'QUIZ',
+            courseId: course._id,
+            facultyId: users['FACULTY']._id,
+            totalPoints: 100,
+            passingScore: 60,
+            dueDate: new Date(Date.now() + 3 * 86400000),
+            isPublished: true,
+            timeLimitMinutes: 30,
+            questions: courseQuizQuestions(course)
+          });
+          console.log(`[Seed] Added missing 10-question quiz for ${course.code}`);
+        }
       }
 
       // Seed an active attendance session for check-in demo
@@ -244,6 +250,98 @@ async function seedDemoData() {
   } catch (err) {
     console.warn(`[Seed Warning] Could not seed default demo accounts: ${err.message}`);
   }
+}
+
+/**
+ * Build a fixed 10-question MCQ quiz for any given course.
+ * Each question is worth 10 points (total 100). Correct answers are stored
+ * server-side and stripped when quizzes are served to students.
+ */
+function courseQuizQuestions(course) {
+  const title = course.title || 'this course';
+  const code = course.code || 'CRS';
+  return [
+    {
+      questionText: `What is the primary focus of ${title}?`,
+      options: ['Master core concepts and apply them', 'Memorize every detail', 'Skip the assessments', 'None of the above'],
+      correctOptionIndex: 0,
+      points: 10,
+      topic: 'Fundamentals',
+      explanation: 'The course is designed to build core conceptual understanding and practical application.'
+    },
+    {
+      questionText: `Which practice best helps you master ${code} topics?`,
+      options: ['Consistent practice and review', 'Cramming only before exams', 'Skipping lectures', 'Guessing on assessments'],
+      correctOptionIndex: 0,
+      points: 10,
+      topic: 'Study Approach',
+      explanation: 'Regular, spaced practice and review leads to better retention than last-minute cramming.'
+    },
+    {
+      questionText: `When approaching problems in ${title}, what is the recommended first step?`,
+      options: ['Understand the problem statement and requirements', 'Start writing code immediately', 'Skip to the hardest part', 'Copy a solution from a peer'],
+      correctOptionIndex: 0,
+      points: 10,
+      topic: 'Problem Solving',
+      explanation: 'Clarifying requirements before solving prevents rework and wrong assumptions.'
+    },
+    {
+      questionText: `Which resource best supports learning in ${code}?`,
+      options: ['Lecture notes, materials, and recommended readings', 'Only random internet searches', 'Ignoring course materials', 'Waiting until the final exam'],
+      correctOptionIndex: 0,
+      points: 10,
+      topic: 'Resources',
+      explanation: 'Course-provided materials and readings are aligned with the syllabus and learning outcomes.'
+    },
+    {
+      questionText: `How should you prepare for assessments in ${title}?`,
+      options: ['Review notes and attempt practice questions regularly', 'Only study the night before', 'Skip all preparation', 'Rely entirely on classmates'],
+      correctOptionIndex: 0,
+      points: 10,
+      topic: 'Assessment Prep',
+      explanation: 'Consistent review and practice questions build confidence and identify gaps early.'
+    },
+    {
+      questionText: `What indicates strong understanding of ${code} material?`,
+      options: ['Ability to explain concepts and solve related problems', 'Memorizing definitions without context', 'Attending class but never reviewing', 'Finishing assignments quickly'],
+      correctOptionIndex: 0,
+      points: 10,
+      topic: 'Mastery',
+      explanation: 'True understanding means you can explain concepts and apply them to solve problems.'
+    },
+    {
+      questionText: `Which of the following is true about ${title}?`,
+      options: ['It builds knowledge progressively across modules', 'All topics are equally difficult', 'Only the final topic matters', 'It requires no active engagement'],
+      correctOptionIndex: 0,
+      points: 10,
+      topic: 'Course Structure',
+      explanation: 'The course is structured so each module builds on the previous one.'
+    },
+    {
+      questionText: `How do you apply ${code} concepts to real-world scenarios?`,
+      options: ['Relate theory to practical examples and case studies', 'Ignore real-world context', 'Only apply concepts during exams', 'Apply them without understanding'],
+      correctOptionIndex: 0,
+      points: 10,
+      topic: 'Application',
+      explanation: 'Connecting theory to practical examples deepens understanding and retention.'
+    },
+    {
+      questionText: `What is a common mistake to avoid in ${title}?`,
+      options: ['Procrastinating until the deadline', 'Asking questions when unsure', 'Reviewing feedback on submissions', 'Practicing regularly'],
+      correctOptionIndex: 0,
+      points: 10,
+      topic: 'Common Pitfalls',
+      explanation: 'Procrastination leads to rushed work and missed learning opportunities.'
+    },
+    {
+      questionText: `How do you track your progress in ${code}?`,
+      options: ['Check quiz scores, feedback, and completion status', 'Ignore all grades', 'Only check progress at year-end', 'Compare only with classmates'],
+      correctOptionIndex: 0,
+      points: 10,
+      topic: 'Progress Tracking',
+      explanation: 'Monitoring scores and feedback helps you identify strengths and areas to improve.'
+    }
+  ];
 }
 
 module.exports = seedDemoData;
